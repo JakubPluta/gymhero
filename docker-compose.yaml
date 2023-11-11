@@ -1,17 +1,16 @@
-version: '3'
-
-volumes:
-  db-data:
-
-
+version: '3.8'
 services:
   db:
-    image: postgres:15-alpine
-    env_file:
-      - .env
+    build:
+      context: ./docker
+      dockerfile: Dockerfile
     restart: always
     ports:
-      - '5431:5432'
+      - '5432:5432'
     volumes:
-      - db-data:/var/lib/postgresql/data
+      - db:/var/lib/postgresql/data
+volumes:
+  db:
+    driver: local
+
 

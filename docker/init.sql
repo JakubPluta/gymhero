@@ -1,0 +1,7 @@
+CREATE USER gymhero;
+
+CREATE DATABASE workout;
+GRANT ALL PRIVILEGES ON DATABASE workout TO gymhero;
+
+CREATE DATABASE workout_test;
+GRANT ALL PRIVILEGES ON DATABASE workout_test TO gymhero;
