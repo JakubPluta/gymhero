@@ -17,6 +17,11 @@ class Exercise(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
+    target_body_part = relationship("BodyPart")
+    exercise_type = relationship("ExerciseType")
+    level = relationship("Level")
+
+
 class BodyPart(Base):
     __tablename__ = "body_parts"
 
@@ -33,6 +38,7 @@ class ExerciseType(Base):
     name = Column(String, nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
 
 class Level(Base):
     __tablename__ = "levels"
