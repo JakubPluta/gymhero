@@ -1,31 +1,33 @@
 import secrets
 from typing import Any, Dict, List, Optional, Union
 
-from pydantic import AnyHttpUrl, BaseSettings, EmailStr, HttpUrl, PostgresDsn, validator
+from pydantic import AnyHttpUrl, EmailStr, ConfigDict
+from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
-    API_V1_STR: str = "/api/v1"
-    SECRET_KEY: str = secrets.token_urlsafe(32)
-    ALGORITHM: str = "HS256"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
 
-    BACKEND_CORS_ORIGINS: List[AnyHttpUrl] = []
 
-    POSTGRES_SERVER: str
+    API_VERSION: str
+    PROJECT_NAME: str
+    ENV: str
+    SECRET_KEY: str
+    ALGORITHM: str
+    ACCESS_TOKEN_EXPIRE_MINUTES: int
+
+    POSTGRES_HOST: str
     POSTGRES_USER: str
     POSTGRES_PASSWORD: str
     POSTGRES_DB: str
+    POSTGRES_PORT: int
 
-    SQLALCHEMY_DATABASE_URI: PostgresDsn
-
-    FIRST_SUPERUSER_USERNAME: str = "user"
-    FIRST_SUPERUSER_EMAIL: EmailStr = "test@gymfreak.com"
-    FIRST_SUPERUSER_PASSWORD: str = "password"
+    FIRST_SUPERUSER_USERNAME: str
+    FIRST_SUPERUSER_EMAIL: EmailStr
+    FIRST_SUPERUSER_PASSWORD: str
 
     class Config:
+        env_file = './.env.example'
         case_sensitive = True
 
 
-def get_settings():
-    return Settings()
+settings = Settings()

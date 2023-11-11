@@ -1,4 +1,7 @@
 from sqlalchemy import MetaData
+from typing import Dict, Any
+from sqlalchemy.ext.declarative import as_declarative, declared_attr
+
 
 POSTGRES_INDEXES_NAMING_CONVENTION = {
     "ix": "%(column_0_label)s_idx",
@@ -7,5 +10,24 @@ POSTGRES_INDEXES_NAMING_CONVENTION = {
     "fk": "%(table_name)s_%(column_0_name)s_fkey",
     "pk": "%(table_name)s_pkey",
 }
+
+
 metadata = MetaData(naming_convention=POSTGRES_INDEXES_NAMING_CONVENTION)
+
+
+class_registry: Dict[str, Any] = {}
+
+
+@as_declarative(class_registry=class_registry)
+class Base:
+    id: Any
+    __name__: str
+    __abstract__: bool  = True
+    metadata = metadata
+
+    @declared_attr
+    def __tablename__(cls) -> str:
+        """Returns the lowercase name of the class as the table name."""
+        return cls.__name__.lower()
+
 
