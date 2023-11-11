@@ -1,0 +1,19 @@
+[tool.poetry]
+name = "gymfreak-diary"
+version = "0.1.0"
+description = "Simple application to note down your workouts details"
+authors = ["jp <plutakuba@gmail.com>"]
+license = "MIT"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+fastapi = "^0.104.1"
+uvicorn = "^0.24.0"
+sqlalchemy = "^2.0.23"
+alembic = "^1.12.1"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
