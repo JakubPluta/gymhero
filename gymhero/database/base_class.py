@@ -25,9 +25,5 @@ class Base:
     __abstract__: bool  = True
     metadata = metadata
 
-    @declared_attr
-    def __tablename__(cls) -> str:
-        """Returns the lowercase name of the class as the table name."""
-        return cls.__name__.lower()
 
 
