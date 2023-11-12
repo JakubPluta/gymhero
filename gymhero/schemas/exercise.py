@@ -3,9 +3,18 @@ import datetime
 from pydantic import BaseModel, Field
 from typing import Optional, List, Any
 
+from pydantic import validator, BaseModel
+
+
+
 
 class LevelBase(BaseModel):
     name: str
+    # key: str = ''
+    #
+    # @validator("key", always=True)
+    # def populate_key(cls, v, values):
+    #     return str(values["name"]).replace(" ", "_").lower()
 
 
 class LevelCreate(LevelBase):

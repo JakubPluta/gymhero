@@ -25,5 +25,3 @@ class Base:
     __abstract__: bool  = True
     metadata = metadata
 
-
-

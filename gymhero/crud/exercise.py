@@ -1,0 +1,29 @@
+from gymhero.models.exercise import Level
+from sqlalchemy.orm import Session
+from gymhero.schemas.exercise import LevelCreate, LevelInDB
+from logging import getLogger
+
+
+log = getLogger(__name__)
+
+
+def create_level(db: Session, level: LevelCreate) -> Level:
+    log.info("creating level")
+    level_data: dict = level.model_dump()
+    level_orm: Level = Level(**level_data)
+    db.add(level_orm)
+    db.commit()
+    db.refresh(level_orm)
+    return level_orm
+
+
+def get_all_levels(db: Session):
+    return db.query(Level).all()
+
+
+def get_level_by_id(db: Session, level_id: int):
+    return db.query(Level).filter(Level.id == level_id).first()
+
+
+def get_level_by_name(db: Session, level_name: str):
+    return db.query(Level).filter(Level.name == level_name).first()
