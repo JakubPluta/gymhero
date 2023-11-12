@@ -9,14 +9,16 @@ class Exercise(Base):
     __tablename__ = "exercises"
 
     id = Column(Integer, primary_key=True)
-    key = Column(String, unique=True, index=True, default=key_column_from('name'))
+    key = Column(String, unique=True, index=True, default=key_column_from("name"))
     name = Column(String, nullable=False)
     description = Column(String, nullable=True)
-    target_body_part_id = Column(Integer, ForeignKey('body_parts.id'))
-    exercise_type_id = Column(Integer, ForeignKey('exercise_types.id'))
-    level_id = Column(Integer, ForeignKey('levels.id'))
+    target_body_part_id = Column(Integer, ForeignKey("body_parts.id"))
+    exercise_type_id = Column(Integer, ForeignKey("exercise_types.id"))
+    level_id = Column(Integer, ForeignKey("levels.id"))
     created_at = Column(DateTime(timezone=True), server_default=func.now())
-    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    updated_at = Column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
 
     target_body_part = relationship("BodyPart")
     exercise_type = relationship("ExerciseType")
@@ -25,36 +27,47 @@ class Exercise(Base):
     def __repr__(self):
         return f"<Exercise(id={self.id}, key={self.key}, name={self.name})>"
 
+
 class BodyPart(Base):
     __tablename__ = "body_parts"
 
     id = Column(Integer, primary_key=True)
-    key = Column(String, unique=True, index=True, default=key_column_from('name'))
+    key = Column(String, unique=True, index=True, default=key_column_from("name"))
     name = Column(String, nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
-    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    updated_at = Column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
 
     def __repr__(self):
         return f"<BodyPart(id={self.id}, key={self.key}, name={self.name})>"
 
+
 class ExerciseType(Base):
     __tablename__ = "exercise_types"
     id = Column(Integer, primary_key=True)
-    key = Column(String, unique=True, index=True, default=key_column_from('name'))
+    key = Column(String, unique=True, index=True, default=key_column_from("name"))
     name = Column(String, nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
-    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    updated_at = Column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
 
     def __repr__(self):
         return f"<ExerciseType(id={self.id}, key={self.key}, name={self.name})>"
 
+
 class Level(Base):
     __tablename__ = "levels"
     id = Column(Integer, primary_key=True)
-    key = Column(String, unique=True, index=True, nullable=False, default=key_column_from('name'))
+    key = Column(
+        String, unique=True, index=True, nullable=False, default=key_column_from("name")
+    )
     name = Column(String, nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
-    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    updated_at = Column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
 
     def __repr__(self):
         return f"<Level(id={self.id}, key={self.key}, name={self.name})>"

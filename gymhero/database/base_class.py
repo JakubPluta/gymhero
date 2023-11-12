@@ -22,6 +22,5 @@ class_registry: Dict[str, Any] = {}
 class Base:
     id: Any
     __name__: str
-    __abstract__: bool  = True
+    __abstract__: bool = True
     metadata = metadata
-

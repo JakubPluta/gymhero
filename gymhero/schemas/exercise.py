@@ -6,19 +6,16 @@ from typing import Optional, List, Any
 from pydantic import validator, BaseModel
 
 
-
-
 class LevelBase(BaseModel):
     name: str
-    # key: str = ''
-    #
-    # @validator("key", always=True)
-    # def populate_key(cls, v, values):
-    #     return str(values["name"]).replace(" ", "_").lower()
 
 
 class LevelCreate(LevelBase):
     pass
+
+
+class LevelUpdate(LevelBase):
+    name: Optional[str]
 
 
 class LevelInDB(LevelBase):
@@ -29,4 +26,3 @@ class LevelInDB(LevelBase):
 
     class Config:
         orm_mode = True
-

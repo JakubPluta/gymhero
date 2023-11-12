@@ -21,7 +21,7 @@ class Settings(BaseSettings):
     FIRST_SUPERUSER_PASSWORD: str
 
     class Config:
-        env_file = './.env.example'
+        env_file = "./.env.example"
         case_sensitive = True
 
 

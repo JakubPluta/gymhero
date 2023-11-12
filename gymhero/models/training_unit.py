@@ -17,5 +17,4 @@ class TrainingUnit(Base):
     key = Column(String, nullable=False, unique=True)
     name = Column(String, nullable=False)
     description = Column(String, nullable=True)
-    exercises = relationship('Exercise', secondary=training_unit_exercise)
-
+    exercises = relationship("Exercise", secondary=training_unit_exercise)

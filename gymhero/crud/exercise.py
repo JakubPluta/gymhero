@@ -1,6 +1,6 @@
 from gymhero.models.exercise import Level
 from sqlalchemy.orm import Session
-from gymhero.schemas.exercise import LevelCreate, LevelInDB
+from gymhero.schemas.exercise import LevelCreate, LevelInDB, LevelUpdate
 from logging import getLogger
 
 
@@ -27,3 +27,18 @@ def get_level_by_id(db: Session, level_id: int):
 
 def get_level_by_name(db: Session, level_name: str):
     return db.query(Level).filter(Level.name == level_name).first()
+
+
+def delete_level(db: Session, level: Level):
+    db.delete(level),
+    db.commit()
+    return level
+
+
+def update_level(db: Session, level: Level, update: LevelUpdate):
+    level.name = update.name
+    level.key = update.name.lower().replace(" ", "_")
+    db.add(level)
+    db.commit()
+    db.refresh(level)
+    return level

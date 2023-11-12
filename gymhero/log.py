@@ -16,7 +16,9 @@ class DebugLevel(str, Enum):
     CRITICAL = "CRITICAL"
 
 
-def get_logger(name: Optional[str] = None, level: DebugLevel = 'DEBUG') -> logging.Logger:
+def get_logger(
+    name: Optional[str] = None, level: DebugLevel = "DEBUG"
+) -> logging.Logger:
     """Creates and configures a logger object.
 
     :param name: The name of the logger (optional).
@@ -38,4 +40,3 @@ def get_logger(name: Optional[str] = None, level: DebugLevel = 'DEBUG') -> loggi
         level = DebugLevel.DEBUG.value
     logger.setLevel(level=level)
     return logger
-
