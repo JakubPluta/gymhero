@@ -1,6 +1,6 @@
 from typing import Optional, List
 
-from gymhero.models.exercise import Level
+from gymhero.models.level import Level
 from sqlalchemy.orm import Session
 from gymhero.schemas.level import LevelCreate, LevelInDB, LevelUpdate
 from logging import getLogger

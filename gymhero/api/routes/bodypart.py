@@ -5,7 +5,12 @@ from fastapi import Depends, status
 
 from sqlalchemy.orm import Session
 
-from gymhero.schemas.bodypart import BodyPartUpdate, BodyPartCreate, BodyPartBase, BodyPartInDB
+from gymhero.schemas.body_part import (
+    BodyPartUpdate,
+    BodyPartCreate,
+    BodyPartBase,
+    BodyPartInDB,
+)
 from gymhero.log import get_logger
 
 log = get_logger(__name__)
@@ -19,7 +24,9 @@ def fetch_body_parts(db: Session = Depends(get_db)):
     return levels
 
 
-@router.get("/{body_part_id}", response_model=BodyPartInDB, status_code=status.HTTP_200_OK)
+@router.get(
+    "/{body_part_id}", response_model=BodyPartInDB, status_code=status.HTTP_200_OK
+)
 def fetch_body_part_by_id(body_part_id: int, db: Session = Depends(get_db)):
     body_part = bodypart_exercise.get_body_part_by_id(db, body_part_id=body_part_id)
 
@@ -32,7 +39,11 @@ def fetch_body_part_by_id(body_part_id: int, db: Session = Depends(get_db)):
     return body_part
 
 
-@router.get("/name/{body_part_name}", response_model=BodyPartInDB, status_code=status.HTTP_200_OK)
+@router.get(
+    "/name/{body_part_name}",
+    response_model=BodyPartInDB,
+    status_code=status.HTTP_200_OK,
+)
 def fetch_body_part_by_id(body_part_name: str, db: Session = Depends(get_db)):
     body_part = bodypart_exercise.get_body_part_by_name(db, body_part_name)
     if body_part is None:
@@ -64,4 +75,3 @@ def delete_body_part(body_part_id: int, db: Session = Depends(get_db)):
             detail=f"Couldn't delete body part with id {body_part_id}. Error: {str(e)}",
         )
     return {"detail": f"Body part with id {body_part_id} deleted."}
-

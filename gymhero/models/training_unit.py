@@ -1,6 +1,7 @@
 from gymhero.database.base_class import Base
 from sqlalchemy import Integer, Column, String, Table, ForeignKey
 from sqlalchemy.orm import relationship
+from gymhero.database.utils import key_column_from
 
 training_unit_exercise = Table(
     "training_unit_exercise",
@@ -14,7 +15,7 @@ class TrainingUnit(Base):
     __tablename__ = "training_units"
 
     id = Column(Integer, primary_key=True)
-    key = Column(String, nullable=False, unique=True)
+    key = Column(String, nullable=False, unique=True, default=key_column_from("name"))
     name = Column(String, nullable=False)
     description = Column(String, nullable=True)
     exercises = relationship("Exercise", secondary=training_unit_exercise)

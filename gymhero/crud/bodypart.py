@@ -1,8 +1,8 @@
 from typing import Optional, List
 
-from gymhero.models.exercise import BodyPart
+from gymhero.models.body_part import BodyPart
 from sqlalchemy.orm import Session
-from gymhero.schemas.bodypart import BodyPartCreate, BodyPartUpdate
+from gymhero.schemas.body_part import BodyPartCreate, BodyPartUpdate
 from logging import getLogger
 
 log = getLogger(__name__)
@@ -37,7 +37,7 @@ def delete_body_part(db: Session, body_part: BodyPart) -> BodyPart:
 
 
 def update_body_part(
-        db: Session, body_part: BodyPart, body_part_update: BodyPartUpdate
+    db: Session, body_part: BodyPart, body_part_update: BodyPartUpdate
 ) -> BodyPart:
     body_part.name = body_part_update.name
     body_part.key = body_part_update.name.lower().replace(" ", "_")
