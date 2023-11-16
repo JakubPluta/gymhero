@@ -1,5 +1,5 @@
 from gymhero.database.db import get_db
-from gymhero.crud import bodypart as bodypart_exercise
+from gymhero.crud import bodypart as bodypart_crud
 from fastapi import APIRouter, HTTPException
 from fastapi import Depends, status
 
@@ -20,7 +20,7 @@ router = APIRouter()
 
 @router.get("/", response_model=list[BodyPartInDB], status_code=status.HTTP_200_OK)
 def fetch_body_parts(db: Session = Depends(get_db)):
-    levels = bodypart_exercise.get_all_body_parts(db)
+    levels = bodypart_crud.get_all_body_parts(db)
     return levels
 
 
@@ -28,7 +28,7 @@ def fetch_body_parts(db: Session = Depends(get_db)):
     "/{body_part_id}", response_model=BodyPartInDB, status_code=status.HTTP_200_OK
 )
 def fetch_body_part_by_id(body_part_id: int, db: Session = Depends(get_db)):
-    body_part = bodypart_exercise.get_body_part_by_id(db, body_part_id=body_part_id)
+    body_part = bodypart_crud.get_body_part_by_id(db, body_part_id=body_part_id)
 
     if body_part is None:
         raise HTTPException(
@@ -45,7 +45,7 @@ def fetch_body_part_by_id(body_part_id: int, db: Session = Depends(get_db)):
     status_code=status.HTTP_200_OK,
 )
 def fetch_body_part_by_id(body_part_name: str, db: Session = Depends(get_db)):
-    body_part = bodypart_exercise.get_body_part_by_name(db, body_part_name)
+    body_part = bodypart_crud.get_body_part_by_name(db, body_part_name)
     if body_part is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -56,19 +56,19 @@ def fetch_body_part_by_id(body_part_name: str, db: Session = Depends(get_db)):
 
 @router.post("/", response_model=BodyPartInDB, status_code=status.HTTP_201_CREATED)
 def create_body_part(body_part: BodyPartCreate, db: Session = Depends(get_db)):
-    return bodypart_exercise.create_body_part(db, body_part=body_part)
+    return bodypart_crud.create_body_part(db, body_part=body_part)
 
 
 @router.delete("/{body_part_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_body_part(body_part_id: int, db: Session = Depends(get_db)):
-    bp = bodypart_exercise.get_body_part_by_id(db, body_part_id=body_part_id)
+    bp = bodypart_crud.get_body_part_by_id(db, body_part_id=body_part_id)
     if bp is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Body part with id {body_part_id} not found. Cannot delete.",
         )
     try:
-        bodypart_exercise.delete_body_part(db, body_part=bp)
+        bodypart_crud.delete_body_part(db, body_part=bp)
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

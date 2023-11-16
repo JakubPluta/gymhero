@@ -1,4 +1,4 @@
-from typing import Optional, List
+from typing import Optional, List, Type
 
 from gymhero.models.exercise import Exercise, ExerciseType
 from sqlalchemy.orm import Session
@@ -30,7 +30,7 @@ def create_exercise_type(
     return exercise_type_orm
 
 
-def get_all_exercise_types(db: Session) -> List[ExerciseType]:
+def get_all_exercise_types(db: Session) -> list[Type[ExerciseType]]:
     return db.query(ExerciseType).all()
 
 
@@ -54,7 +54,7 @@ def delete_exercise_type(db: Session, exercise_type: ExerciseType) -> ExerciseTy
     return exercise_type
 
 
-def update_level(
+def update_exercise_type(
     db: Session, exercise_type: ExerciseType, update: ExerciseTypeUpdate
 ) -> ExerciseType:
     exercise_type.name = update.name
@@ -63,3 +63,42 @@ def update_level(
     db.commit()
     db.refresh(exercise_type)
     return exercise_type
+
+
+def create_exercise(db: Session, exercise: ExerciseCreate) -> Exercise:
+    log.info("creating exercise")
+    exercise_data: dict = exercise.model_dump()
+    exercise_orm: Exercise = Exercise(**exercise_data)
+    db.add(exercise_orm)
+    db.commit()
+    db.refresh(exercise_orm)
+    return exercise_orm
+
+
+def get_exercise_by_id(db: Session, exercise_id: int) -> Optional[Exercise]:
+    return db.query(Exercise).filter(Exercise.id == exercise_id).first()
+
+
+def get_exercise_by_name(db: Session, exercise_name: str) -> Optional[Exercise]:
+    return db.query(Exercise).filter(Exercise.name == exercise_name).first()
+
+
+def get_all_exercises(db: Session) -> List:
+    return db.query(Exercise).all()
+
+
+def update_exercise(
+    db: Session, exercise: Exercise, update: ExerciseUpdate
+) -> Exercise:
+    exercise.name = update.name
+    exercise.key = update.name.lower().replace(" ", "_")
+    db.add(exercise)
+    db.commit()
+    db.refresh(exercise)
+    return exercise
+
+
+def delete_exercise(db: Session, exercise: Exercise) -> Exercise:
+    db.delete(exercise),
+    db.commit()
+    return exercise
