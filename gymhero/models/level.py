@@ -7,9 +7,6 @@ from gymhero.database.utils import key_column_from
 class Level(Base):
     __tablename__ = "levels"
     id = Column(Integer, primary_key=True)
-    key = Column(
-        String, unique=True, index=True, nullable=False, default=key_column_from("name")
-    )
     name = Column(String, nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(
@@ -17,4 +14,4 @@ class Level(Base):
     )
 
     def __repr__(self):
-        return f"<Level(id={self.id}, key={self.key}, name={self.name})>"
+        return f"<Level(id={self.id}, name={self.name})>"

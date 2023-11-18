@@ -3,8 +3,6 @@ from sqlalchemy.orm import relationship
 from gymhero.database.base_class import Base
 from sqlalchemy import Integer, Column, String, ForeignKey, Table
 
-from gymhero.database.utils import key_column_from
-
 training_plan_training_unit = Table(
     "training_plan_training_unit",
     Base.metadata,
@@ -17,6 +15,8 @@ class TrainingPlan(Base):
     __tablename__ = "training_plans"
 
     id = Column(Integer, primary_key=True)
-    key = Column(String, unique=True, index=True, default=key_column_from("name"))
     name = Column(String)
     training_units = relationship("TrainingUnit", secondary=training_plan_training_unit)
+
+    def __repr__(self):
+        return f"TrainingPlan(id={self.id}, name={self.name})"

@@ -29,6 +29,3 @@ class UserInDB(UserBase):
 class UserUpdate(UserBase):
     password: Optional[str] = None
 
-
-class UserUpdateDB(UserInDB):
-    pass

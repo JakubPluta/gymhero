@@ -18,7 +18,6 @@ class BodyPartUpdate(BodyPartBase):
 
 class BodyPartInDB(BodyPartBase):
     id: int
-    key: str
     created_at: datetime.datetime
     updated_at: datetime.datetime
 

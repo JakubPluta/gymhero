@@ -7,8 +7,11 @@ from sqlalchemy.orm import Session
 from gymhero.log import get_logger
 
 ORMModel = TypeVar("ORMModel")
-CreateModelType = TypeVar("CreateModelType", bound=BaseModel)
-UpdateModelType = TypeVar("UpdateModelType", bound=BaseModel)
+
+CreateSchemaType = TypeVar("CreateSchemaType", bound=BaseModel)
+UpdateSchemaType = TypeVar("UpdateSchemaType", bound=BaseModel)
+InDBSchemaType = TypeVar("InDBSchemaType", bound=BaseModel)
+
 
 log = get_logger(__name__)
 
@@ -79,7 +82,7 @@ class CRUDRepository:
             .all()
         )
 
-    def create_record(self, db: Session, obj_create: CreateModelType) -> ORMModel:
+    def create_record(self, db: Session, obj_create: CreateSchemaType) -> ORMModel:
         """
         Create a new record in the database.
 
@@ -106,7 +109,7 @@ class CRUDRepository:
         self,
         db: Session,
         db_obj: ORMModel,
-        obj_update: UpdateModelType,
+        obj_update: UpdateSchemaType,
     ) -> ORMModel:
         """
         Updates a record in the database.

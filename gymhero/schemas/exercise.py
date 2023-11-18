@@ -17,7 +17,6 @@ class ExerciseTypeUpdate(ExerciseTypeBase):
 
 class ExerciseTypeInDB(ExerciseTypeBase):
     id: int
-    key: str
     created_at: datetime.datetime
     updated_at: datetime.datetime
 
@@ -47,7 +46,6 @@ class ExerciseUpdate(ExerciseBase):
 
 class ExerciseInDB(ExerciseBase):
     id: int
-    key: str
     created_at: datetime.datetime
     updated_at: datetime.datetime
 

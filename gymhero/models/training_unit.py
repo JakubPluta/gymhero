@@ -15,7 +15,9 @@ class TrainingUnit(Base):
     __tablename__ = "training_units"
 
     id = Column(Integer, primary_key=True)
-    key = Column(String, nullable=False, unique=True, default=key_column_from("name"))
     name = Column(String, nullable=False)
     description = Column(String, nullable=True)
     exercises = relationship("Exercise", secondary=training_unit_exercise)
+
+    def __repr__(self):
+        return f"TrainingUnit(id={self.id}, name={self.name})"
