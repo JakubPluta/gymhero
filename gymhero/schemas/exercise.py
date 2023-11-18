@@ -1,5 +1,5 @@
 import datetime
-from typing import Optional
+from typing import Optional, List
 from pydantic import BaseModel
 
 
@@ -51,3 +51,11 @@ class ExerciseInDB(ExerciseBase):
 
     class Config:
         orm_mode = True
+
+
+class ExercisesInDB(BaseModel):
+    results: List[ExerciseInDB]
+
+
+class ExerciseTypesInDB(BaseModel):
+    results: List[ExerciseTypeInDB]
