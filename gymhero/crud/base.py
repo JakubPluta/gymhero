@@ -13,7 +13,7 @@ UpdateModelType = TypeVar("UpdateModelType", bound=BaseModel)
 log = get_logger(__name__)
 
 
-class CrudRepository:
+class CRUDRepository:
     """Base interface for CRUD operations."""
 
     def __init__(self, model: Type[ORMModel]) -> None:
@@ -24,6 +24,7 @@ class CrudRepository:
             To see models go to gymhero.models module.
         """
         self._model = model
+        self._name = model.__name__
 
     def get_one_record(self, db: Session, *args, **kwargs) -> Optional[ORMModel]:
         """
