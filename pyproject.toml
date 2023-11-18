@@ -15,6 +15,8 @@ alembic = "^1.12.1"
 pydantic-settings = "^2.0.3"
 pydantic = {extras = ["email"], version = "^2.4.2"}
 psycopg2 = "^2.9.9"
+pathlib = "^1.0.1"
+pandas = "^2.1.3"
 
 
 [tool.poetry.group.dev.dependencies]

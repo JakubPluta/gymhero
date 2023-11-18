@@ -8,9 +8,7 @@ from sqlalchemy.orm import Session
 
 from gymhero.models import User
 from gymhero.schemas.user import (
-    UserInDB,
     UserOut,
-    UserBase,
     UserCreate,
     UserUpdate,
     UsersInDB,
@@ -19,6 +17,7 @@ from gymhero.log import get_logger
 
 
 log = get_logger(__name__)
+
 
 router = APIRouter()
 
