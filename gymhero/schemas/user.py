@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, List
 
 from pydantic import BaseModel, EmailStr
 
@@ -28,3 +28,7 @@ class UserInDB(UserBase):
 
 class UserUpdate(UserBase):
     password: Optional[str] = None
+
+
+class UsersInDB(BaseModel):
+    results: List[UserOut]
