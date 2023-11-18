@@ -37,4 +37,3 @@ def create_user(db: Session, user: UserInDB) -> User:
     db.commit()
     db.refresh(user_orm)
     return user_orm
-
