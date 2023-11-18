@@ -1,7 +1,7 @@
 from sqlalchemy.orm import relationship
 
 from gymhero.database.base_class import Base
-from sqlalchemy import Integer, Column, String, ForeignKey, Table
+from sqlalchemy import Integer, Column, String, ForeignKey, Table, DateTime, func
 
 training_plan_training_unit = Table(
     "training_plan_training_unit",
@@ -16,6 +16,11 @@ class TrainingPlan(Base):
 
     id = Column(Integer, primary_key=True)
     name = Column(String)
+    description = Column(String)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
     training_units = relationship("TrainingUnit", secondary=training_plan_training_unit)
 
     def __repr__(self):

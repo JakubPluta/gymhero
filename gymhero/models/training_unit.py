@@ -1,5 +1,5 @@
 from gymhero.database.base_class import Base
-from sqlalchemy import Integer, Column, String, Table, ForeignKey
+from sqlalchemy import Integer, Column, String, Table, ForeignKey, DateTime, func
 from sqlalchemy.orm import relationship
 from gymhero.database.utils import key_column_from
 
@@ -17,6 +17,10 @@ class TrainingUnit(Base):
     id = Column(Integer, primary_key=True)
     name = Column(String, nullable=False)
     description = Column(String, nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
     exercises = relationship("Exercise", secondary=training_unit_exercise)
 
     def __repr__(self):
