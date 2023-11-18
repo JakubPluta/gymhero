@@ -1,16 +1,14 @@
 """
 This module contains the base interface for CRUD (Create, Read, Update, Delete) operations.
 """
-from typing import TypeVar, Type, Optional, List
+from typing import TypeVar, Type, Optional, List, Generic
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from gymhero.log import get_logger
 
 ORMModel = TypeVar("ORMModel")
-
 CreateSchemaType = TypeVar("CreateSchemaType", bound=BaseModel)
 UpdateSchemaType = TypeVar("UpdateSchemaType", bound=BaseModel)
-InDBSchemaType = TypeVar("InDBSchemaType", bound=BaseModel)
 
 
 log = get_logger(__name__)

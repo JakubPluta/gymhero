@@ -1,5 +1,5 @@
 import datetime
-from typing import Optional
+from typing import Optional, List
 from pydantic import BaseModel
 
 
@@ -22,3 +22,7 @@ class LevelInDB(LevelBase):
 
     class Config:
         orm_mode = True
+
+
+class LevelsInDB(BaseModel):
+    results: List[LevelInDB]
