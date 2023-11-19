@@ -22,6 +22,7 @@ class TrainingUnitInDB(TrainingUnitBase):
     created_at: datetime.datetime
     updated_at: datetime.datetime
     exercises: Optional[List[ExerciseInDB]] = []
+    owner_id: int
 
 
 class TrainingUnitsInDB(BaseModel):

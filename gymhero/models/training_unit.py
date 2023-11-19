@@ -21,6 +21,8 @@ class TrainingUnit(Base):
     updated_at = Column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
     )
+    owner_id = Column(Integer, ForeignKey("users.id"))
+    owner = relationship("User")
     exercises = relationship("Exercise", secondary=training_unit_exercise)
 
     def __repr__(self):

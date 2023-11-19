@@ -1,5 +1,5 @@
 from sqlalchemy import Boolean, Column, Integer, String
-
+from sqlalchemy.orm import relationship
 
 from gymhero.database.base_class import Base
 
@@ -11,6 +11,9 @@ class User(Base):
     hashed_password = Column(String, nullable=False)
     is_active = Column(Boolean, default=True)
     is_superuser = Column(Boolean, default=False)
+
+    training_plans = relationship("TrainingPlan", back_populates="owner")
+    training_units = relationship("TrainingUnit", back_populates="owner")
 
     def __repr__(self):
         return f"<User(full_name={self.full_name}, email={self.email})>"

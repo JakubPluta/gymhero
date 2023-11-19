@@ -10,7 +10,8 @@ To build an CRUD API with FastAPI, SQLAlchemy, Postgres, Docker
 
 ##### Initial Data Modeling - Define entities:
 - Exercise
-- MuscleGroup
+- ExerciseType
+- Level (Average, Beginner, Intermediate, Advanced)
 - TrainingUnit
 - TrainingPlan
 - User
@@ -40,3 +41,22 @@ To build an CRUD API with FastAPI, SQLAlchemy, Postgres, Docker
 #### Add JWT authentication
 #### Upgrade docker-compose
 - To keep app in container
+
+
+
+## Define use cases:
+
+1. Superuser can
+   - create all entities
+   - update all entities
+   - delete all entities
+   - read all entities
+2. Active user can:
+    - create exercise
+    - update exercise if he is owner
+    - delete exercise if he is owner
+    - read all exercises
+    - create training plan
+    - update/delete plan if he is owner
+    - read all plans ? (think about it)
+    

@@ -12,6 +12,7 @@ from gymhero.schemas.user import (
     UserCreate,
     UserUpdate,
     UsersInDB,
+    UserInDB,
 )
 from gymhero.log import get_logger
 
@@ -60,7 +61,7 @@ def create_user(user_create: UserCreate, db: Session = Depends(get_db)):
             detail=f"The user with this {user_create.email} already exists in the system",
         )
 
-    user_in = UsersInDB(
+    user_in = UserInDB(
         **user_create.model_dump(),
         hashed_password=get_password_hash(user_create.password),
     )
