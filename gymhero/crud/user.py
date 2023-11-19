@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 
 from gymhero.models.user import User
 from gymhero.crud.base import CRUDRepository
+from gymhero.security import verify_password
 
 
 class UserCRUDRepository(CRUDRepository):
@@ -24,6 +25,16 @@ class UserCRUDRepository(CRUDRepository):
         db.add(user)
         db.commit()
         db.refresh(user)
+        return user
+
+    def authenticate_user(
+        self, db: Session, email: str, password: str
+    ) -> Optional[User]:
+        user = self.get_user_by_email(db, email)
+        if not user:
+            return None
+        if not verify_password(password, user.hashed_password):
+            return None
         return user
 
 
