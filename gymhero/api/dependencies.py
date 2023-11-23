@@ -71,7 +71,7 @@ def get_token(token: str = Depends(oauth2_scheme)) -> TokenPayload:
 def get_current_user(
     db: Session = Depends(get_db), token: TokenPayload = Depends(get_token)
 ) -> User:
-    user = user_crud.get_one_record(db, User.id == token.sub)
+    user = user_crud.get_one(db, User.id == token.sub)
     if user is None:
         raise _get_credential_exception(
             status_code=status.HTTP_404_NOT_FOUND, details="User not found"

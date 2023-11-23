@@ -30,6 +30,7 @@ class ExerciseBase(BaseModel):
     target_body_part_id: int
     exercise_type_id: int
     level_id: int
+    owner_id: int
 
 
 class ExerciseCreate(ExerciseBase):

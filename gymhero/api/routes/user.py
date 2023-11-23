@@ -28,12 +28,12 @@ def fetch_all_users(
     db: Session = Depends(get_db), pagination_params=Depends(get_pagination_params)
 ):
     skip, limit = pagination_params
-    return user_crud.get_many_records(db, skip=skip, limit=limit)
+    return user_crud.get_many(db, skip=skip, limit=limit)
 
 
 @router.get("/{user_id}", response_model=UserOut, status_code=status.HTTP_200_OK)
 def fetch_user_by_id(user_id: int, db: Session = Depends(get_db)):
-    user = user_crud.get_one_record(db, User.id == user_id)
+    user = user_crud.get_one(db, User.id == user_id)
     if not user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -71,7 +71,7 @@ def create_user(user_create: UserCreate, db: Session = Depends(get_db)):
 
 @router.delete("/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_user(user_id: int, db: Session = Depends(get_db)):
-    user = user_crud.get_one_record(db, User.id == user_id)
+    user = user_crud.get_one(db, User.id == user_id)
     if user is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -88,14 +88,14 @@ def delete_user(user_id: int, db: Session = Depends(get_db)):
 
 @router.put("/{user_id}", response_model=UserOut, status_code=status.HTTP_200_OK)
 def update_user(user_id: int, user_update: UserUpdate, db: Session = Depends(get_db)):
-    user = user_crud.get_one_record(db, User.id == user_id)
+    user = user_crud.get_one(db, User.id == user_id)
     if user is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"User with id {user_id} not found. Cannot update.",
         )
     try:
-        user = user_crud.update_record(db, user, user_update)
+        user = user_crud.update(db, user, user_update)
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

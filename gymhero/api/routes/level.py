@@ -21,12 +21,12 @@ def fetch_all_levels(
     pagination_params: dict = Depends(get_pagination_params),
 ):
     skip, limit = pagination_params
-    return level_crud.get_many_records(db, skip=skip, limit=limit)
+    return level_crud.get_many(db, skip=skip, limit=limit)
 
 
 @router.get("/{level_id}", response_model=LevelInDB, status_code=status.HTTP_200_OK)
 def fetch_level_by_id(level_id: int, db: Session = Depends(get_db)):
-    level = level_crud.get_one_record(db, Level.id == level_id)
+    level = level_crud.get_one(db, Level.id == level_id)
     if level is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -39,7 +39,7 @@ def fetch_level_by_id(level_id: int, db: Session = Depends(get_db)):
     "/name/{level_name}", response_model=LevelInDB, status_code=status.HTTP_200_OK
 )
 def fetch_level_by_name(level_name: str, db: Session = Depends(get_db)):
-    level = level_crud.get_one_record(db, Level.name == level_name)
+    level = level_crud.get_one(db, Level.name == level_name)
     if level is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -50,12 +50,12 @@ def fetch_level_by_name(level_name: str, db: Session = Depends(get_db)):
 
 @router.post("/", response_model=LevelInDB, status_code=status.HTTP_201_CREATED)
 def create_level(level_create: LevelCreate, db: Session = Depends(get_db)):
-    return level_crud.create_record(db, obj_create=level_create)
+    return level_crud.create(db, obj_create=level_create)
 
 
 @router.delete("/{level_id}", response_model=dict, status_code=status.HTTP_200_OK)
 def delete_level(level_id: int, db: Session = Depends(get_db)):
-    level = level_crud.get_one_record(db, Level.id == level_id)
+    level = level_crud.get_one(db, Level.id == level_id)
     if level is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -77,14 +77,14 @@ def delete_level(level_id: int, db: Session = Depends(get_db)):
 def update_level(
     level_id: int, level_update: LevelUpdate, db: Session = Depends(get_db)
 ):
-    level = level_crud.get_one_record(db, Level.id == level_id)
+    level = level_crud.get_one(db, Level.id == level_id)
     if level is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Level with id {level_id} not found. Cannot update.",
         )
     try:
-        level = level_crud.update_record(db, level, level_update)
+        level = level_crud.update(db, level, level_update)
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

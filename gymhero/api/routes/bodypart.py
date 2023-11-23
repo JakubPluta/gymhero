@@ -26,14 +26,14 @@ def fetch_body_parts(
     pagination_params: dict = Depends(get_pagination_params),
 ):
     skip, limit = pagination_params
-    return bodypart_crud.get_many_records(db, skip=skip, limit=limit)
+    return bodypart_crud.get_many(db, skip=skip, limit=limit)
 
 
 @router.get(
     "/{body_part_id}", response_model=BodyPartInDB, status_code=status.HTTP_200_OK
 )
 def fetch_body_part_by_id(body_part_id: int, db: Session = Depends(get_db)):
-    body_part = bodypart_crud.get_one_record(db, BodyPart.id == body_part_id)
+    body_part = bodypart_crud.get_one(db, BodyPart.id == body_part_id)
 
     if body_part is None:
         raise HTTPException(
@@ -50,7 +50,7 @@ def fetch_body_part_by_id(body_part_id: int, db: Session = Depends(get_db)):
     status_code=status.HTTP_200_OK,
 )
 def fetch_body_part_by_id(body_part_name: str, db: Session = Depends(get_db)):
-    body_part = bodypart_crud.get_one_record(db, BodyPart.name == body_part_name)
+    body_part = bodypart_crud.get_one(db, BodyPart.name == body_part_name)
     if body_part is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -61,12 +61,12 @@ def fetch_body_part_by_id(body_part_name: str, db: Session = Depends(get_db)):
 
 @router.post("/", response_model=BodyPartInDB, status_code=status.HTTP_201_CREATED)
 def create_body_part(body_part: BodyPartCreate, db: Session = Depends(get_db)):
-    return bodypart_crud.create_record(db, obj_create=body_part)
+    return bodypart_crud.create(db, obj_create=body_part)
 
 
 @router.delete("/{body_part_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_body_part(body_part_id: int, db: Session = Depends(get_db)):
-    bp = bodypart_crud.get_one_record(db, BodyPart.id == body_part_id)
+    bp = bodypart_crud.get_one(db, BodyPart.id == body_part_id)
     if bp is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -88,14 +88,14 @@ def delete_body_part(body_part_id: int, db: Session = Depends(get_db)):
 def update_body_part(
     body_part_id: int, body_part_update: BodyPartUpdate, db: Session = Depends(get_db)
 ):
-    body_part = bodypart_crud.get_one_record(db, BodyPart.id == body_part_id)
+    body_part = bodypart_crud.get_one(db, BodyPart.id == body_part_id)
     if body_part is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Body part with id {body_part_id} not found. Cannot update.",
         )
     try:
-        body_part = bodypart_crud.update_record(db, body_part, body_part_update)
+        body_part = bodypart_crud.update(db, body_part, body_part_update)
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

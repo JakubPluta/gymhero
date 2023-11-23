@@ -13,7 +13,7 @@ from gymhero.crud import user_crud
 router = APIRouter()
 
 
-@router.post("/login/token", response_model=Token)
+@router.post("/login", response_model=Token)
 def login_for_access_token(
     db: Session = Depends(get_db),
     form_data: OAuth2PasswordRequestForm = Depends(),

@@ -9,7 +9,7 @@ from gymhero.log import get_logger
 ORMModel = TypeVar("ORMModel")
 CreateSchemaType = TypeVar("CreateSchemaType", bound=BaseModel)
 UpdateSchemaType = TypeVar("UpdateSchemaType", bound=BaseModel)
-
+OwnerIDType = int
 
 log = get_logger(__name__)
 
@@ -27,7 +27,7 @@ class CRUDRepository:
         self._model = model
         self._name = model.__name__
 
-    def get_one_record(self, db: Session, *args, **kwargs) -> Optional[ORMModel]:
+    def get_one(self, db: Session, *args, **kwargs) -> Optional[ORMModel]:
         """
         Retrieves one record from the database.
 
@@ -45,7 +45,7 @@ class CRUDRepository:
         )
         return db.query(self._model).filter(*args).filter_by(**kwargs).first()
 
-    def get_many_records(
+    def get_many(
         self, db: Session, *args, skip: int = 0, limit: int = 100, **kwargs
     ) -> List[ORMModel]:
         """
@@ -80,7 +80,7 @@ class CRUDRepository:
             .all()
         )
 
-    def create_record(self, db: Session, obj_create: CreateSchemaType) -> ORMModel:
+    def create(self, db: Session, obj_create: CreateSchemaType) -> ORMModel:
         """
         Create a new record in the database.
 
@@ -103,7 +103,7 @@ class CRUDRepository:
         db.refresh(db_obj)
         return db_obj
 
-    def update_record(
+    def update(
         self,
         db: Session,
         db_obj: ORMModel,
@@ -152,3 +152,48 @@ class CRUDRepository:
         db.delete(db_obj)
         db.commit()
         return db_obj
+
+    def create_with_owner(self, db: Session, obj_create: CreateSchemaType, owner_id: OwnerIDType) -> ORMModel:
+        """Create a new record with ownerin the database.
+
+        Args:
+            db (Session): The database session.
+            owner_id (int): The id of the owner of the record.
+            obj_create (CreateSchemaType): Pydantic model for given schema
+
+        Returns:
+            ORMModel: The newly created record.
+        """
+        log.debug(
+            "creating record for %s with data %s",
+            self._model.__name__,
+            obj_create.model_dump(),
+        )
+        obj_create_data = obj_create.model_dump()
+        db_obj = self._model(**obj_create_data, owner_id=owner_id)
+        db.add(db_obj)
+        db.commit()
+        db.refresh(db_obj)
+        return db_obj
+
+    def get_many_for_owner(
+            self, db: Session, *args, owner_id: OwnerIDType, skip: int = 0, limit: int = 100, **kwargs
+    ) -> List[ORMModel]:
+        """
+        Fetches multiple records for a specific owner.
+
+        Args:
+            db (Session): The database session.
+            *args: Variable length argument list.
+            owner_id (int): The id of the owner.
+            skip (int): The number of records to skip.
+            limit (int): The maximum number of records to fetch.
+            **kwargs: Arbitrary keyword arguments.
+
+        Returns:
+            List[ORMModel]: A list of the fetched records.
+
+        """
+        return self.get_many(
+            db, *args, skip=skip, limit=limit, owner_id=owner_id
+        )
