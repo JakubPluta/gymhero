@@ -20,14 +20,9 @@ log = get_logger(__name__)
 router = APIRouter()
 
 
-@router.get(
-    "/types/",
-    response_model=ExerciseTypesInDB,
-    status_code=status.HTTP_200_OK
-)
+@router.get("/types/", response_model=ExerciseTypesInDB, status_code=status.HTTP_200_OK)
 def fetch_all_exercise_types(
-    db: Session = Depends(get_db),
-    pagination_params=Depends(get_pagination_params)
+    db: Session = Depends(get_db), pagination_params=Depends(get_pagination_params)
 ):
     """
     Fetches all exercise types from the database.
@@ -90,10 +85,14 @@ def fetch_exercise_type_by_name(exercise_type_name: str, db: Session = Depends(g
     Raises:
         - HTTPException: If the exercise type with the given name is not found.
     """
-    exercise_type = exercise_type_crud.get_one(db, ExerciseType.name == exercise_type_name)
+    exercise_type = exercise_type_crud.get_one(
+        db, ExerciseType.name == exercise_type_name
+    )
     if exercise_type is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-                            detail=f"Exercise type with name {exercise_type_name} not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Exercise type with name {exercise_type_name} not found",
+        )
     return exercise_type
 
 

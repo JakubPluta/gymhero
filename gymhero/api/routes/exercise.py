@@ -29,13 +29,13 @@ router = APIRouter()
 @router.get("/", response_model=ExercisesInDB, status_code=status.HTTP_200_OK)
 def fetch_all_exercises(
     db: Session = Depends(get_db),
-    pagination_params: Tuple[int, int] = Depends(get_pagination_params)
+    pagination_params: Tuple[int, int] = Depends(get_pagination_params),
 ) -> ExercisesInDB:
     """
     Fetch all exercises.
 
     This function fetches all exercises from the database based on the pagination parameters.
-    
+
     Args:
         - db (Session): The database session.
         - pagination_params (Tuple[int, int]): The pagination parameters (skip, limit).
@@ -55,33 +55,37 @@ def fetch_all_exercises_for_owner(
 ) -> ExercisesInDB:
     """
     Fetches all exercises for user
-    
+
     Args:
         - db (Session): The database session.
         - pagination_params (Tuple[int, int]): The pagination parameters (skip, limit).
         - user (User): The current active user.
-    
+
     Returns:
         - ExercisesInDB: The exercises fetched for the owner.
     """
     skip, limit = pagination_params
-    return exercise_crud.get_many_for_owner(db, skip=skip, limit=limit, owner_id=user.id)
+    return exercise_crud.get_many_for_owner(
+        db, skip=skip, limit=limit, owner_id=user.id
+    )
 
 
 @router.get(
     "/{exercise_id}", response_model=ExerciseInDB, status_code=status.HTTP_200_OK
 )
-def fetch_exercise_by_id(exercise_id: int, db: Session = Depends(get_db)) -> ExerciseInDB:
+def fetch_exercise_by_id(
+    exercise_id: int, db: Session = Depends(get_db)
+) -> ExerciseInDB:
     """
     Fetches an exercise by its ID.
-    
+
     Args:
         - exercise_id (int): The ID of the exercise.
         - db (Session): The database session.
-    
+
     Returns:
         - ExerciseInDB: The fetched exercise.
-    
+
     Raises:
         - HTTPException: If the exercise is not found.
     """
@@ -99,9 +103,7 @@ def fetch_exercise_by_id(exercise_id: int, db: Session = Depends(get_db)) -> Exe
     response_model=ExerciseInDB,
     status_code=status.HTTP_200_OK,
 )
-def fetch_exercise_by_name(
-    exercise_name: str, db: Session = Depends(get_db)
-):
+def fetch_exercise_by_name(exercise_name: str, db: Session = Depends(get_db)):
     """
     Fetches an exercise by its name from the database.
 
@@ -115,9 +117,7 @@ def fetch_exercise_by_name(
     Raises:
         HTTPException: If the exercise with the given name is not found in the database.
     """
-    exercise = exercise_crud.get_one(
-        db, Exercise.name == exercise_name
-    )
+    exercise = exercise_crud.get_one(db, Exercise.name == exercise_name)
     if exercise is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -201,7 +201,11 @@ def update_exercise(
 
 
 @router.delete("/{exercise_id}", response_model=dict, status_code=status.HTTP_200_OK)
-def delete_exercise(exercise_id: int, db: Session = Depends(get_db), user: User = Depends(get_current_active_user)):
+def delete_exercise(
+    exercise_id: int,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_active_user),
+):
     """
     Deletes an exercise by its ID.
 
@@ -212,7 +216,7 @@ def delete_exercise(exercise_id: int, db: Session = Depends(get_db), user: User 
 
     Returns:
         dict: A dictionary containing the detail that the exercise with the given ID was deleted.
-    
+
     Raises:
         HTTPException: If the exercise with the given ID is not found.
         HTTPException: If the user does not have enough permissions to delete the exercise.
@@ -220,17 +224,23 @@ def delete_exercise(exercise_id: int, db: Session = Depends(get_db), user: User 
     """
     exercise = exercise_crud.get_one(db, Exercise.id == exercise_id)
     if exercise is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-                            detail=f"Exercise with id {exercise_id} not found. Cannot delete.")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Exercise with id {exercise_id} not found. Cannot delete.",
+        )
 
     if exercise.owner_id != user.id or not user.is_superuser:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
-                            detail="Not enough permissions to delete exercise")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not enough permissions to delete exercise",
+        )
 
     try:
         exercise_crud.delete(db, exercise)
     except Exception as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                            detail=f"Couldn't delete exercise with id {exercise_id}. Error: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Couldn't delete exercise with id {exercise_id}. Error: {str(e)}",
+        )
 
     return {"detail": f"Exercise with id {exercise_id} deleted."}
