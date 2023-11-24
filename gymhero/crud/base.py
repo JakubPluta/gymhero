@@ -153,7 +153,9 @@ class CRUDRepository:
         db.commit()
         return db_obj
 
-    def create_with_owner(self, db: Session, obj_create: CreateSchemaType, owner_id: OwnerIDType) -> ORMModel:
+    def create_with_owner(
+        self, db: Session, obj_create: CreateSchemaType, owner_id: OwnerIDType
+    ) -> ORMModel:
         """Create a new record with ownerin the database.
 
         Args:
@@ -177,7 +179,13 @@ class CRUDRepository:
         return db_obj
 
     def get_many_for_owner(
-            self, db: Session, *args, owner_id: OwnerIDType, skip: int = 0, limit: int = 100, **kwargs
+        self,
+        db: Session,
+        *args,
+        owner_id: OwnerIDType,
+        skip: int = 0,
+        limit: int = 100,
+        **kwargs
     ) -> List[ORMModel]:
         """
         Fetches multiple records for a specific owner.
@@ -194,6 +202,4 @@ class CRUDRepository:
             List[ORMModel]: A list of the fetched records.
 
         """
-        return self.get_many(
-            db, *args, skip=skip, limit=limit, owner_id=owner_id
-        )
+        return self.get_many(db, *args, skip=skip, limit=limit, owner_id=owner_id)
