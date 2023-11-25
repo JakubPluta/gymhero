@@ -1,25 +1,22 @@
-from gymhero.database.db import get_db
-from gymhero.crud import exercise_crud
-from gymhero.api.dependencies import (
-    get_pagination_params,
-    get_current_active_user,
-    get_current_superuser,
-)
-from fastapi import APIRouter, HTTPException
-from fastapi import Depends, status
-
+from typing import Tuple
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
+from gymhero.api.dependencies import (
+    get_current_active_user,
+    get_pagination_params,
+)
+from gymhero.crud import exercise_crud
+from gymhero.database.db import get_db
+from gymhero.log import get_logger
 from gymhero.models import User
 from gymhero.models.exercise import Exercise
 from gymhero.schemas.exercise import (
     ExerciseCreate,
-    ExerciseUpdate,
     ExerciseInDB,
     ExercisesInDB,
+    ExerciseUpdate,
 )
-from gymhero.log import get_logger
-
 
 log = get_logger(__name__)
 
@@ -36,7 +33,7 @@ def fetch_all_exercises(
 
     This function fetches all exercises from the database based on the pagination parameters.
 
-    Args:
+    Parameters:
         - db (Session): The database session.
         - pagination_params (Tuple[int, int]): The pagination parameters (skip, limit).
 
@@ -56,7 +53,7 @@ def fetch_all_exercises_for_owner(
     """
     Fetches all exercises for user
 
-    Args:
+    Parameters:
         - db (Session): The database session.
         - pagination_params (Tuple[int, int]): The pagination parameters (skip, limit).
         - user (User): The current active user.
@@ -79,7 +76,7 @@ def fetch_exercise_by_id(
     """
     Fetches an exercise by its ID.
 
-    Args:
+    Parameters:
         - exercise_id (int): The ID of the exercise.
         - db (Session): The database session.
 
@@ -107,7 +104,7 @@ def fetch_exercise_by_name(exercise_name: str, db: Session = Depends(get_db)):
     """
     Fetches an exercise by its name from the database.
 
-    Args:
+    Parameters:
         exercise_name (str): The name of the exercise.
         db (Session, optional): The database session. Defaults to Depends(get_db).
 
@@ -135,7 +132,7 @@ def create_exercise(
     """
     Create an exercise.
 
-    Args:
+    Parameters:
         exercise_create (ExerciseCreate): The exercise data to be created.
         db (Session, optional): The database session. Defaults to Depends(get_db).
         user (User, optional): The current active user. Defaults to Depends(get_current_active_user).
@@ -164,7 +161,7 @@ def update_exercise(
     """
     Update an exercise by its ID.
 
-    Args:
+    Parameters:
         exercise_id (int): The ID of the exercise to be updated.
         exercise_update (ExerciseUpdate): The updated exercise data.
         db (Session, optional): The database session. Defaults to Depends(get_db).
@@ -209,7 +206,7 @@ def delete_exercise(
     """
     Deletes an exercise by its ID.
 
-    Args:
+    Parameters:
         exercise_id (int): The ID of the exercise to delete.
         db (Session): The database session.
         user (User): The current user.

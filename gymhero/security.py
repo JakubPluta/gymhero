@@ -15,7 +15,7 @@ def create_access_token(
     """
     Creates an access token.
 
-    Args:
+    Parameters:
         subject (Union[str, Any]): The subject for which the access token is created.
         expires_delta (timedelta, optional): The expiration time for the access token. Defaults to None.
 

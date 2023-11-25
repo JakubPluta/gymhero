@@ -1,19 +1,19 @@
 from typing import Tuple
 
-from fastapi import Query, Depends, HTTPException
+from fastapi import Depends, Query, status
 from fastapi.security import OAuth2PasswordBearer
-from fastapi import status
 from jose import jwt
-from sqlalchemy.orm import Session
 from pydantic import ValidationError
+from sqlalchemy.orm import Session
 
-from gymhero.database import get_db
-from gymhero.models import User
 from gymhero.config import settings
+from gymhero.crud import user_crud
+from gymhero.database import get_db
+from gymhero.exceptions import _get_credential_exception
+from gymhero.models import User
 from gymhero.schemas.auth import TokenPayload
-from gymhero.crud.user import user_crud
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login/token")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
 
 
 def get_pagination_params(
@@ -22,7 +22,7 @@ def get_pagination_params(
     """
     Get the pagination parameters.
 
-    Args:
+    Parameters:
         skip (int): The number of items to skip. Defaults to 0.
         limit (int): The maximum number of items to return. Defaults to 10.
 
@@ -30,19 +30,6 @@ def get_pagination_params(
         Tuple[int, int]: A tuple containing the skip and limit values.
     """
     return skip, limit
-
-
-def _get_credential_exception(
-    status_code: int = status.HTTP_401_UNAUTHORIZED,
-    details: str = "Could not validate credentials",
-) -> HTTPException:
-    """Create an HTTPException with the given status code and details"""
-    credentials_exception = HTTPException(
-        status_code=status_code,
-        detail=details,
-        headers={"WWW-Authenticate": "Bearer"},
-    )
-    return credentials_exception
 
 
 def get_token(token: str = Depends(oauth2_scheme)) -> TokenPayload:
@@ -71,6 +58,19 @@ def get_token(token: str = Depends(oauth2_scheme)) -> TokenPayload:
 def get_current_user(
     db: Session = Depends(get_db), token: TokenPayload = Depends(get_token)
 ) -> User:
+    """
+    Retrieves the current user based on the provided database session and authentication token.
+
+    Parameters:
+        db (Session): The database session to use for querying the user information.
+        token (TokenPayload): The authentication token containing the user's identification.
+
+    Returns:
+        User: The user object representing the current authenticated user.
+
+    Raises:
+        HTTPException: If the user is not found in the database.
+    """
     user = user_crud.get_one(db, User.id == token.sub)
     if user is None:
         raise _get_credential_exception(
@@ -82,6 +82,18 @@ def get_current_user(
 def get_current_active_user(
     current_user: User = Depends(get_current_user),
 ) -> User:
+    """Returns the current active user.
+
+    Parameters:
+        current_user (User, optional): The current user.
+
+    Returns:
+        User: The current active user.
+
+    Raises:
+        HTTPException: If the user is not active
+
+    """
     if not user_crud.is_active_user(current_user):
         raise _get_credential_exception(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -93,6 +105,18 @@ def get_current_active_user(
 def get_current_superuser(
     current_user: User = Depends(get_current_user),
 ) -> User:
+    """Returns the current superuser.
+
+    Parameters:
+        current_user (User, optional): The current user.
+
+    Returns:
+        User: The current superuser.
+
+    Raises:
+        HTTPException: If the current user is not a super user.
+
+    """
     if not user_crud.is_super_user(current_user):
         raise _get_credential_exception(
             status_code=status.HTTP_400_BAD_REQUEST,

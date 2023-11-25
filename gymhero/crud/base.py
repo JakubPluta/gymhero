@@ -1,9 +1,11 @@
 """
 This module contains the base interface for CRUD (Create, Read, Update, Delete) operations.
 """
-from typing import TypeVar, Type, Optional, List, Generic
+from typing import List, Optional, Type, TypeVar
+
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
+
 from gymhero.log import get_logger
 
 ORMModel = TypeVar("ORMModel")
@@ -20,7 +22,7 @@ class CRUDRepository:
     def __init__(self, model: Type[ORMModel]) -> None:
         """Initialize the CRUD repository.
 
-        Args:
+        Parameters:
             model (Type[ORMModel]): The ORM model to use for CRUD operations.
             To see models go to gymhero.models module.
         """
@@ -31,7 +33,7 @@ class CRUDRepository:
         """
         Retrieves one record from the database.
 
-        Args:
+        Parameters:
             db (Session): The database session object.
             *args: Variable length argument list used for filter e.g. filter(MyClass.name == 'some name')
             **kwargs: Keyword arguments used for filter_by e.g. filter_by(name='some name')
@@ -51,7 +53,7 @@ class CRUDRepository:
         """
         Retrieves multiple records from the database.
 
-        Args:
+        Parameters:
             db (Session): The database session.
             *args: Variable number of arguments. For example: filter
                 db.query(MyClass).filter(MyClass.name == 'some name', MyClass.id > 5)
@@ -84,7 +86,7 @@ class CRUDRepository:
         """
         Create a new record in the database.
 
-        Args:
+        Parameters:
             db (Session): The database session.
             obj_create (CreateModelType): The data for creating the new record. It's a pydantic BaseModel
 
@@ -112,7 +114,7 @@ class CRUDRepository:
         """
         Updates a record in the database.
 
-        Args:
+        Parameters:
             db (Session): The database session.
             db_obj (ORMModel): The database object to be updated.
             obj_update (UpdateModelType): The updated data for the object - it's a pydantic BaseModel.
@@ -140,7 +142,7 @@ class CRUDRepository:
         """
         Deletes a record from the database.
 
-        Args:
+        Parameters:
             db (Session): The database session.
             db_obj (ORMModel): The object to be deleted from the database.
 
@@ -158,7 +160,7 @@ class CRUDRepository:
     ) -> ORMModel:
         """Create a new record with ownerin the database.
 
-        Args:
+        Parameters:
             db (Session): The database session.
             owner_id (int): The id of the owner of the record.
             obj_create (CreateSchemaType): Pydantic model for given schema
@@ -190,7 +192,7 @@ class CRUDRepository:
         """
         Fetches multiple records for a specific owner.
 
-        Args:
+        Parameters:
             db (Session): The database session.
             *args: Variable length argument list.
             owner_id (int): The id of the owner.
@@ -202,4 +204,6 @@ class CRUDRepository:
             List[ORMModel]: A list of the fetched records.
 
         """
-        return self.get_many(db, *args, skip=skip, limit=limit, owner_id=owner_id)
+        return self.get_many(
+            db, *args, skip=skip, limit=limit, owner_id=owner_id, **kwargs
+        )

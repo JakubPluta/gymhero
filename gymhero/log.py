@@ -1,42 +1,44 @@
+"""Logging module"""
+
 import logging
 import sys
 from enum import Enum
 from typing import Optional
 
-LOGGING_FORMATTER = (
-    "[%(levelname)s] %(name)s %(asctime)s %(funcName)s:%(lineno)d - %(message)s"
-)
+LOGGING_FORMATTER = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 
 
-class DebugLevel(str, Enum):
+class DebugLevel(Enum):
     DEBUG = "DEBUG"
     INFO = "INFO"
     WARNING = "WARNING"
     ERROR = "ERROR"
-    CRITICAL = "CRITICAL"
 
 
 def get_logger(
-    name: Optional[str] = None, level: DebugLevel = "DEBUG"
+    name: Optional[str] = None, level: DebugLevel = DebugLevel.DEBUG
 ) -> logging.Logger:
-    """Creates and configures a logger object.
+    """
+    Creates and configures a logger for logging messages.
 
-    :param name: The name of the logger (optional).
-    :type name: Optional[str]
-    :param level: The logging level (default: "DEBUG").
-    :type level: str
-    :return: The configured logger object.
-    :rtype: logging.Logger
+    Parameters:
+        name (Optional[str]): The name of the logger. Defaults to None.
+        level (DebugLevel): The logging level. Defaults to DebugLevel.DEBUG.
+
+    Returns:
+        logging.Logger: The configured logger object.
     """
     logger = logging.getLogger(name=name)
     handler = logging.StreamHandler(sys.stdout)
     formatter = logging.Formatter(LOGGING_FORMATTER)
     handler.setFormatter(formatter)
     logger.addHandler(handler)
-    if not level or level.upper() not in DebugLevel.__members__:
+
+    if not level or level not in DebugLevel:
         logger.warning(
-            "invalid logging level: %s, setting logging level to `DEBUG`", level
+            f"invalid logging level: {level}, setting logging level to `DEBUG`"
         )
-        level = DebugLevel.DEBUG.value
+        level = DebugLevel.DEBUG
+
     logger.setLevel(level=level)
     return logger

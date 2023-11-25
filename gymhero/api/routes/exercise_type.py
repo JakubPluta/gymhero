@@ -1,19 +1,17 @@
-from gymhero.database.db import get_db
-from gymhero.crud import exercise_type_crud
-from gymhero.api.dependencies import get_pagination_params
-from fastapi import APIRouter, HTTPException
-from fastapi import Depends, status
-
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
+
+from gymhero.api.dependencies import get_pagination_params
+from gymhero.crud import exercise_type_crud
+from gymhero.database.db import get_db
+from gymhero.log import get_logger
 from gymhero.models.exercise import ExerciseType
 from gymhero.schemas.exercise import (
     ExerciseTypeCreate,
-    ExerciseTypeUpdate,
     ExerciseTypeInDB,
     ExerciseTypesInDB,
+    ExerciseTypeUpdate,
 )
-from gymhero.log import get_logger
-
 
 log = get_logger(__name__)
 
@@ -27,7 +25,7 @@ def fetch_all_exercise_types(
     """
     Fetches all exercise types from the database.
 
-    Args:
+    Parameters:
         - db (Session): The database session.
         - pagination_params (Tuple[int, int]): The pagination args (skip, limit).
 
@@ -47,7 +45,7 @@ def fetch_exercise_type_by_id(exercise_type_id: int, db: Session = Depends(get_d
     """
     Fetches an exercise type by its ID from the database.
 
-    Args:
+    Parameters:
         exercise_type_id (int): The ID of the exercise type to fetch.
         db (Session, optional): The database session. Defaults to Depends(get_db).
 
@@ -75,7 +73,7 @@ def fetch_exercise_type_by_name(exercise_type_name: str, db: Session = Depends(g
     """
     Fetches an exercise type from the database by its name.
 
-    Args:
+    Parameters:
         - exercise_type_name (str): The name of the exercise type to fetch.
         - db (Session): The database session.
 
@@ -108,7 +106,7 @@ def create_exercise_type(
     """
     Creates a new exercise type.
 
-    Args:
+    Parameters:
         exercise_type_create (ExerciseTypeCreate): The exercise type data to create.
         db (Session, optional): The database session. Defaults to Depends(get_db).
 
@@ -132,7 +130,7 @@ def update_exercise_type(
     """
     Update an exercise type in the database.
 
-    Args:
+    Parameters:
         exercise_type_id (int): The ID of the exercise type to be updated.
         exercise_type_update (ExerciseTypeUpdate): The updated exercise type data.
         db (Session, optional): The database session. Defaults to Depends(get_db).
@@ -170,7 +168,7 @@ def delete_exercise_type(exercise_type_id: int, db: Session = Depends(get_db)):
     """
     Deletes an exercise type with the given exercise_type_id.
 
-    Args:
+    Parameters:
         exercise_type_id (int): The ID of the exercise type to delete.
         db (Session, optional): The database session. Defaults to Depends(get_db).
 

@@ -1,7 +1,7 @@
+from sqlalchemy import Column, DateTime, ForeignKey, Integer, String, Table, func
 from sqlalchemy.orm import relationship
 
 from gymhero.database.base_class import Base
-from sqlalchemy import Integer, Column, String, ForeignKey, Table, DateTime, func
 
 training_plan_training_unit = Table(
     "training_plan_training_unit",

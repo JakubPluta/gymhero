@@ -1,6 +1,7 @@
+from typing import Generator
+
 from gymhero.database.session import SessionLocal
 from gymhero.log import get_logger
-from typing import Generator
 
 logger = get_logger(__name__)
 

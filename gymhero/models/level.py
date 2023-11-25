@@ -1,7 +1,6 @@
+from sqlalchemy import Column, DateTime, Integer, String, func
+
 from gymhero.database.base_class import Base
-from sqlalchemy import Integer, String, DateTime, Column
-from sqlalchemy import func
-from gymhero.database.utils import key_column_from
 
 
 class Level(Base):

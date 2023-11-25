@@ -1,10 +1,11 @@
 from fastapi import FastAPI
+
+from gymhero.api.routes.auth import router as auth_router
+from gymhero.api.routes.bodypart import router as bodypart_router
 from gymhero.api.routes.exercise import router as exercise_router
 from gymhero.api.routes.exercise_type import router as exercise_type_router
-from gymhero.api.routes.user import router as user_router
 from gymhero.api.routes.level import router as level_router
-from gymhero.api.routes.bodypart import router as bodypart_router
-from gymhero.api.routes.auth import router as auth_router
+from gymhero.api.routes.user import router as user_router
 
 app = FastAPI()
 

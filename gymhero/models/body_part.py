@@ -1,6 +1,6 @@
+from sqlalchemy import Column, DateTime, Integer, String, func
+
 from gymhero.database.base_class import Base
-from sqlalchemy import Integer, String, DateTime, Column
-from sqlalchemy import func
 
 
 class BodyPart(Base):

@@ -1,27 +1,7 @@
 import datetime
-from typing import Optional, List
+from typing import List, Optional
+
 from pydantic import BaseModel
-
-
-class ExerciseTypeBase(BaseModel):
-    name: str
-
-
-class ExerciseTypeCreate(ExerciseTypeBase):
-    pass
-
-
-class ExerciseTypeUpdate(ExerciseTypeBase):
-    name: Optional[str]
-
-
-class ExerciseTypeInDB(ExerciseTypeBase):
-    id: int
-    created_at: datetime.datetime
-    updated_at: datetime.datetime
-
-    class Config:
-        orm_mode = True
 
 
 class ExerciseBase(BaseModel):
@@ -34,7 +14,7 @@ class ExerciseBase(BaseModel):
 
 
 class ExerciseCreate(ExerciseBase):
-    pass
+    ...
 
 
 class ExerciseUpdate(ExerciseBase):
@@ -57,7 +37,3 @@ class ExerciseInDB(ExerciseBase):
 
 class ExercisesInDB(BaseModel):
     results: List[ExerciseInDB]
-
-
-class ExerciseTypesInDB(BaseModel):
-    results: List[ExerciseTypeInDB]

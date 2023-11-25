@@ -1,7 +1,8 @@
 import os
 
-from gymhero.config import settings
 import dotenv
+
+from gymhero.config import settings
 
 dotenv.load_dotenv(".env.example")
 

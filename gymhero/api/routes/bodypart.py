@@ -1,19 +1,18 @@
-from gymhero.api.utils import get_pagination_params
-from gymhero.database.db import get_db
-from gymhero.crud import bodypart_crud
-from fastapi import APIRouter, HTTPException
-from fastapi import Depends, status
-
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
+from gymhero.api.dependencies import get_pagination_params, get_current_superuser
+from gymhero.crud import bodypart_crud
+from gymhero.database.db import get_db
+from gymhero.log import get_logger
 from gymhero.models import BodyPart
+from gymhero.models.user import User
 from gymhero.schemas.body_part import (
-    BodyPartUpdate,
     BodyPartCreate,
     BodyPartInDB,
     BodyPartsInDB,
+    BodyPartUpdate,
 )
-from gymhero.log import get_logger
 
 log = get_logger(__name__)
 
@@ -32,7 +31,7 @@ def fetch_body_parts(
     """
     Fetches the body parts from the database based on pagination parameters.
 
-    Args:
+    Parameters:
         db (Session): The database session.
         pagination_params (dict): The pagination parameters.
 
@@ -48,7 +47,7 @@ def fetch_body_part_by_id(body_part_id: int, db: Session = Depends(get_db)):
     """
     Fetches a body part by its ID.
 
-    Args:
+    Parameters:
         body_part_id (int): The ID of the body part to fetch.
         db (Session, optional): The database session. Defaults to Depends(get_db).
 
@@ -78,7 +77,7 @@ def fetch_body_part_by_id(body_part_name: str, db: Session = Depends(get_db)):
     """
     Fetches a body part from the database by its name.
 
-    Args:
+    Parameters:
         body_part_name (str): The name of the body part.
         db (Session): The database session.
 
@@ -99,9 +98,9 @@ def fetch_body_part_by_id(body_part_name: str, db: Session = Depends(get_db)):
 
 @router.post("/", response_model=BodyPartInDB, status_code=status.HTTP_201_CREATED)
 def create_body_part(
-    body_part: BodyPartCreate, 
-    db: Session = Depends(get_db), 
-    user: User = Depends(get_current_superuser)
+    body_part: BodyPartCreate,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_superuser),
 ) -> BodyPartInDB:
     """
     Creates a new body part in the database.
@@ -117,17 +116,21 @@ def create_body_part(
     if not user.is_superuser:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Not enough permissions. Only super user can create body parts."
+            detail="Not enough permissions. Only super user can create body parts.",
         )
     return bodypart_crud.create(db, obj_create=body_part)
 
 
 @router.delete("/{body_part_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_body_part(body_part_id: int, db: Session = Depends(get_db), user: User = Depends(get_current_superuser)):
+def delete_body_part(
+    body_part_id: int,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_superuser),
+):
     """
     Delete a body part by its ID.
 
-    Args:
+    Parameters:
         body_part_id (int): The ID of the body part to be deleted.
         db (Session): The database session.
         user (User): The current superuser.
@@ -143,20 +146,20 @@ def delete_body_part(body_part_id: int, db: Session = Depends(get_db), user: Use
     if body_part is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Body part with id {body_part_id} not found. Cannot delete."
+            detail=f"Body part with id {body_part_id} not found. Cannot delete.",
         )
-        
+
     if not user.is_superuser:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail=f"User {user.email} does not have permission to delete body part with id {body_part_id}."
+            detail=f"User {user.email} does not have permission to delete body part with id {body_part_id}.",
         )
     try:
         bodypart_crud.delete(db, body_part)
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Couldn't delete body part with id {body_part_id}. Error: {str(e)}"
+            detail=f"Couldn't delete body part with id {body_part_id}. Error: {str(e)}",
         )
     return {"detail": f"Body part with id {body_part_id} deleted."}
 
@@ -175,7 +178,7 @@ def update_body_part(
     """
     Update a body part in the database.
 
-    Args:
+    Parameters:
         body_part_id (int): The ID of the body part to update.
         body_part_update (BodyPartUpdate): The updated body part data.
         db (Session): The database session.

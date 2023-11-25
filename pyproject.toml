@@ -27,6 +27,7 @@ pytest-cov = "^4.1.0"
 black = "^23.11.0"
 pre-commit = "^3.5.0"
 isort = "^5.12.0"
+pylint = "^3.0.2"
 
 [build-system]
 requires = ["poetry-core"]

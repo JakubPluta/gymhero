@@ -2,8 +2,8 @@ from typing import Optional
 
 from sqlalchemy.orm import Session
 
-from gymhero.models.user import User
 from gymhero.crud.base import CRUDRepository
+from gymhero.models.user import User
 from gymhero.security import verify_password
 
 

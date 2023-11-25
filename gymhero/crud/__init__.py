@@ -1,8 +1,8 @@
-from gymhero.crud.exercise import exercise_crud, exercise_type_crud
+from gymhero.crud.body_part import bodypart_crud
+from gymhero.crud.exercise import exercise_crud
+from gymhero.crud.exercise_type import exercise_type_crud
 from gymhero.crud.level import level_crud
 from gymhero.crud.user import user_crud
-from gymhero.crud.bodypart import bodypart_crud
-
 
 __all__ = [
     "exercise_crud",

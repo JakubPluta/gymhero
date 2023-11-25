@@ -1,4 +1,4 @@
-from pydantic import AnyHttpUrl, EmailStr, ConfigDict
+from pydantic import EmailStr
 from pydantic_settings import BaseSettings
 
 

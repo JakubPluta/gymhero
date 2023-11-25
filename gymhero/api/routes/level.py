@@ -1,14 +1,12 @@
-from gymhero.api.utils import get_pagination_params
-from gymhero.database.db import get_db
-from gymhero.crud import level_crud
-from fastapi import APIRouter, HTTPException
-from fastapi import Depends, status
-
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
-from gymhero.models import Level
-from gymhero.schemas.level import LevelCreate, LevelInDB, LevelUpdate, LevelsInDB
+from gymhero.api.utils import get_pagination_params
+from gymhero.crud import level_crud
+from gymhero.database.db import get_db
 from gymhero.log import get_logger
+from gymhero.models import Level
+from gymhero.schemas.level import LevelCreate, LevelInDB, LevelsInDB, LevelUpdate
 
 log = get_logger(__name__)
 

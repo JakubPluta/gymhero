@@ -4,19 +4,19 @@ from typing import List, Optional
 from pydantic import BaseModel
 
 
-class LevelBase(BaseModel):
+class ExerciseTypeBase(BaseModel):
     name: str
 
 
-class LevelCreate(LevelBase):
+class ExerciseTypeCreate(ExerciseTypeBase):
     pass
 
 
-class LevelUpdate(LevelBase):
+class ExerciseTypeUpdate(ExerciseTypeBase):
     name: Optional[str]
 
 
-class LevelInDB(LevelBase):
+class ExerciseTypeInDB(ExerciseTypeBase):
     id: int
     created_at: datetime.datetime
     updated_at: datetime.datetime
@@ -25,5 +25,5 @@ class LevelInDB(LevelBase):
         orm_mode = True
 
 
-class LevelsInDB(BaseModel):
-    results: List[LevelInDB]
+class ExerciseTypesInDB(BaseModel):
+    results: List[ExerciseTypeInDB]

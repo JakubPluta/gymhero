@@ -1,7 +1,7 @@
-from gymhero.database.base_class import Base
-from sqlalchemy import Integer, String, DateTime, ForeignKey, Unicode, Column
+from sqlalchemy import Column, DateTime, ForeignKey, Integer, String, func
 from sqlalchemy.orm import relationship
-from sqlalchemy import func
+
+from gymhero.database.base_class import Base
 
 
 class Exercise(Base):
