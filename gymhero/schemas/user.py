@@ -31,4 +31,4 @@ class UserUpdate(UserBase):
 
 
 class UsersInDB(BaseModel):
-    results: List[UserOut]
+    results: List[UserOut] = []

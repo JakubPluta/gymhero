@@ -9,7 +9,7 @@ from gymhero.api import (
     user_router,
 )
 
-app = FastAPI()
+app = FastAPI(title="GymHero API", version="0.1.0")
 
 app.include_router(exercise_router, prefix="/exercise", tags=["exercise"])
 app.include_router(exercise_type_router, prefix="/exercise", tags=["exercise_types"])

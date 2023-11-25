@@ -7,3 +7,13 @@ from gymhero.api.routes.user import router as user_router
 
 # from gymhero.api.routes.training_plan import router as training_plan_router
 # from gymhero.api.routes.training_unit import router as training_unit_router
+
+
+__all__ = [
+    "auth_router",
+    "bodypart_router",
+    "exercise_router",
+    "exercise_type_router",
+    "level_router",
+    "user_router",
+]

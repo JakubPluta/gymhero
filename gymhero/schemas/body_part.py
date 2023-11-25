@@ -26,4 +26,4 @@ class BodyPartInDB(BodyPartBase):
 
 
 class BodyPartsInDB(BaseModel):
-    results: List[BodyPartInDB]
+    results: List[BodyPartInDB] = []

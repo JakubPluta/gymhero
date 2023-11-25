@@ -1,3 +1,4 @@
+from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
@@ -20,7 +21,7 @@ router = APIRouter()
 
 
 @router.get(
-    "/",
+    "/all",
     response_model=BodyPartsInDB,
     status_code=status.HTTP_200_OK,
 )
@@ -36,13 +37,18 @@ def fetch_body_parts(
         pagination_params (dict): The pagination parameters.
 
     Returns:
-        - BodyPartsInDB: The fetched body parts from the database.
+        BodyPartsInDB: The fetched body parts from the database.
     """
     skip, limit = pagination_params
-    return bodypart_crud.get_many(db, skip=skip, limit=limit)
+    results = bodypart_crud.get_many(db, skip=skip, limit=limit)
+    return BodyPartsInDB(results=results)
 
 
-@router.get("/{body_part_id}", status_code=status.HTTP_200_OK)
+@router.get(
+    "/{body_part_id}",
+    status_code=status.HTTP_200_OK,
+    response_model=Optional[BodyPartInDB],
+)
 def fetch_body_part_by_id(body_part_id: int, db: Session = Depends(get_db)):
     """
     Fetches a body part by its ID.
@@ -70,7 +76,7 @@ def fetch_body_part_by_id(body_part_id: int, db: Session = Depends(get_db)):
 
 @router.get(
     "/name/{body_part_name}",
-    response_model=BodyPartInDB,
+    response_model=Optional[BodyPartInDB],
     status_code=status.HTTP_200_OK,
 )
 def fetch_body_part_by_name(body_part_name: str, db: Session = Depends(get_db)):

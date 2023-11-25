@@ -19,6 +19,7 @@ pathlib = "^1.0.1"
 pandas = "^2.1.3"
 passlib = {extras = ["bcrypt"], version = "^1.7.4"}
 python-jose = "^3.3.0"
+python-multipart = "^0.0.6"
 
 
 [tool.poetry.group.dev.dependencies]

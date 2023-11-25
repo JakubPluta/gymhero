@@ -28,4 +28,4 @@ class TrainingPlanInDB(TrainingPlanBase):
 
 
 class TrainingPlansInDB(BaseModel):
-    results: List[TrainingUnitInDB]
+    results: List[TrainingUnitInDB] = []

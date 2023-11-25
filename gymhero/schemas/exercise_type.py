@@ -26,4 +26,4 @@ class ExerciseTypeInDB(ExerciseTypeBase):
 
 
 class ExerciseTypesInDB(BaseModel):
-    results: List[ExerciseTypeInDB]
+    results: List[ExerciseTypeInDB] = []

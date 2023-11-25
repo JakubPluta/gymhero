@@ -26,4 +26,4 @@ class LevelInDB(LevelBase):
 
 
 class LevelsInDB(BaseModel):
-    results: List[LevelInDB]
+    results: List[LevelInDB] = []

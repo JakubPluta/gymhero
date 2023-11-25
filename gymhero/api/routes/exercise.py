@@ -1,4 +1,4 @@
-from typing import Tuple
+from typing import Optional, Tuple
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
@@ -21,7 +21,7 @@ log = get_logger(__name__)
 router = APIRouter()
 
 
-@router.get("/", response_model=ExercisesInDB, status_code=status.HTTP_200_OK)
+@router.get("/all", response_model=ExercisesInDB, status_code=status.HTTP_200_OK)
 def fetch_all_exercises(
     db: Session = Depends(get_db),
     pagination_params: Tuple[int, int] = Depends(get_pagination_params),
@@ -33,17 +33,18 @@ def fetch_all_exercises(
     database based on the pagination parameters.
 
     Parameters:
-        - db (Session): The database session.
-        - pagination_params (Tuple[int, int]): The pagination parameters (skip, limit).
+        db (Session): The database session.
+        pagination_params (Tuple[int, int]): The pagination parameters (skip, limit).
 
     Returns:
-        - ExercisesInDB: The list of exercises fetched from the database.
+        ExercisesInDB: The list of exercises fetched from the database.
     """
     skip, limit = pagination_params
-    return exercise_crud.get_many(db, skip=skip, limit=limit)
+    exercises = exercise_crud.get_many(db, skip=skip, limit=limit)
+    return ExercisesInDB(results=exercises)
 
 
-@router.get("/all/owner", response_model=ExercisesInDB, status_code=status.HTTP_200_OK)
+@router.get("/mine", response_model=ExercisesInDB, status_code=status.HTTP_200_OK)
 def fetch_all_exercises_for_owner(
     db: Session = Depends(get_db),
     pagination_params: Tuple[int, int] = Depends(get_pagination_params),
@@ -53,21 +54,24 @@ def fetch_all_exercises_for_owner(
     Fetches all exercises for user
 
     Parameters:
-        - db (Session): The database session.
-        - pagination_params (Tuple[int, int]): The pagination parameters (skip, limit).
-        - user (User): The current active user.
+        db (Session): The database session.
+        pagination_params (Tuple[int, int]): The pagination parameters (skip, limit).
+        user (User): The current active user.
 
     Returns:
-        - ExercisesInDB: The exercises fetched for the owner.
+        ExercisesInDB: The exercises fetched for the owner.
     """
     skip, limit = pagination_params
-    return exercise_crud.get_many_for_owner(
+    results = exercise_crud.get_many_for_owner(
         db, skip=skip, limit=limit, owner_id=user.id
     )
+    return ExercisesInDB(results=results)
 
 
 @router.get(
-    "/{exercise_id}", response_model=ExerciseInDB, status_code=status.HTTP_200_OK
+    "/{exercise_id}",
+    response_model=Optional[ExerciseInDB],
+    status_code=status.HTTP_200_OK,
 )
 def fetch_exercise_by_id(
     exercise_id: int, db: Session = Depends(get_db)
@@ -76,14 +80,14 @@ def fetch_exercise_by_id(
     Fetches an exercise by its ID.
 
     Parameters:
-        - exercise_id (int): The ID of the exercise.
-        - db (Session): The database session.
+        exercise_id (int): The ID of the exercise.
+        db (Session): The database session.
 
     Returns:
-        - ExerciseInDB: The fetched exercise.
+        ExerciseInDB: The fetched exercise.
 
     Raises:
-        - HTTPException: If the exercise is not found.
+        HTTPException: If the exercise is not found.
     """
     exercise = exercise_crud.get_one(db, Exercise.id == exercise_id)
     if exercise is None:

@@ -10,7 +10,8 @@ def get_db() -> Generator:
     """
     Generate the database session.
 
-    This function returns a generator object that provides a database session. The session is created using the `SessionLocal` class.
+    This function returns a generator object that provides a database session.
+    The session is created using the `SessionLocal` class.
 
     Returns:
         Generator: A generator that yields the database session.
@@ -23,7 +24,9 @@ def get_db() -> Generator:
     try:
         yield db
     except Exception as e:
-        logger.error(e)
+        logger.error(
+            "An error occurred while getting the database session. Error: %s", e
+        )
         raise e
     finally:
         db.close()

@@ -2,21 +2,17 @@
 
 import logging
 import sys
-from enum import Enum
 from typing import Optional
 
 LOGGING_FORMATTER = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 
 
-class DebugLevel(Enum):
-    DEBUG = "DEBUG"
-    INFO = "INFO"
-    WARNING = "WARNING"
-    ERROR = "ERROR"
+DebugLevels = ["DEBUG", "INFO", "WARNING", "ERROR"]
+DebugLevelType = str
 
 
 def get_logger(
-    name: Optional[str] = None, level: DebugLevel = DebugLevel.DEBUG
+    name: Optional[str] = None, level: DebugLevelType = "DEBUG"
 ) -> logging.Logger:
     """
     Creates and configures a logger for logging messages.
@@ -34,11 +30,11 @@ def get_logger(
     handler.setFormatter(formatter)
     logger.addHandler(handler)
 
-    if not level or level not in DebugLevel:
+    if not level or level not in DebugLevels:
         logger.warning(
-            f"invalid logging level: {level}, setting logging level to `DEBUG`"
+            "Invalid logging level %s. Setting logging level to DEBUG.", level
         )
-        level = DebugLevel.DEBUG
+        level = "DEBUG"
 
     logger.setLevel(level=level)
     return logger
