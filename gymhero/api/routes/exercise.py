@@ -1,11 +1,9 @@
 from typing import Tuple
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
-from gymhero.api.dependencies import (
-    get_current_active_user,
-    get_pagination_params,
-)
+from gymhero.api.dependencies import get_current_active_user, get_pagination_params
 from gymhero.crud import exercise_crud
 from gymhero.database.db import get_db
 from gymhero.log import get_logger
@@ -31,7 +29,8 @@ def fetch_all_exercises(
     """
     Fetch all exercises.
 
-    This function fetches all exercises from the database based on the pagination parameters.
+    This function fetches all exercises from the
+    database based on the pagination parameters.
 
     Parameters:
         - db (Session): The database session.
@@ -134,8 +133,10 @@ def create_exercise(
 
     Parameters:
         exercise_create (ExerciseCreate): The exercise data to be created.
-        db (Session, optional): The database session. Defaults to Depends(get_db).
-        user (User, optional): The current active user. Defaults to Depends(get_current_active_user).
+        db (Session, optional): The database session.
+            Defaults to Depends(get_db).
+        user (User, optional): The current active user.
+            Defaults to Depends(get_current_active_user).
 
     Returns:
         ExerciseInDB: The created exercise.
@@ -164,15 +165,19 @@ def update_exercise(
     Parameters:
         exercise_id (int): The ID of the exercise to be updated.
         exercise_update (ExerciseUpdate): The updated exercise data.
-        db (Session, optional): The database session. Defaults to Depends(get_db).
-        user (User, optional): The current authenticated user. Defaults to Depends(get_current_active_user).
+        db (Session, optional): The database session.
+            Defaults to Depends(get_db).
+        user (User, optional): The current authenticated user.
+            Defaults to Depends(get_current_active_user).
 
     Returns:
         ExerciseInDB: The updated exercise.
 
     Raises:
-        HTTPException: If the exercise does not exist or the user does not have enough permissions.
-        HTTPException: If there is an error updating the exercise in the database.
+        HTTPException: If the exercise does not exist or
+            the user does not have enough permissions.
+        HTTPException: If there is an error updating
+            the exercise in the database.
     """
     exercise = exercise_crud.get_one(db, Exercise.id == exercise_id)
     if exercise is None:
@@ -193,7 +198,7 @@ def update_exercise(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Couldn't update exercise with id {exercise_id}. Error: {str(e)}",
-        )
+        ) from e
     return exercise
 
 
@@ -212,12 +217,15 @@ def delete_exercise(
         user (User): The current user.
 
     Returns:
-        dict: A dictionary containing the detail that the exercise with the given ID was deleted.
+        dict: A dictionary containing the detail that
+            the exercise with the given ID was deleted.
 
     Raises:
         HTTPException: If the exercise with the given ID is not found.
-        HTTPException: If the user does not have enough permissions to delete the exercise.
-        HTTPException: If there is an error while deleting the exercise from the database.
+        HTTPException: If the user does not have enough
+            permissions to delete the exercise.
+        HTTPException: If there is an error while
+            deleting the exercise from the database.
     """
     exercise = exercise_crud.get_one(db, Exercise.id == exercise_id)
     if exercise is None:
@@ -238,6 +246,6 @@ def delete_exercise(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Couldn't delete exercise with id {exercise_id}. Error: {str(e)}",
-        )
+        ) from e
 
     return {"detail": f"Exercise with id {exercise_id} deleted."}

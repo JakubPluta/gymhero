@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
-from gymhero.api.dependencies import get_pagination_params, get_current_superuser
+from gymhero.api.dependencies import get_current_superuser, get_pagination_params
 from gymhero.crud import bodypart_crud
 from gymhero.database.db import get_db
 from gymhero.log import get_logger
@@ -57,7 +57,7 @@ def fetch_body_part_by_id(body_part_id: int, db: Session = Depends(get_db)):
     Raises:
         HTTPException: If the body part with the given ID is not found.
     """
-    body_part = bodypart_crud.get_one_by_filter(db, BodyPart.id == body_part_id)
+    body_part = bodypart_crud.get_one(db, BodyPart.id == body_part_id)
 
     if body_part is None:
         raise HTTPException(
@@ -73,7 +73,7 @@ def fetch_body_part_by_id(body_part_id: int, db: Session = Depends(get_db)):
     response_model=BodyPartInDB,
     status_code=status.HTTP_200_OK,
 )
-def fetch_body_part_by_id(body_part_name: str, db: Session = Depends(get_db)):
+def fetch_body_part_by_name(body_part_name: str, db: Session = Depends(get_db)):
     """
     Fetches a body part from the database by its name.
 
@@ -85,7 +85,8 @@ def fetch_body_part_by_id(body_part_name: str, db: Session = Depends(get_db)):
         BodyPartInDB: The body part fetched from the database.
 
     Raises:
-        HTTPException: If the body part with the specified name is not found in the database.
+        HTTPException: If the body part with the
+        specified name is not found in the database.
     """
     body_part = bodypart_crud.get_one(db, BodyPart.name == body_part_name)
     if body_part is None:
@@ -136,23 +137,27 @@ def delete_body_part(
         user (User): The current superuser.
 
     Raises:
-        HTTPException: If the body part with the given ID is not found or the user does not have permission to delete it.
+        HTTPException: If the body part with the given ID is
+        not found or the user does not have permission to delete it.
         HTTPException: If there is an error while deleting the body part.
 
     Returns:
-        dict: A dictionary with a detail message indicating that the body part was deleted.
+        dict: A dictionary with a detail message indicating
+        that the body part was deleted.
     """
     body_part = bodypart_crud.get_one(db, BodyPart.id == body_part_id)
     if body_part is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Body part with id {body_part_id} not found. Cannot delete.",
+            detail=f"Body part with id {body_part_id} not found.\
+                Cannot delete.",
         )
 
     if not user.is_superuser:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail=f"User {user.email} does not have permission to delete body part with id {body_part_id}.",
+            detail=f"User {user.email} does not have permission \
+                to delete body part with id {body_part_id}.",
         )
     try:
         bodypart_crud.delete(db, body_part)
@@ -160,7 +165,7 @@ def delete_body_part(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Couldn't delete body part with id {body_part_id}. Error: {str(e)}",
-        )
+        ) from e
     return {"detail": f"Body part with id {body_part_id} deleted."}
 
 
@@ -185,7 +190,8 @@ def update_body_part(
         user (User): The current superuser.
 
     Raises:
-        HTTPException: If the body part with the given ID is not found or if the user does not have permission to update the body part.
+        HTTPException: If the body part with the given ID is not
+        found or if the user does not have permission to update the body part.
         HTTPException: If there is an error updating the body part.
 
     Returns:
@@ -200,7 +206,8 @@ def update_body_part(
     if not user.is_superuser:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail=f"User {user.email} does not have permission to update body part with id {body_part_id}.",
+            detail=f"User {user.email} does not have permission \
+                to update body part with id {body_part_id}.",
         )
     try:
         body_part = bodypart_crud.update(db, body_part, body_part_update)
@@ -208,5 +215,5 @@ def update_body_part(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Couldn't update body part with id {body_part_id}. Error: {str(e)}",
-        )
+        ) from e
     return body_part
