@@ -1,3 +1,4 @@
+from typing import List
 from sqlalchemy.orm import Session
 from gymhero.crud.base import CRUDRepository
 from gymhero.models import TrainingUnit
@@ -48,8 +49,43 @@ class TrainingUnitCRUD(CRUDRepository):
         Returns:
             TrainingUnit: The updated training unit with the removed exercise.
         """
-        training_unit.exercises.remove(exercise)
+        try:
+            training_unit.exercises.remove(exercise)
+        except ValueError:
+            log.error("Exercise not found in training unit")
+            return None
+
         db.add(training_unit)
         db.commit()
         db.refresh(training_unit)
         return training_unit
+
+    def get_exercises_in_training_unit(
+        self, training_unit: TrainingUnit
+    ) -> List[Exercise]:
+        """Returns a list of exercises in a training unit.
+
+        Parameters:
+            training_unit (TrainingUnit): The training unit to get the exercises from.
+
+        Returns:
+            List[Exercise]: A list of exercises in the training unit.
+        """
+        return training_unit.exercises
+
+    def check_if_exercise_in_training_unit(
+        self, training_unit: TrainingUnit, exercise: Exercise
+    ) -> bool:
+        """Checks if an exercise is in a training unit.
+
+        Parameters:
+            training_unit (TrainingUnit): The training unit to check.
+            exercise (Exercise): The exercise to check.
+
+        Returns:
+            bool: True if the exercise is in the training unit, False otherwise.
+        """
+        return exercise in training_unit.exercises
+
+
+training_unit_crud = TrainingUnitCRUD(model=TrainingUnit)
