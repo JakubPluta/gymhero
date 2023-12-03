@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
@@ -14,7 +14,6 @@ from gymhero.models.user import User
 from gymhero.schemas.training_plan import (
     TrainingPlanCreate,
     TrainingPlanInDB,
-    TrainingPlansInDB,
     TrainingPlanUpdate,
 )
 
@@ -23,18 +22,23 @@ log = get_logger(__name__)
 router = APIRouter()
 
 
-@router.get("/all", response_model=TrainingPlansInDB, status_code=status.HTTP_200_OK)
+@router.get(
+    "/all",
+    response_model=List[Optional[TrainingPlanInDB]],
+    status_code=status.HTTP_200_OK,
+)
 def get_all_training_plans(
     db: Session = Depends(get_db),
     pagination_params: dict = Depends(get_pagination_params),
 ):
     skip, limit = pagination_params
-    results = training_plan_crud.get_many(db, skip=skip, limit=limit)
-    return TrainingPlansInDB(results=results)
+    return training_plan_crud.get_many(db, skip=skip, limit=limit)
 
 
 @router.get(
-    "/all/mine", response_model=TrainingPlansInDB, status_code=status.HTTP_200_OK
+    "/all/mine",
+    response_model=List[Optional[TrainingPlanInDB]],
+    status_code=status.HTTP_200_OK,
 )
 def get_all_training_plans_for_owner(
     db: Session = Depends(get_db),
@@ -42,10 +46,9 @@ def get_all_training_plans_for_owner(
     user: User = Depends(get_current_active_user),
 ):
     skip, limit = pagination_params
-    results = training_plan_crud.get_many_for_owner(
+    return training_plan_crud.get_many_for_owner(
         db, skip=skip, limit=limit, owner_id=user.id
     )
-    return TrainingPlansInDB(results=results)
 
 
 @router.get(

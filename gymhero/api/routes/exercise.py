@@ -1,4 +1,4 @@
-from typing import Optional, Tuple
+from typing import List, Optional, Tuple
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
@@ -12,7 +12,6 @@ from gymhero.models.exercise import Exercise
 from gymhero.schemas.exercise import (
     ExerciseCreate,
     ExerciseInDB,
-    ExercisesInDB,
     ExerciseUpdate,
 )
 
@@ -21,11 +20,13 @@ log = get_logger(__name__)
 router = APIRouter()
 
 
-@router.get("/all", response_model=ExercisesInDB, status_code=status.HTTP_200_OK)
+@router.get(
+    "/all", response_model=List[Optional[ExerciseInDB]], status_code=status.HTTP_200_OK
+)
 def fetch_all_exercises(
     db: Session = Depends(get_db),
     pagination_params: Tuple[int, int] = Depends(get_pagination_params),
-) -> ExercisesInDB:
+) -> List[Optional[ExerciseInDB]]:
     """
     Fetch all exercises.
 
@@ -40,16 +41,17 @@ def fetch_all_exercises(
         ExercisesInDB: The list of exercises fetched from the database.
     """
     skip, limit = pagination_params
-    exercises = exercise_crud.get_many(db, skip=skip, limit=limit)
-    return ExercisesInDB(results=exercises)
+    return exercise_crud.get_many(db, skip=skip, limit=limit)
 
 
-@router.get("/mine", response_model=ExercisesInDB, status_code=status.HTTP_200_OK)
+@router.get(
+    "/mine", response_model=List[Optional[ExerciseInDB]], status_code=status.HTTP_200_OK
+)
 def fetch_all_exercises_for_owner(
     db: Session = Depends(get_db),
     pagination_params: Tuple[int, int] = Depends(get_pagination_params),
     user: User = Depends(get_current_active_user),
-) -> ExercisesInDB:
+) -> List[Optional[ExerciseInDB]]:
     """
     Fetches all exercises for user
 
@@ -62,10 +64,9 @@ def fetch_all_exercises_for_owner(
         ExercisesInDB: The exercises fetched for the owner.
     """
     skip, limit = pagination_params
-    results = exercise_crud.get_many_for_owner(
+    return exercise_crud.get_many_for_owner(
         db, skip=skip, limit=limit, owner_id=user.id
     )
-    return ExercisesInDB(results=results)
 
 
 @router.get(

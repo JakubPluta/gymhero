@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
@@ -11,7 +11,6 @@ from gymhero.models.user import User
 from gymhero.schemas.body_part import (
     BodyPartCreate,
     BodyPartInDB,
-    BodyPartsInDB,
     BodyPartUpdate,
 )
 
@@ -22,7 +21,7 @@ router = APIRouter()
 
 @router.get(
     "/all",
-    response_model=BodyPartsInDB,
+    response_model=List[Optional[BodyPartInDB]],
     status_code=status.HTTP_200_OK,
 )
 def fetch_body_parts(
@@ -40,8 +39,7 @@ def fetch_body_parts(
         BodyPartsInDB: The fetched body parts from the database.
     """
     skip, limit = pagination_params
-    results = bodypart_crud.get_many(db, skip=skip, limit=limit)
-    return BodyPartsInDB(results=results)
+    return bodypart_crud.get_many(db, skip=skip, limit=limit)
 
 
 @router.get(

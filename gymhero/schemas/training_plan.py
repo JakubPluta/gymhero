@@ -25,7 +25,3 @@ class TrainingPlanInDB(TrainingPlanBase):
     updated_at: datetime.datetime
     training_units: Optional[List[TrainingUnitInDB]] = []
     owner_id: int
-
-
-class TrainingPlansInDB(BaseModel):
-    results: List[TrainingUnitInDB] = []

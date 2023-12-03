@@ -1,4 +1,5 @@
-from sqlalchemy import Column, DateTime, ForeignKey, Integer, String, func
+from sqlalchemy import Column, DateTime, ForeignKey, Integer, String
+from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 
 from gymhero.database.base_class import Base
@@ -8,7 +9,7 @@ class Exercise(Base):
     __tablename__ = "exercises"
 
     id = Column(Integer, primary_key=True)
-    name = Column(String, nullable=False)
+    name = Column(String, nullable=False, unique=True)
     description = Column(String, nullable=True)
     target_body_part_id = Column(Integer, ForeignKey("body_parts.id"))
     exercise_type_id = Column(Integer, ForeignKey("exercise_types.id"))

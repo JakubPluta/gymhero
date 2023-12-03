@@ -1,3 +1,4 @@
+from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
@@ -6,23 +7,24 @@ from gymhero.crud import user_crud
 from gymhero.database.db import get_db
 from gymhero.log import get_logger
 from gymhero.models import User
-from gymhero.schemas.user import UserCreate, UserInDB, UserOut, UsersInDB, UserUpdate
+from gymhero.schemas.user import UserCreate, UserInDB, UserOut, UserUpdate
 from gymhero.security import get_password_hash
 
 
 log = get_logger(__name__)
 
 
-router = APIRouter()
+router = APIRouter(dependencies=[Depends(get_current_superuser)])
 
 
-@router.get("/all", response_model=UsersInDB, status_code=status.HTTP_200_OK)
+@router.get(
+    "/all", response_model=List[Optional[UserOut]], status_code=status.HTTP_200_OK
+)
 def fetch_all_users(
     db: Session = Depends(get_db), pagination_params=Depends(get_pagination_params)
 ):
     skip, limit = pagination_params
-    results = user_crud.get_many(db, skip=skip, limit=limit)
-    return UsersInDB(results=results)
+    return user_crud.get_many(db, skip=skip, limit=limit)
 
 
 @router.get("/{user_id}", response_model=UserOut, status_code=status.HTTP_200_OK)

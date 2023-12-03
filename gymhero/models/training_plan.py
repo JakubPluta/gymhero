@@ -1,4 +1,5 @@
-from sqlalchemy import Column, DateTime, ForeignKey, Integer, String, Table, func
+from sqlalchemy import Column, DateTime, ForeignKey, Integer, String, Table
+from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 
 from gymhero.database.base_class import Base
@@ -15,7 +16,7 @@ class TrainingPlan(Base):
     __tablename__ = "training_plans"
 
     id = Column(Integer, primary_key=True)
-    name = Column(String)
+    name = Column(String, nullable=False, unique=False)
     description = Column(String)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(

@@ -1,5 +1,5 @@
 import datetime
-from typing import List, Optional
+from typing import Optional
 
 from pydantic import BaseModel
 
@@ -23,7 +23,3 @@ class BodyPartInDB(BodyPartBase):
 
     class Config:
         orm_mode = True
-
-
-class BodyPartsInDB(BaseModel):
-    results: List[BodyPartInDB] = []

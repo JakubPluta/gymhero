@@ -14,3 +14,9 @@ class TokenPayload(BaseModel):
     """Payload for Bearer Access Token"""
 
     sub: Optional[int] = None
+
+
+class UserRegister(BaseModel):
+    email: str
+    password: str
+    full_name: Optional[str] = None

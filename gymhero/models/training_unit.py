@@ -1,4 +1,5 @@
-from sqlalchemy import Column, DateTime, ForeignKey, Integer, String, Table, func
+from sqlalchemy import Column, DateTime, ForeignKey, Integer, String, Table
+from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 
 from gymhero.database.base_class import Base

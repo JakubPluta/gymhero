@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
@@ -10,7 +10,6 @@ from gymhero.models.exercise import ExerciseType
 from gymhero.schemas.exercise_type import (
     ExerciseTypeCreate,
     ExerciseTypeInDB,
-    ExerciseTypesInDB,
     ExerciseTypeUpdate,
 )
 
@@ -20,7 +19,9 @@ router = APIRouter()
 
 
 @router.get(
-    "/types/all", response_model=ExerciseTypesInDB, status_code=status.HTTP_200_OK
+    "/types/all",
+    response_model=List[Optional[ExerciseTypeInDB]],
+    status_code=status.HTTP_200_OK,
 )
 def fetch_all_exercise_types(
     db: Session = Depends(get_db), pagination_params=Depends(get_pagination_params)
@@ -36,8 +37,7 @@ def fetch_all_exercise_types(
         List[ExerciseTypesInDB]: A list of exercise types from the database.
     """
     skip, limit = pagination_params
-    results = exercise_type_crud.get_many(db, skip=skip, limit=limit)
-    return ExerciseTypesInDB(results=results)
+    return exercise_type_crud.get_many(db, skip=skip, limit=limit)
 
 
 @router.get(

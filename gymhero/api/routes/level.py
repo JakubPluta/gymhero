@@ -1,5 +1,6 @@
-from typing import Optional
+from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from gymhero.api.dependencies import get_current_superuser, get_pagination_params
@@ -8,21 +9,23 @@ from gymhero.database.db import get_db
 from gymhero.log import get_logger
 from gymhero.models import Level
 from gymhero.models.user import User
-from gymhero.schemas.level import LevelCreate, LevelInDB, LevelsInDB, LevelUpdate
+from gymhero.schemas.level import LevelCreate, LevelInDB, LevelUpdate
 
 log = get_logger(__name__)
 
 router = APIRouter()
 
 
-@router.get("/all", response_model=LevelsInDB, status_code=status.HTTP_200_OK)
+@router.get(
+    "/all", response_model=List[Optional[LevelInDB]], status_code=status.HTTP_200_OK
+)
 def fetch_all_levels(
     db: Session = Depends(get_db),
     pagination_params: dict = Depends(get_pagination_params),
 ):
     skip, limit = pagination_params
-    retults = level_crud.get_many(db, skip=skip, limit=limit)
-    return LevelsInDB(results=retults)
+    results = level_crud.get_many(db, skip=skip, limit=limit)
+    return results
 
 
 @router.get(
@@ -66,7 +69,20 @@ def create_level(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="The user does not have enough privileges",
         )
-    return level_crud.create(db, obj_create=level_create)
+    try:
+        return level_crud.create(db, obj_create=level_create)
+    except IntegrityError as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Couldn't create level. \
+                Level with name: {level_create.name} already exists",
+        ) from e
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Couldn't create level. Error: {str(e)}",
+        ) from e
 
 
 @router.delete("/{level_id}", response_model=dict, status_code=status.HTTP_200_OK)
