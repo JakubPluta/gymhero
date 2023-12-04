@@ -1,12 +1,14 @@
 from typing import List, Optional
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
-from gymhero.api.dependencies import get_pagination_params
+from gymhero.api.dependencies import get_current_superuser, get_pagination_params
 from gymhero.crud import exercise_type_crud
 from gymhero.database.db import get_db
 from gymhero.log import get_logger
 from gymhero.models.exercise import ExerciseType
+from gymhero.models.user import User
 from gymhero.schemas.exercise_type import (
     ExerciseTypeCreate,
     ExerciseTypeInDB,
@@ -51,7 +53,7 @@ def fetch_exercise_type_by_id(exercise_type_id: int, db: Session = Depends(get_d
 
     Parameters:
         exercise_type_id (int): The ID of the exercise type to fetch.
-        db (Session, optional): The database session. Defaults to Depends(get_db).
+        db (Session): The database session. Defaults to Depends(get_db).
 
     Returns:
         ExerciseTypeInDB: The fetched exercise type.
@@ -107,17 +109,24 @@ def fetch_exercise_type_by_name(exercise_type_name: str, db: Session = Depends(g
 def create_exercise_type(
     exercise_type_create: ExerciseTypeCreate,
     db: Session = Depends(get_db),
+    user: User = Depends(get_current_superuser),
 ):
     """
     Creates a new exercise type.
 
     Parameters:
         exercise_type_create (ExerciseTypeCreate): The exercise type data to create.
-        db (Session, optional): The database session. Defaults to Depends(get_db).
+        db (Session): The database session. Defaults to Depends(get_db).
+        user (User): The current user.
 
     Returns:
         ExerciseTypeInDB: The newly created exercise type.
     """
+    if not user.is_superuser:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only superusers can create exercise types",
+        )
     exercise_type = exercise_type_crud.create(db, exercise_type_create)
     return exercise_type
 
@@ -131,6 +140,7 @@ def update_exercise_type(
     exercise_type_id: int,
     exercise_type_update: ExerciseTypeUpdate,
     db: Session = Depends(get_db),
+    user: User = Depends(get_current_superuser),
 ):
     """
     Update an exercise type in the database.
@@ -138,7 +148,8 @@ def update_exercise_type(
     Parameters:
         exercise_type_id (int): The ID of the exercise type to be updated.
         exercise_type_update (ExerciseTypeUpdate): The updated exercise type data.
-        db (Session, optional): The database session. Defaults to Depends(get_db).
+        db (Session): The database session. Defaults to Depends(get_db).
+        user (User): The current user.
 
     Returns:
         ExerciseTypeInDB: The updated exercise type.
@@ -147,12 +158,20 @@ def update_exercise_type(
         HTTPException: If the exercise type with the specified ID
         is not found or if there is an internal server error during the update process.
     """
+
+    if not user.is_superuser:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only superusers can update exercise types",
+        )
+
     exercise_type = exercise_type_crud.get_one(db, ExerciseType.id == exercise_type_id)
     if exercise_type is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Exercise type with id {exercise_type_id} not found",
         )
+
     try:
         exercise_type = exercise_type_crud.update(
             db, exercise_type, exercise_type_update
@@ -171,18 +190,28 @@ def update_exercise_type(
     status_code=status.HTTP_200_OK,
     response_model=dict,
 )
-def delete_exercise_type(exercise_type_id: int, db: Session = Depends(get_db)):
+def delete_exercise_type(
+    exercise_type_id: int,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_superuser),
+):
     """
     Deletes an exercise type with the given exercise_type_id.
 
     Parameters:
         exercise_type_id (int): The ID of the exercise type to delete.
-        db (Session, optional): The database session. Defaults to Depends(get_db).
+        db (Session): The database session. Defaults to Depends(get_db).
+        user (User): The current user.
 
     Returns:
         dict: A dictionary with a detail message indicating whether the
               exercise type was successfully deleted or not.
     """
+    if not user.is_superuser:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only superusers can delete exercise types",
+        )
     exercise_type = exercise_type_crud.get_one(db, ExerciseType.id == exercise_type_id)
     if exercise_type is None:
         raise HTTPException(

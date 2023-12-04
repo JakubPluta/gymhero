@@ -1,4 +1,5 @@
 from typing import List, Optional
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
@@ -8,11 +9,7 @@ from gymhero.database.db import get_db
 from gymhero.log import get_logger
 from gymhero.models import BodyPart
 from gymhero.models.user import User
-from gymhero.schemas.body_part import (
-    BodyPartCreate,
-    BodyPartInDB,
-    BodyPartUpdate,
-)
+from gymhero.schemas.body_part import BodyPartCreate, BodyPartInDB, BodyPartUpdate
 
 log = get_logger(__name__)
 

@@ -1,5 +1,6 @@
 from sqlalchemy import Column, DateTime, Integer, String
 from sqlalchemy.sql import func
+
 from gymhero.database.base_class import Base
 
 

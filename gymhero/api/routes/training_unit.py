@@ -1,15 +1,14 @@
 from typing import List, Optional
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
-from gymhero.api.dependencies import (
-    get_current_active_user,
-    get_pagination_params,
-)
-from gymhero.crud import training_unit_crud
+from gymhero.api.dependencies import get_current_active_user, get_pagination_params
+from gymhero.crud import training_unit_crud, exercise_crud
 from gymhero.database.db import get_db
 from gymhero.log import get_logger
 from gymhero.models import TrainingUnit
+from gymhero.models.exercise import Exercise
 from gymhero.models.user import User
 from gymhero.schemas.training_unit import (
     TrainingUnitCreate,
@@ -234,3 +233,35 @@ def delete_training_unit(
             detail="Could not delete training unit. Error: " + str(e),
         ) from e
     return {"detail": f"Training unit type with id {training_unit_id} deleted."}
+
+
+@router.post(
+    "/{training_unit_id}/exercises/{exercise_id}/add",
+)
+def add_exercise_to_training_unit(
+    training_unit_id: int,
+    exercise_id: int,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_active_user),
+):
+    training_unit = training_unit_crud.get_one(db, TrainingUnit.id == training_unit_id)
+    if training_unit is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Training unit with id {training_unit_id} not found",
+        )
+
+    exercise = exercise_crud.get_one(db, Exercise.id == exercise_id)
+    if exercise is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Exercise with id {exercise_id} not found",
+        )
+
+    if training_unit.owner_id != user.id or not user.is_superuser:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You do not have permission to perform this action",
+        )
+
+    return training_unit_crud.add_exercise_to_training_unit(db, training_unit, exercise)

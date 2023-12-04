@@ -1,10 +1,10 @@
 from typing import List
-from sqlalchemy.orm import Session
-from gymhero.crud.base import CRUDRepository
-from gymhero.models import TrainingUnit
-from gymhero.models import Exercise
-from gymhero.log import get_logger
 
+from sqlalchemy.orm import Session
+
+from gymhero.crud.base import CRUDRepository
+from gymhero.log import get_logger
+from gymhero.models import Exercise, TrainingUnit
 
 log = get_logger(__name__)
 

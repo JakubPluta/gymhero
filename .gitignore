@@ -1,11 +1,15 @@
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
+.vscode/
+*.vscode
 *$py.class
+*.ruff_cache/*
 .idea
 *.idea 
 .idea/
 # C extensions
+.ruff_cache
 *.so
 */idea/
 .idea

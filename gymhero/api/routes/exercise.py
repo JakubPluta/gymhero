@@ -9,11 +9,7 @@ from gymhero.database.db import get_db
 from gymhero.log import get_logger
 from gymhero.models import User
 from gymhero.models.exercise import Exercise
-from gymhero.schemas.exercise import (
-    ExerciseCreate,
-    ExerciseInDB,
-    ExerciseUpdate,
-)
+from gymhero.schemas.exercise import ExerciseCreate, ExerciseInDB, ExerciseUpdate
 
 log = get_logger(__name__)
 
