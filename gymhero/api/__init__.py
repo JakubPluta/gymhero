@@ -4,9 +4,8 @@ from gymhero.api.routes.exercise import router as exercise_router
 from gymhero.api.routes.exercise_type import router as exercise_type_router
 from gymhero.api.routes.level import router as level_router
 from gymhero.api.routes.user import router as user_router
-
-# from gymhero.api.routes.training_plan import router as training_plan_router
-# from gymhero.api.routes.training_unit import router as training_unit_router
+from gymhero.api.routes.training_plan import router as training_plan_router
+from gymhero.api.routes.training_unit import router as training_unit_router
 
 
 __all__ = [
@@ -16,4 +15,6 @@ __all__ = [
     "exercise_type_router",
     "level_router",
     "user_router",
+    "training_plan_router",
+    "training_unit_router",
 ]

@@ -21,7 +21,7 @@ router = APIRouter()
 
 
 @router.get(
-    "/types/all",
+    "/all",
     response_model=List[Optional[ExerciseTypeInDB]],
     status_code=status.HTTP_200_OK,
 )
@@ -43,7 +43,7 @@ def fetch_all_exercise_types(
 
 
 @router.get(
-    "/types/{exercise_type_id}",
+    "/{exercise_type_id}",
     response_model=Optional[ExerciseTypeInDB],
     status_code=status.HTTP_200_OK,
 )
@@ -72,7 +72,7 @@ def fetch_exercise_type_by_id(exercise_type_id: int, db: Session = Depends(get_d
 
 
 @router.get(
-    "/types/name/{exercise_type_name}",
+    "/name/{exercise_type_name}",
     response_model=Optional[ExerciseTypeInDB],
     status_code=status.HTTP_200_OK,
 )
@@ -102,7 +102,7 @@ def fetch_exercise_type_by_name(exercise_type_name: str, db: Session = Depends(g
 
 
 @router.post(
-    "/types/",
+    "/",
     response_model=ExerciseTypeInDB,
     status_code=status.HTTP_201_CREATED,
 )
@@ -132,7 +132,7 @@ def create_exercise_type(
 
 
 @router.put(
-    "/types/{exercise_type_id}",
+    "/{exercise_type_id}",
     response_model=ExerciseTypeInDB,
     status_code=status.HTTP_200_OK,
 )
@@ -186,7 +186,7 @@ def update_exercise_type(
 
 
 @router.delete(
-    "/types/{exercise_type_id}",
+    "/{exercise_type_id}",
     status_code=status.HTTP_200_OK,
     response_model=dict,
 )

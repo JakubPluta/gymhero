@@ -2,9 +2,14 @@ import os
 
 import dotenv
 
-from gymhero.config import settings
+dotenv.load_dotenv(".env.testexample")
 
-dotenv.load_dotenv(".env.example")
+os.environ["ENV"] = "test"
+
+from gymhero.config import get_settings
+
+
+settings = get_settings()
 
 
 def test_properly_read_config():
@@ -15,5 +20,5 @@ def test_properly_read_config():
 def test_can_build_postgres_url():
     assert (
         f"postgresql://{settings.POSTGRES_USER}:{settings.POSTGRES_PASSWORD}@{settings.POSTGRES_HOST}:{settings.POSTGRES_PORT}/{settings.POSTGRES_DB}"
-        == "postgresql://gymhero:p4ssw0rd@localhost:5432/workout"
+        == "postgresql://test:test@localhost:5433/workout"
     )

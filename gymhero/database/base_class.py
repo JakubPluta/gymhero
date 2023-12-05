@@ -1,7 +1,7 @@
 from typing import Any, Dict
 
 from sqlalchemy import MetaData
-from sqlalchemy.ext.declarative import as_declarative
+from sqlalchemy.orm import as_declarative
 
 POSTGRES_INDEXES_NAMING_CONVENTION = {
     "ix": "%(column_0_label)s_idx",

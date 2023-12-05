@@ -27,6 +27,7 @@ class TrainingUnitCRUD(CRUDRepository):
         existing_exercise: Exercise
         for existing_exercise in training_unit.exercises:
             if existing_exercise.id == exercise.id:
+                log.warning("Exercise already exists in training unit")
                 return None
 
         training_unit.exercises.append(exercise)

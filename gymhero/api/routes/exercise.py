@@ -137,13 +137,11 @@ def create_exercise(
         db (Session, optional): The database session.
             Defaults to Depends(get_db).
         user (User, optional): The current active user.
-            Defaults to Depends(get_current_active_user).
+
 
     Returns:
         ExerciseInDB: The created exercise.
 
-    Raises:
-        None
     """
     exercise = exercise_crud.create_with_owner(db, exercise_create, owner_id=user.id)
     return exercise
@@ -169,7 +167,7 @@ def update_exercise(
         db (Session, optional): The database session.
             Defaults to Depends(get_db).
         user (User, optional): The current authenticated user.
-            Defaults to Depends(get_current_active_user).
+
 
     Returns:
         ExerciseInDB: The updated exercise.

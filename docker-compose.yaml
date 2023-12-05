@@ -2,15 +2,36 @@ version: '3.8'
 services:
   db:
     build:
-      context: ./docker
+      context: ./docker/dev
       dockerfile: Dockerfile
     restart: always
     ports:
       - '5432:5432'
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
     volumes:
       - db:/var/lib/postgresql/data
+  test-db:
+    build:
+      context: ./docker/test
+      dockerfile: Dockerfile
+    restart: always
+    ports:
+      - '5433:5432'
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - test-db:/var/lib/postgresql/data
 volumes:
   db:
+    driver: local
+  test-db:
     driver: local
 
 

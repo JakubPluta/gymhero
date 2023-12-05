@@ -6,57 +6,89 @@ Simple application to create training plans, log workouts, add own exercise and 
 ### Motivation
 To build an CRUD API with FastAPI, SQLAlchemy, Postgres, Docker
 
-### Steps
 
-##### Initial Data Modeling - Define entities:
-- Exercise
-- ExerciseType
+
+**Initial Data Modeling - Define entities**:
+- Exercise 
+- ExerciseType 
 - Level (Average, Beginner, Intermediate, Advanced)
+- BodyPart
 - TrainingUnit
 - TrainingPlan
 - User
 
-#### Setup Python Environment
-- Build venv
-- Prepare docker-compose with postgres
-- Install dependencies (poetry)
-- Initialize alembic
-- Prepare app configuration (pydantic)
+**Setup Python Environment**
+- Build venv [x]
+- Prepare docker-compose with postgres [x]
+- Install dependencies (poetry) [x]
+- Initialize alembic [x]
+- Prepare app configuration (pydantic) [x]
 
-#### Write initial ORM and make alembic migration
-- Use SQLAlchemy do define tables
+**Write initial ORM and make alembic migration**
+- Use SQLAlchemy do define tables [x]
 
-#### Define Schemas with Pydantic
+**Define Schemas with Pydantic**
+- Use Pydantic to define coresponding object to ORM objects. [x]
 
-#### Define dependencies in FastAPI (Depends(get_db))
+**Define dependencies in FastAPI**
+- Pagination, Active user, Superuser, Database [x]
 
-#### Write initial CRUD for all entities
-- Create, Update, Delete, Read functions - no without security
+**Write initial CRUD for all entities**
+- Create, Update, Delete, Read functions [x]
 
-#### Add first unit/integration tests
-- pytest
+**Add security**:
+- Add JWT authentication [x]
+- Users module [x]
+- Password hashing [x]
+- Login endpoint [x]
+- Register endpoint [x]
 
-#### Add routes
-#### Add users module 
-#### Add JWT authentication
-#### Upgrade docker-compose
-- To keep app in container
+**Add first unit/integration tests**
+- pytest []
 
+
+**Upgrade docker-compose** 
+- Define whole app in docker-compose []
+- Think about adding Redis for caching requests []
 
 
 ## Define use cases:
 
-1. Superuser can
-   - create all entities
-   - update all entities
-   - delete all entities
-   - read all entities
-2. Active user can:
-    - create exercise
-    - update exercise if he is owner
-    - delete exercise if he is owner
-    - read all exercises
-    - create training plan
-    - update/delete plan if he is owner
-    - read all plans ? (think about it)
-    
+### Exercises
+
+| Routes     | Method | Endpoint                 | Access            |
+|------------|--------|--------------------------|------------------ |
+| /exercises | GET    | /all                     | All               |
+| /exercises | GET    | /mine                    | Owner             |
+| /exercises | GET    | /{exercise_id}           | All               |
+| /exercises | DELETE | /{exercise_id}           | Superuser, Owner  |
+| /exercises | PUT    | /{exercise_id}           | Superuser, Owner  |
+| /exercises | GET    | /name/{exercise_name}    | All               |
+| /exercises | POST   |                          | All               |
+
+### ExerciseType
+
+| Routes          | Method  | Endpoint                 | Access            |
+|------------------|--------|--------------------------|-----------        |
+| /exercise-types | GET     | /all                     | All               |
+| /exercise-types | GET    | /{exercise_type_id}       | All               |
+| /exercise-types | DELETE | /{exercise_type_id}       | Superuser         |
+| /exercise-types | PUT    | /{exercise_type_id}       | Superuser         |
+| /exercise-types | GET    | /name/{exercise_type_name}| All               |
+| /exercise-types | POST   |                           | Superuser         |
+
+
+### Levels
+
+| Routes           | Method | Endpoint         | Access     |
+|------------------|--------|------------------|------------|
+| /levels          | GET    | /all             | All        |
+| /levels          | GET    | /{level_id}      | All        |
+| /levels          | DELETE | /{level_id}      | Superuser  |
+| /levels          | PUT    | /{level_id}      | Superuser  |
+| /levels          | GET    | /name/{level_id} | All        |
+| /levels          | POST   |                  | Superuser  |
+
+
+### Users
+

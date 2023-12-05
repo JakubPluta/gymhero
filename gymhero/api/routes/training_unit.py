@@ -10,6 +10,7 @@ from gymhero.log import get_logger
 from gymhero.models import TrainingUnit
 from gymhero.models.exercise import Exercise
 from gymhero.models.user import User
+from gymhero.schemas.exercise import ExerciseInDB
 from gymhero.schemas.training_unit import (
     TrainingUnitCreate,
     TrainingUnitInDB,
@@ -235,7 +236,7 @@ def delete_training_unit(
     return {"detail": f"Training unit type with id {training_unit_id} deleted."}
 
 
-@router.post(
+@router.put(
     "/{training_unit_id}/exercises/{exercise_id}/add",
 )
 def add_exercise_to_training_unit(
@@ -244,6 +245,19 @@ def add_exercise_to_training_unit(
     db: Session = Depends(get_db),
     user: User = Depends(get_current_active_user),
 ):
+    """
+    Adds an exercise to a training unit.
+
+    Parameters:
+        training_unit_id (int): The ID of the training unit.
+        exercise_id (int): The ID of the exercise.
+        db (Session, optional): The database session. Defaults to Depends(get_db).
+        user (User, optional): The current authenticated user.
+            Defaults to Depends(get_current_active_user).
+
+    Returns:
+        The updated training unit with the added exercise.
+    """
     training_unit = training_unit_crud.get_one(db, TrainingUnit.id == training_unit_id)
     if training_unit is None:
         raise HTTPException(
@@ -265,3 +279,94 @@ def add_exercise_to_training_unit(
         )
 
     return training_unit_crud.add_exercise_to_training_unit(db, training_unit, exercise)
+
+
+@router.get(
+    "/{training_unit_id}/exercises", response_model=List[Optional[ExerciseInDB]]
+)
+def get_exercises_in_training_unit(
+    training_unit_id: int,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_active_user),
+):
+    """
+    Retrieve all exercises within a given training unit.
+
+    Parameters:
+        training_unit_id (int): The ID of the training unit.
+        db (Session): The database session.
+        user (User): The current active user.
+
+    Returns:
+        List[Exercise]: A list of exercises within the training unit.
+
+    Raises:
+        HTTPException: If the training unit is
+        not found or the user does not have permission.
+    """
+    training_unit = training_unit_crud.get_one(db, TrainingUnit.id == training_unit_id)
+    if training_unit is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Training unit with id {training_unit_id} not found",
+        )
+
+    if training_unit.owner_id != user.id or not user.is_superuser:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You do not have permission to perform this action",
+        )
+
+    return training_unit_crud.get_exercises_in_training_unit(training_unit)
+
+
+@router.put(
+    "/{training_unit_id}/exercises/{exercise_id}/remove",
+)
+def remove_exercise_from_training_unit(
+    training_unit_id: int,
+    exercise_id: int,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_active_user),
+):
+    """
+    Remove an exercise from a training unit.
+
+    Parameters:
+        training_unit_id (int): The ID of the training unit.
+        exercise_id (int): The ID of the exercise.
+        db (Session, optional): The database session.
+            Defaults to Depends(get_db).
+        user (User, optional): The current user.
+            Defaults to Depends(get_current_active_user).
+
+    Returns:
+        The updated training unit after removing the exercise.
+
+    Raises:
+        HTTPException: If the training unit or exercise is not found,
+        or if the user does not have permission.
+    """
+    training_unit = training_unit_crud.get_one(db, TrainingUnit.id == training_unit_id)
+    if training_unit is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Training unit with id {training_unit_id} not found",
+        )
+
+    exercise = exercise_crud.get_one(db, Exercise.id == exercise_id)
+    if exercise is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Exercise with id {exercise_id} not found",
+        )
+
+    if training_unit.owner_id != user.id or not user.is_superuser:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You do not have permission to perform this action",
+        )
+
+    return training_unit_crud.remove_exercise_from_training_unit(
+        db, training_unit, exercise
+    )

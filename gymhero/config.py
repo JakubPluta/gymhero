@@ -1,3 +1,4 @@
+import os
 from pydantic import EmailStr
 from pydantic_settings import BaseSettings
 
@@ -28,4 +29,44 @@ class Settings(BaseSettings):
         case_sensitive = True
 
 
-settings = Settings()
+class DevSettings(Settings):
+    ENV: str = "dev"
+
+    class Config:
+        env_file = "./.env.example"
+        case_sensitive = True
+
+
+class TestSettings(Settings):
+    ENV: str = "test"
+
+    class Config:
+        env_file = "./.env.testexample"
+        case_sensitive = True
+
+
+# TODO: Think about overwriting config for tests from file
+def get_settings(env: str) -> Settings:
+    """
+    Return the settings object based on the environment.
+
+    Parameters:
+        env (str): The environment to retrieve the settings for. Defaults to "dev".
+
+    Returns:
+        Settings: The settings object based on the environment.
+
+    Raises:
+        ValueError: If the environment is invalid.
+    """
+    if env == "dev":
+        return DevSettings()
+    if env == "test":
+        return TestSettings()
+
+    raise ValueError("Invalid environment. Must be 'dev' or 'test'.")
+
+
+ENV_NAME = os.environ.get("ENV", "dev")
+
+settings = get_settings(ENV_NAME)

@@ -4,10 +4,11 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from gymhero.api.dependencies import get_current_active_user, get_pagination_params
-from gymhero.crud import training_plan_crud
+from gymhero.crud import training_plan_crud, training_unit_crud
 from gymhero.database.db import get_db
 from gymhero.log import get_logger
 from gymhero.models import TrainingPlan
+from gymhero.models.training_unit import TrainingUnit
 from gymhero.models.user import User
 from gymhero.schemas.training_plan import (
     TrainingPlanCreate,
@@ -254,3 +255,151 @@ def update_training_plan(
     return training_plan_crud.update(
         db, db_obj=training_plan, obj_update=training_plan_update
     )
+
+
+@router.put(
+    "/{training_plan_id}/training_units/{training_unit_id}/add",
+)
+def add_training_unit_to_training_plan(
+    training_plan_id: int,
+    training_unit_id: int,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_active_user),
+):
+    """
+    Add a training unit to a training plan.
+
+    Parameters:
+        training_plan_id (int): The ID of the training plan to add the training unit to.
+        training_unit_id (int): The ID of the training unit to add to the training plan.
+        db (Session, optional): The database session. Defaults to Depends(get_db).
+        user (User, optional): The current user.
+
+    Returns:
+        None
+
+    Raises:
+        HTTPException 404: If the training plan or
+            training unit with the given IDs are not found.
+        HTTPException 403: If the user does not have sufficient privileges.
+    """
+    training_plan: TrainingPlan = training_plan_crud.get_one(
+        db, TrainingPlan.id == training_plan_id
+    )
+    if training_plan is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Training plan with id {training_plan_id} not found. \
+            Cannot update.",
+        )
+    training_unit = training_unit_crud.get_one(db, TrainingUnit.id == training_unit_id)
+    if training_unit is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Training unit with id {training_unit_id} not found. \
+            Cannot update.",
+        )
+    if not user.is_superuser or training_plan.owner_id != user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="The user does not have enough privileges",
+        )
+    training_plan = training_plan_crud.add_training_unit_to_training_plan(
+        db, training_plan=training_plan, training_unit=training_unit
+    )
+    return training_plan
+
+
+@router.put(
+    "/{training_plan_id}/training_units/{training_unit_id}/remove",
+)
+def remove_training_unit_from_training_plan(
+    training_plan_id: int,
+    training_unit_id: int,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_active_user),
+):
+    """
+    Remove a training unit from a training plan.
+
+    Parameters:
+        training_plan_id (int): The ID of the training plan to
+        remove the training unit from.
+        training_unit_id (int): The ID of the training unit to
+        remove from the training plan.
+        db (Session, optional): The database session. Defaults to Depends(get_db).
+        user (User, optional): The current user.
+
+    Returns:
+        None
+
+    Raises:
+        HTTPException 404: If the training plan or training unit
+        with the given IDs are not found.
+        HTTPException 403: If the user does not have sufficient privileges.
+    """
+    training_plan: TrainingPlan = training_plan_crud.get_one(
+        db, TrainingPlan.id == training_plan_id
+    )
+    if training_plan is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Training plan with id {training_plan_id} not found. \
+            Cannot update.",
+        )
+    training_unit = training_unit_crud.get_one(db, TrainingUnit.id == training_unit_id)
+    if training_unit is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Training unit with id {training_unit_id} not found. \
+            Cannot update.",
+        )
+    if not user.is_superuser or training_plan.owner_id != user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="The user does not have enough privileges",
+        )
+    return training_plan_crud.remove_training_unit_from_training_plan(
+        db, training_plan=training_plan, training_unit=training_unit
+    )
+
+
+@router.get(
+    "/{training_plan_id}/training_units",
+)
+def get_training_units_in_training_plan(
+    training_plan_id: int,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_active_user),
+):
+    """
+    Get all training units in a training plan.
+
+    Parameters:
+        training_plan_id (int): The ID of the training plan
+        to get the training units from.
+        db (Session, optional): The database session. Defaults to Depends(get_db).
+        user (User, optional): The current user.
+
+    Returns:
+        List[TrainingUnit]: A list of training units in the training plan.
+
+    Raises:
+        HTTPException 404: If the training plan with the given ID is not found.
+        HTTPException 403: If the user does not have sufficient privileges.
+    """
+    training_plan: TrainingPlan = training_plan_crud.get_one(
+        db, TrainingPlan.id == training_plan_id
+    )
+    if training_plan is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Training plan with id {training_plan_id} not found. ",
+        )
+    if not user.is_superuser or training_plan.owner_id != user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="The user does not have enough privileges",
+        )
+
+    return training_plan.training_units
