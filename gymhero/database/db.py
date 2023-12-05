@@ -1,27 +1,30 @@
 from contextlib import contextmanager
 from typing import Generator
 
-from gymhero.database.session import SessionLocal
+from gymhero.database.session import get_local_session, SQLALCHEMY_DATABASE_URL
 from gymhero.log import get_logger
 
 logger = get_logger(__name__)
 
 
-def get_db() -> Generator:
+def get_db(database_url: str = SQLALCHEMY_DATABASE_URL) -> Generator:
     """
-    Generate the database session.
+    Returns a generator that yields a database session
+    obtained from the provided `database_url`.
 
-    This function returns a generator object that provides a database session.
-    The session is created using the `SessionLocal` class.
+    Parameters:
+        database_url (str, optional): The URL of the database to connect to.
+        Defaults to `SQLALCHEMY_DATABASE_URL`.
 
-    Returns:
-        Generator: A generator that yields the database session.
+    Yields:
+        Session: A database session object.
 
     Raises:
-        Exception: If an error occurs while creating the session.
-
+        Exception: If an error occurs while getting the database session.
     """
-    db = SessionLocal()
+
+    logger.debug("getting database session")
+    db = get_local_session(database_url)()
     try:
         yield db
     except Exception as e:
@@ -30,25 +33,28 @@ def get_db() -> Generator:
         )
         raise e
     finally:
+        logger.debug("closing database session")
         db.close()
 
 
 @contextmanager
-def get_ctx_db() -> Generator:
+def get_ctx_db(database_url: str) -> Generator:
     """
-    A context manager that provides a database session.
+    Context manager that creates a database session and yields
+    it for use in a 'with' statement.
 
-    This function returns a generator object that provides a database session.
-    The session is created using the `SessionLocal` class.
+    Parameters:
+        database_url (str): The URL of the database to connect to.
 
-    Returns:
-        Generator: A generator that yields the database session.
+    Yields:
+        Generator: A database session.
 
     Raises:
-        Exception: If an error occurs while creating the session.
+        Exception: If an error occurs while getting the database session.
 
     """
-    db = SessionLocal()
+    logger.debug("getting database session")
+    db = get_local_session(database_url)()
     try:
         yield db
     except Exception as e:
@@ -57,4 +63,5 @@ def get_ctx_db() -> Generator:
         )
         raise e
     finally:
+        logger.debug("closing database session")
         db.close()

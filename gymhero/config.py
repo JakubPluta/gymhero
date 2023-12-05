@@ -59,9 +59,9 @@ def get_settings(env: str) -> Settings:
     Raises:
         ValueError: If the environment is invalid.
     """
-    if env == "dev":
+    if env.lower() == "dev":
         return DevSettings()
-    if env == "test":
+    if env.lower() == "test":
         return TestSettings()
 
     raise ValueError("Invalid environment. Must be 'dev' or 'test'.")
