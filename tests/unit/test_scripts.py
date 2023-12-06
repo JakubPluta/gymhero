@@ -4,15 +4,15 @@ from scripts.core._initdb import seed_database
 from gymhero.config import get_settings
 
 
-# def test_can_seed_database(get_test_db) -> None:
-#     """Test that we can connect to the database"""
-#     seed_database("test")
-#     session = get_test_db
-#     record: CursorResult = session.execute(text("SELECT * FROM exercises")).fetchone()
+def test_can_seed_database(get_test_db) -> None:
+    """Test that we can connect to the database"""
+    seed_database("test")
+    session = get_test_db
+    record: CursorResult = session.execute(text("SELECT * FROM exercises")).fetchone()
 
-#     for table in ["exercises", "exercise_types", "levels", "body_parts", "users"]:
-#         record = session.execute(text(f"SELECT * FROM {table}")).fetchone()
-#         assert record and len(record) > 0
+    for table in ["exercises", "exercise_types", "levels", "body_parts", "users"]:
+        record = session.execute(text(f"SELECT * FROM {table}")).fetchone()
+        assert record and len(record) > 0
 
 
 def test_can_create_superuser(get_test_db, test_settings) -> None:

@@ -21,3 +21,7 @@ class ExerciseTypeInDB(ExerciseTypeBase):
     created_at: datetime.datetime
     updated_at: datetime.datetime
     model_config = ConfigDict(from_attributes=True)
+
+
+class ExerciseTypeOut(ExerciseTypeBase):
+    model_config = ConfigDict(from_attributes=True)

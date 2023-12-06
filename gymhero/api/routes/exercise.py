@@ -1,6 +1,6 @@
-from typing import List, Optional, Tuple
+from typing import List, Optional, Tuple, Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Body, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from gymhero.api.dependencies import get_current_active_user, get_pagination_params
@@ -9,7 +9,11 @@ from gymhero.database.db import get_db
 from gymhero.log import get_logger
 from gymhero.models import User
 from gymhero.models.exercise import Exercise
-from gymhero.schemas.exercise import ExerciseCreate, ExerciseInDB, ExerciseUpdate
+from gymhero.schemas.exercise import (
+    ExerciseCreate,
+    ExerciseInDB,
+    ExerciseUpdate,
+)
 
 log = get_logger(__name__)
 
@@ -123,9 +127,26 @@ def fetch_exercise_by_name(exercise_name: str, db: Session = Depends(get_db)):
     return exercise
 
 
-@router.post("/", response_model=ExerciseInDB, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/",
+    response_model=ExerciseInDB,
+    status_code=status.HTTP_201_CREATED,
+    response_model_exclude_none=True,
+    response_model_exclude_unset=True,
+)
 def create_exercise(
-    exercise_create: ExerciseCreate,
+    exercise_create: Annotated[
+        ExerciseCreate,
+        Body(
+            example={
+                "name": "Bench Press with closed eyes",
+                "target_body_part_id": 1,
+                "exercise_type_id": 1,
+                "level_id": 1,
+                "description": "description",
+            }
+        ),
+    ],
     db: Session = Depends(get_db),
     user: User = Depends(get_current_active_user),
 ):

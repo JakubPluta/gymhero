@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import Dict, List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
@@ -108,12 +108,12 @@ def create_body_part(
     Creates a new body part in the database.
 
     Parameters:
-        - body_part: The data of the body part to be created.
-        - db: The database session.
-        - user: The current superuser.
+        body_part: The data of the body part to be created.
+        db: The database session.
+        user: The current superuser.
 
     Returns:
-        - The created body part.
+        The created body part.
     """
     if not user.is_superuser:
         raise HTTPException(
@@ -123,7 +123,9 @@ def create_body_part(
     return bodypart_crud.create(db, obj_create=body_part)
 
 
-@router.delete("/{body_part_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete(
+    "/{body_part_id}", status_code=status.HTTP_200_OK, response_model=Dict[str, str]
+)
 def delete_body_part(
     body_part_id: int,
     db: Session = Depends(get_db),
@@ -150,8 +152,7 @@ def delete_body_part(
     if body_part is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Body part with id {body_part_id} not found.\
-                Cannot delete.",
+            detail=f"Body part with id {body_part_id} not found. Cannot delete.",
         )
 
     if not user.is_superuser:

@@ -21,3 +21,7 @@ class LevelInDB(LevelBase):
     created_at: datetime.datetime
     updated_at: datetime.datetime
     model_config = ConfigDict(from_attributes=True)
+
+
+class LevelOut(LevelBase):
+    name: str

@@ -24,7 +24,7 @@ docker-kill:
 	docker compose kill
 
 test-all:
-	pytest tests/ -s -v 
+	ENV=test pytest tests/ -s -v 
 
 test-unit:
 	ENV=test pytest tests/unit/ -s -v
@@ -34,7 +34,7 @@ test-integration:
 
 
 cov:
-	pytest --cov=gymhero tests/
+	ENV=test pytest --cov=gymhero tests/
 
 echos:
 	echo $(if ${env},${env},dev)

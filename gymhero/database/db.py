@@ -7,14 +7,9 @@ from gymhero.log import get_logger
 logger = get_logger(__name__)
 
 
-def get_db(database_url: str = SQLALCHEMY_DATABASE_URL) -> Generator:
+def get_db() -> Generator:
     """
     Returns a generator that yields a database session
-    obtained from the provided `database_url`.
-
-    Parameters:
-        database_url (str, optional): The URL of the database to connect to.
-        Defaults to `SQLALCHEMY_DATABASE_URL`.
 
     Yields:
         Session: A database session object.
@@ -24,7 +19,7 @@ def get_db(database_url: str = SQLALCHEMY_DATABASE_URL) -> Generator:
     """
 
     logger.debug("getting database session")
-    db = get_local_session(database_url)()
+    db = get_local_session(SQLALCHEMY_DATABASE_URL, False)()
     try:
         yield db
     except Exception as e:

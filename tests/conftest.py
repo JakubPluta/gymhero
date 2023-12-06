@@ -6,7 +6,7 @@ from sqlalchemy.orm import sessionmaker
 
 from gymhero.models import Base
 from gymhero.main import app
-from gymhero.database.db import get_db
+from gymhero.database import get_db
 from gymhero.log import get_logger
 
 from gymhero.config import get_settings

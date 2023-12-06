@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import Dict, List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
@@ -188,7 +188,7 @@ def update_exercise_type(
 @router.delete(
     "/{exercise_type_id}",
     status_code=status.HTTP_200_OK,
-    response_model=dict,
+    response_model=Dict[str, str],
 )
 def delete_exercise_type(
     exercise_type_id: int,
@@ -216,8 +216,7 @@ def delete_exercise_type(
     if exercise_type is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Exercise type with id {exercise_type_id} not found. \
-                Cannot delete.",
+            detail=f"Exercise type with id {exercise_type_id} not found.",
         )
     try:
         exercise_type_crud.delete(db, exercise_type)

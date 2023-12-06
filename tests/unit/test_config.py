@@ -10,6 +10,7 @@ from gymhero.config import settings
 
 
 def test_properly_read_config():
+    """Test whether the config is properly read."""
     for key in [key for key, _ in settings.model_fields.items()]:
         assert str(getattr(settings, key)) == os.environ[key]
 

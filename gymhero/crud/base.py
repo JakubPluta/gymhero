@@ -106,7 +106,7 @@ class CRUDRepository:
             str(self._model.__name__),
             obj_create.model_dump(),
         )
-        obj_create_data = obj_create.model_dump()
+        obj_create_data = obj_create.model_dump(exclude_none=True, exclude_unset=True)
         db_obj = self._model(**obj_create_data)
         db.add(db_obj)
         db.commit()
@@ -182,7 +182,9 @@ class CRUDRepository:
             self._model.__name__,
             obj_create.model_dump(),
         )
-        obj_create_data = obj_create.model_dump()
+        obj_create_data = obj_create.model_dump(
+            exclude_none=True, exclude_unset=True, exclude_defaults=True
+        )
         db_obj = self._model(**obj_create_data, owner_id=owner_id)
         db.add(db_obj)
         db.commit()
