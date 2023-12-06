@@ -1,7 +1,7 @@
 import datetime
 from typing import Optional
 
-from pydantic import BaseModel
+from pydantic import ConfigDict, BaseModel
 
 
 class ExerciseTypeBase(BaseModel):
@@ -13,13 +13,11 @@ class ExerciseTypeCreate(ExerciseTypeBase):
 
 
 class ExerciseTypeUpdate(ExerciseTypeBase):
-    name: Optional[str]
+    name: Optional[str] = None
 
 
 class ExerciseTypeInDB(ExerciseTypeBase):
     id: int
     created_at: datetime.datetime
     updated_at: datetime.datetime
-
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
