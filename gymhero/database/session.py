@@ -21,7 +21,7 @@ def build_sqlalchemy_database_url_from_settings(_settings: Settings) -> str:
     )
 
 
-def get_engine(database_url: str, echo=True) -> Engine:
+def get_engine(database_url: str, echo=False) -> Engine:
     """
     Creates and returns a SQLAlchemy Engine object for connecting to a database.
 
@@ -29,7 +29,7 @@ def get_engine(database_url: str, echo=True) -> Engine:
         database_url (str): The URL of the database to connect to.
         Defaults to SQLALCHEMY_DATABASE_URL.
         echo (bool): Whether or not to enable echoing of SQL statements.
-        Defaults to True.
+        Defaults to False.
 
     Returns:
         Engine: A SQLAlchemy Engine object representing the database connection.
@@ -38,7 +38,7 @@ def get_engine(database_url: str, echo=True) -> Engine:
     return engine
 
 
-def get_local_session(database_url: str, echo=True, **kwargs) -> sessionmaker:
+def get_local_session(database_url: str, echo=False, **kwargs) -> sessionmaker:
     """
     Create and return a sessionmaker object for a local database session.
 
@@ -46,7 +46,7 @@ def get_local_session(database_url: str, echo=True, **kwargs) -> sessionmaker:
         database_url (str): The URL of the local database.
         Defaults to `SQLALCHEMY_DATABASE_URL`.
         echo (bool): Whether to echo SQL statements to the console.
-        Defaults to `True`.
+        Defaults to `False`.
 
     Returns:
         sessionmaker: A sessionmaker object configured for the local database session.

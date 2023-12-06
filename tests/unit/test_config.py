@@ -2,14 +2,11 @@ import os
 
 import dotenv
 
-dotenv.load_dotenv(".env.testexample")
+dotenv.load_dotenv(".env.test")
 
 os.environ["ENV"] = "test"
 
-from gymhero.config import get_settings
-
-
-settings = get_settings()
+from gymhero.config import settings
 
 
 def test_properly_read_config():

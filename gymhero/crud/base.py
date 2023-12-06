@@ -1,5 +1,6 @@
 """
-This module contains the base interface for CRUD (Create, Read, Update, Delete) operations.
+This module contains the base interface for CRUD 
+(Create, Read, Update, Delete) operations.
 """
 from typing import List, Optional, Type, TypeVar
 
@@ -35,8 +36,10 @@ class CRUDRepository:
 
         Parameters:
             db (Session): The database session object.
-            *args: Variable length argument list used for filter e.g. filter(MyClass.name == 'some name')
-            **kwargs: Keyword arguments used for filter_by e.g. filter_by(name='some name')
+            *args: Variable length argument list used for filter
+                e.g. filter(MyClass.name == 'some name')
+            **kwargs: Keyword arguments used for filter_by e.g.
+                filter_by(name='some name')
 
         Returns:
             Optional[ORMModel]: The retrieved record, if found.
@@ -44,6 +47,8 @@ class CRUDRepository:
         log.debug(
             "retrieving one record for %s with args %s and kwargs %s",
             self._model.__name__,
+            args,
+            kwargs,
         )
         return db.query(self._model).filter(*args).filter_by(**kwargs).first()
 
@@ -58,7 +63,8 @@ class CRUDRepository:
             *args: Variable number of arguments. For example: filter
                 db.query(MyClass).filter(MyClass.name == 'some name', MyClass.id > 5)
             skip (int, optional): Number of records to skip. Defaults to 0.
-            limit (int, optional): Maximum number of records to retrieve. Defaults to 100.
+            limit (int, optional): Maximum number of records to retrieve.
+                Defaults to 100.
             **kwargs: Variable number of keyword arguments. For example: filter_by
                 db.query(MyClass).filter_by(name='some name', id > 5)
 
@@ -66,7 +72,8 @@ class CRUDRepository:
             List[ORMModel]: List of retrieved records.
         """
         log.debug(
-            "retrieving many records for %s with args %s and kwargs %s with pagination skip %s and limit %s",
+            "retrieving many records for %s with args %s and \
+                kwargs %s with pagination skip %s and limit %s",
             self._model.__name__,
             args,
             kwargs,
@@ -88,14 +95,15 @@ class CRUDRepository:
 
         Parameters:
             db (Session): The database session.
-            obj_create (CreateModelType): The data for creating the new record. It's a pydantic BaseModel
+            obj_create (CreateModelType): The data for creating the new record.
+            It's a pydantic BaseModel
 
         Returns:
             ORMModel: The newly created record.
         """
         log.debug(
             "creating record for %s with data %s",
-            self._model.__name__,
+            str(self._model.__name__),
             obj_create.model_dump(),
         )
         obj_create_data = obj_create.model_dump()
@@ -117,7 +125,8 @@ class CRUDRepository:
         Parameters:
             db (Session): The database session.
             db_obj (ORMModel): The database object to be updated.
-            obj_update (UpdateModelType): The updated data for the object - it's a pydantic BaseModel.
+            obj_update (UpdateModelType): The updated data for the object
+                - it's a pydantic BaseModel.
 
         Returns:
             ORMModel: The updated database object.

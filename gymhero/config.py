@@ -1,9 +1,13 @@
 import os
 from pydantic import EmailStr
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
+    model_config = SettingsConfigDict(
+        env_file="./.env.example", env_file_encoding="utf-8", case_sensitive=True
+    )
+
     API_VERSION: str
     PROJECT_NAME: str
     ENV: str
@@ -24,25 +28,19 @@ class Settings(BaseSettings):
     FIRST_SUPERUSER_EMAIL: EmailStr
     FIRST_SUPERUSER_PASSWORD: str
 
-    class Config:
-        env_file = "./.env.example"
-        case_sensitive = True
-
 
 class DevSettings(Settings):
+    model_config = SettingsConfigDict(
+        env_file="./.env.example", env_file_encoding="utf-8", case_sensitive=True
+    )
     ENV: str = "dev"
-
-    class Config:
-        env_file = "./.env.example"
-        case_sensitive = True
 
 
 class TestSettings(Settings):
+    model_config = SettingsConfigDict(
+        env_file="./.env.test", env_file_encoding="utf-8", case_sensitive=True
+    )
     ENV: str = "test"
-
-    class Config:
-        env_file = "./.env.testexample"
-        case_sensitive = True
 
 
 # TODO: Think about overwriting config for tests from file

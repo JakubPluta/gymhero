@@ -8,10 +8,11 @@ from sqlalchemy import pool
 
 from alembic import context
 
-from gymhero.models import Base
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(BASE_DIR)
+
+from gymhero.models import Base  # pylint: wrong-import-position
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
