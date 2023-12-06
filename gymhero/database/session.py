@@ -15,8 +15,10 @@ def build_sqlalchemy_database_url_from_settings(_settings: Settings) -> str:
     Returns:
         str: The generated SQLAlchemy URL.
     """
-    return f"postgresql://{_settings.POSTGRES_USER}:{_settings.POSTGRES_PASSWORD}\
-        @{_settings.POSTGRES_HOST}:{_settings.POSTGRES_PORT}/{_settings.POSTGRES_DB}"
+    return (
+        f"postgresql://{_settings.POSTGRES_USER}:{_settings.POSTGRES_PASSWORD}@"
+        f"{_settings.POSTGRES_HOST}:{_settings.POSTGRES_PORT}/{_settings.POSTGRES_DB}"
+    )
 
 
 def get_engine(database_url: str, echo=True) -> Engine:

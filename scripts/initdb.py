@@ -1,12 +1,11 @@
 import os
 from pathlib import Path
-from argparse import ArgumentParser
 from functools import partial
 
 import numpy as np
 import pandas as pd
 
-from gymhero.config import Settings, get_settings
+from gymhero.config import get_settings
 from gymhero.database.session import build_sqlalchemy_database_url_from_settings
 from gymhero.log import get_logger
 from gymhero.database.db import get_ctx_db
@@ -17,6 +16,7 @@ from scripts.utils import (
     create_initial_levels,
     create_initial_body_parts,
     create_initial_exercise_types,
+    get_argparser,
 )
 
 
@@ -27,36 +27,18 @@ RESOURCE_DIR_PATH = os.path.join(
 log = get_logger(__name__)
 
 
-def _resolve_settings(env) -> Settings:
-    """returns the settings for the specified environment.
+def seed_database(env):
+    """
+    Seed the database with initial data.
 
     Parameters:
-        env (str): The environment for which to
-            retrieve the settings.
-        Defaults to the value of ENV.
-
-    Returns:
-        dict: The settings for the specified environment.
-    """
-    return get_settings(env)
-
-
-def seed_database(env):
-    """Seeding order:
-
-    1. Levels
-    2. BodyParts
-    3. ExerciseTypes
-    4. Exercises - needs owner (set it to superuser)
-
+        env (str): The environment in which the database is being seeded.
     """
 
-    settings = _resolve_settings(env)
-    get_db = partial(
-        get_ctx_db, database_url=build_sqlalchemy_database_url_from_settings(settings)
-    )
-
-    log.info("Seeding database")
+    settings = get_settings(env)
+    database_url = build_sqlalchemy_database_url_from_settings(settings)
+    get_db = partial(get_ctx_db, database_url=database_url)
+    log.info("Seeding database %s", str(database_url.split("@")[-1]))
     exercise_path = os.path.join(RESOURCE_DIR_PATH, "exercises.csv")
     df = pd.read_csv(exercise_path, header=0, index_col=0)
     df.replace({"": None, "nan": None, "N/A": None, np.nan: None}, inplace=True)
@@ -98,14 +80,7 @@ def seed_database(env):
 
 
 if __name__ == "__main__":
-    parser = ArgumentParser()
-    parser.add_argument(
-        "--env",
-        default="dev",
-        dest="env",
-        help="Environment for which to seed the database",
-        choices=["dev", "prod"],
-    )
+    parser = get_argparser()
     args = parser.parse_args()
     env_value = args.env
     log.info("Current ENV value %s", env_value)

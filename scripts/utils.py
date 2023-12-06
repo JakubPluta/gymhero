@@ -1,5 +1,6 @@
 """Create first user"""
 
+from argparse import ArgumentParser
 import pandas as pd
 from sqlalchemy.orm import Session
 from gymhero.log import get_logger
@@ -147,3 +148,50 @@ def create_initial_exercises(
 
     session.add_all(exercises)
     session.commit()
+
+
+def create_database(session: Session, database: str) -> None:
+    """
+    Creates a new database if it does not already exist in the PostgreSQL server.
+
+    Parameters:
+        session (Session): The active session object used to execute the SQL statement.
+        database (str): The name of the database to be created.
+
+    Returns:
+        None
+    """
+    log.debug("Creating database: %s", database)
+    record = session.execute(
+        f"SELECT 1 FROM pg_catalog.pg_database WHERE datname = '{database}'"
+    )
+    log.info("Record: %s", record)
+    if not record:
+        session.execute(f"CREATE DATABASE {database}")
+        log.debug("Created database: %s", database)
+    else:
+        log.debug("Database already exists: %s", database)
+
+
+def get_argparser() -> ArgumentParser:
+    """
+    Returns an ArgumentParser object.
+
+    This function creates and configures an ArgumentParser object, which is
+    used to parse command line arguments. The function sets up a single
+    argument called "--env" that allows the user to specify the environment
+    for which to seed the database. The default value for this argument is "dev".
+    The argument is stored in the "env" attribute of the parser object.
+
+    Returns:
+        ArgumentParser: The configured ArgumentParser object.
+    """
+    parser = ArgumentParser()
+    parser.add_argument(
+        "--env",
+        default="dev",
+        dest="env",
+        help="Environment for which to seed the database",
+        choices=["dev", "test"],
+    )
+    return parser
