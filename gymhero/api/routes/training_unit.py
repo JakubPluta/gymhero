@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from gymhero.api.dependencies import get_current_active_user, get_pagination_params
-from gymhero.crud import training_unit_crud, exercise_crud
+from gymhero.crud import exercise_crud, training_unit_crud
 from gymhero.database.db import get_db
 from gymhero.log import get_logger
 from gymhero.models import TrainingUnit

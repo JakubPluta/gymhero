@@ -1,6 +1,11 @@
 import os
+
 from pydantic import EmailStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+from gymhero.log import get_logger
+
+log = get_logger(__name__)
 
 
 class Settings(BaseSettings):
@@ -44,7 +49,7 @@ class TestSettings(Settings):
 
 
 # TODO: Think about overwriting config for tests from file
-def get_settings(env: str) -> Settings:
+def get_settings(env: str = "dev") -> Settings:
     """
     Return the settings object based on the environment.
 
@@ -57,6 +62,8 @@ def get_settings(env: str) -> Settings:
     Raises:
         ValueError: If the environment is invalid.
     """
+    log.debug("getting settings for env: %s", env)
+
     if env.lower() == "dev":
         return DevSettings()
     if env.lower() == "test":
@@ -65,6 +72,6 @@ def get_settings(env: str) -> Settings:
     raise ValueError("Invalid environment. Must be 'dev' or 'test'.")
 
 
-ENV_NAME = os.environ.get("ENV", "dev")
+_env = os.environ.get("ENV", "dev")
 
-settings = get_settings(ENV_NAME)
+settings = get_settings(env=_env)

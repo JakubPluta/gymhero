@@ -45,10 +45,8 @@ class CRUDRepository:
             Optional[ORMModel]: The retrieved record, if found.
         """
         log.debug(
-            "retrieving one record for %s with args %s and kwargs %s",
+            "retrieving one record for %s",
             self._model.__name__,
-            args,
-            kwargs,
         )
         return db.query(self._model).filter(*args).filter_by(**kwargs).first()
 
@@ -72,11 +70,8 @@ class CRUDRepository:
             List[ORMModel]: List of retrieved records.
         """
         log.debug(
-            "retrieving many records for %s with args %s and \
-                kwargs %s with pagination skip %s and limit %s",
+            "retrieving many records for %s with pagination skip %s and limit %s",
             self._model.__name__,
-            args,
-            kwargs,
             skip,
             limit,
         )

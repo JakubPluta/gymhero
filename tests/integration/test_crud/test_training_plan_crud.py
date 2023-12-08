@@ -1,9 +1,11 @@
-import pytest
 from unittest.mock import MagicMock
+
+import pytest
 from sqlalchemy.orm import Session
+
 from gymhero.crud.training_plan import training_plan_crud
-from gymhero.models.training_unit import TrainingUnit
 from gymhero.models.training_plan import TrainingPlan
+from gymhero.models.training_unit import TrainingUnit
 
 
 @pytest.fixture

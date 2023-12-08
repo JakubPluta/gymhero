@@ -1,9 +1,10 @@
-import pytest
 from datetime import datetime, timedelta
 from typing import Any, Union
 
+import pytest
 from jose import jwt
-from gymhero.security import get_password_hash, verify_password, create_access_token
+
+from gymhero.security import create_access_token, get_password_hash, verify_password
 
 
 def test_password_hash():
@@ -24,16 +25,6 @@ def test_non_matching_passwords():
     assert verify_password("password321", hashed) == False
 
 
-@pytest.fixture
-def subject():
-    return "user123"
-
-
-@pytest.fixture
-def expires_delta():
-    return timedelta(minutes=30)
-
-
 @pytest.mark.parametrize(
     "subject, expires_delta",
     [
@@ -49,7 +40,6 @@ def test_create_access_token(subject, expires_delta, test_settings):
 
     # Verify that the token is a string
     assert isinstance(token, str)
-    print(token)
 
     # Verify that the token can be decoded
     decoded_token = jwt.decode(
@@ -58,7 +48,6 @@ def test_create_access_token(subject, expires_delta, test_settings):
         algorithms=[test_settings.ALGORITHM],
         options={"verify_aud": False},
     )
-    print(decoded_token)
     assert decoded_token is not None
 
     # Verify that the token contains the correct subject

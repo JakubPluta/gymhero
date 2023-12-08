@@ -1,7 +1,12 @@
 """Create first user"""
 
 from argparse import ArgumentParser
+import os
+from typing import Union
+from pathlib import Path
 import pandas as pd
+import numpy as np
+from pandas import DataFrame
 from sqlalchemy.orm import Session
 from gymhero.log import get_logger
 from gymhero.models.body_part import BodyPart
@@ -195,3 +200,26 @@ def get_argparser() -> ArgumentParser:
         choices=["dev", "test"],
     )
     return parser
+
+
+def load_exercise_resource() -> DataFrame:
+    """
+    Load exercise resource data from the exercises.csv file.
+
+    Returns:
+        DataFrame: The loaded exercise resource data.
+    """
+    resource_dir_path: Union[Path, str] = os.path.join(
+        Path(os.path.abspath(__file__)).parent.parent.parent, "resources"
+    )
+    df: DataFrame = pd.read_csv(
+        os.path.join(resource_dir_path, "exercises.csv"),
+        header=0,
+        index_col=0,
+    )
+    df.replace(
+        {"": None, "nan": None, "N/A": None, np.nan: None},
+        inplace=True,
+    )
+    df.drop_duplicates(subset=["Title"], keep="first", inplace=True)
+    return df

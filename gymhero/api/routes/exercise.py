@@ -1,4 +1,4 @@
-from typing import List, Optional, Tuple, Annotated
+from typing import Annotated, List, Optional, Tuple
 
 from fastapi import APIRouter, Body, Depends, HTTPException, status
 from sqlalchemy.orm import Session
@@ -9,11 +9,7 @@ from gymhero.database.db import get_db
 from gymhero.log import get_logger
 from gymhero.models import User
 from gymhero.models.exercise import Exercise
-from gymhero.schemas.exercise import (
-    ExerciseCreate,
-    ExerciseInDB,
-    ExerciseUpdate,
-)
+from gymhero.schemas.exercise import ExerciseCreate, ExerciseInDB, ExerciseUpdate
 
 log = get_logger(__name__)
 
@@ -138,13 +134,15 @@ def create_exercise(
     exercise_create: Annotated[
         ExerciseCreate,
         Body(
-            example={
-                "name": "Bench Press with closed eyes",
-                "target_body_part_id": 1,
-                "exercise_type_id": 1,
-                "level_id": 1,
-                "description": "description",
-            }
+            examples=[
+                {
+                    "name": "Bench Press with closed eyes",
+                    "target_body_part_id": 1,
+                    "exercise_type_id": 1,
+                    "level_id": 1,
+                    "description": "description",
+                }
+            ]
         ),
     ],
     db: Session = Depends(get_db),

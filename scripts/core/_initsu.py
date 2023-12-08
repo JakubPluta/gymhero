@@ -22,6 +22,7 @@ def seed_superuser(env: str) -> None:
     """
 
     settings = get_settings(env)
+    log.info("settings: %s", settings)
     database_url = build_sqlalchemy_database_url_from_settings(settings)
     with get_ctx_db(database_url) as database:
         create_first_superuser(database)

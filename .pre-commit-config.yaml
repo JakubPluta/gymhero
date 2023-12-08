@@ -24,7 +24,6 @@ repos:
     rev: v0.0.291
     hooks:
       - id: ruff
-        args: [--fix]
         exclude: __init__.py, migrations
   - repo: local
     hooks:

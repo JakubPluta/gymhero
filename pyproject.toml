@@ -51,7 +51,10 @@ skip-magic-trailing-comma = false
 line-ending = "auto"
 
 [tool.ruff]
-extend-exclude = ["tests", "migrations/*"]
+extend-exclude = ["tests", "migrations/*", "__init__.py"]
+
+[tool.codespell]
+skip = "migrations/**/*,migrations,migrations/*.py"
 
 
 

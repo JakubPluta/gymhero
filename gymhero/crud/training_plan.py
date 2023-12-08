@@ -1,9 +1,8 @@
 from sqlalchemy.orm import Session
-from gymhero.crud.base import CRUDRepository
-from gymhero.models import TrainingPlan
-from gymhero.models import TrainingUnit
 
+from gymhero.crud.base import CRUDRepository
 from gymhero.log import get_logger
+from gymhero.models import TrainingPlan, TrainingUnit
 
 log = get_logger(__name__)
 

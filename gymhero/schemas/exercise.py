@@ -1,10 +1,11 @@
 import datetime
 from typing import Optional
-from pydantic import ConfigDict, BaseModel
-from pydantic import Field
+
+from pydantic import BaseModel, ConfigDict, Field
+
 from gymhero.schemas.body_part import BodyPartOut
-from gymhero.schemas.level import LevelOut
 from gymhero.schemas.exercise_type import ExerciseTypeOut
+from gymhero.schemas.level import LevelOut
 from gymhero.schemas.user import UserOut
 
 

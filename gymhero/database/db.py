@@ -1,7 +1,7 @@
 from contextlib import contextmanager
 from typing import Generator
 
-from gymhero.database.session import get_local_session, SQLALCHEMY_DATABASE_URL
+from gymhero.database.session import SQLALCHEMY_DATABASE_URL, get_local_session
 from gymhero.log import get_logger
 
 logger = get_logger(__name__)

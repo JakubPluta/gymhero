@@ -1,7 +1,7 @@
 from sqlalchemy import CursorResult, text
-from scripts.core._initsu import seed_superuser
+
 from scripts.core._initdb import seed_database
-from gymhero.config import get_settings
+from scripts.core._initsu import seed_superuser
 
 
 def test_can_seed_database(get_test_db) -> None:
@@ -22,5 +22,5 @@ def test_can_create_superuser(get_test_db, test_settings) -> None:
     session = get_test_db
     record = session.execute(text("SELECT * FROM users")).fetchone()
     assert record.id == 1
-    # assert record.full_name == test_settings.FIRST_SUPERUSER_USERNAME
+    assert record.full_name == test_settings.FIRST_SUPERUSER_USERNAME
     assert record.email == test_settings.FIRST_SUPERUSER_EMAIL
