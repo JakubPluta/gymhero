@@ -47,7 +47,7 @@ def setup_and_teardown():
 
 
 @pytest.fixture
-def _initdb():
+def seed_test_database():
     seed_database("test")
 
 

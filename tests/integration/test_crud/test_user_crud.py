@@ -1,5 +1,6 @@
 import pytest
 from sqlalchemy.exc import IntegrityError
+
 from gymhero.crud import user_crud
 from gymhero.models.user import User
 from gymhero.schemas.user import UserCreate, UserInDB, UserUpdate
@@ -102,10 +103,4 @@ def test_should_properly_check_user_status_and_role(get_test_db):
     """Test that we can check user's status and role"""
     user = user_crud.get_one(get_test_db, User.id == 1)
     assert user.is_active is True
-    assert user.is_superuser is True
-
-
-def test_should_properly_check_user_role(get_test_db):
-    """Test that we can check user's role"""
-    user = user_crud.get_one(get_test_db, User.id == 1)
     assert user.is_superuser is True

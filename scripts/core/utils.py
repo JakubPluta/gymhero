@@ -2,7 +2,7 @@
 
 from argparse import ArgumentParser
 import os
-from typing import Union
+from typing import Optional, Union
 from pathlib import Path
 import pandas as pd
 import numpy as np
@@ -18,25 +18,44 @@ from gymhero.crud import user_crud
 from gymhero.schemas.user import UserInDB
 
 
-log = get_logger(__name__, level="DEBUG")
+log = get_logger(__name__)
+
+
+def _create_first_user(
+    db: Session,
+    email: str,
+    password: str,
+    username: Optional[str] = None,
+    is_superuser: bool = True,
+    is_active: bool = True,
+):
+    """Create first user"""
+    user = user_crud.get_user_by_email(db, email=email)
+
+    if not user:
+        user_in = UserInDB(
+            email=email,
+            hashed_password=get_password_hash(password),
+            full_name=username,
+            is_superuser=is_superuser,
+            is_active=is_active,
+        )
+        user = user_crud.create(db, obj_create=user_in)
+        log.debug("Created first user: %s", user)
+    else:
+        log.debug("First user already exists: %s", user)
+    return user
 
 
 def create_first_superuser(db: Session):
     """Create first superuser"""
-    user = user_crud.get_user_by_email(db, email=settings.FIRST_SUPERUSER_EMAIL)
-
-    if not user:
-        user_in = UserInDB(
-            email=settings.FIRST_SUPERUSER_EMAIL,
-            hashed_password=get_password_hash(settings.FIRST_SUPERUSER_PASSWORD),
-            is_superuser=True,
-            full_name=settings.FIRST_SUPERUSER_USERNAME,
-        )
-        user = user_crud.create(db, obj_create=user_in)
-        log.debug("Created first superuser: %s", user)
-    else:
-        log.debug("First superuser already exists: %s", user)
-    return user
+    return _create_first_user(
+        db,
+        email=settings.FIRST_SUPERUSER_EMAIL,
+        password=settings.FIRST_SUPERUSER_PASSWORD,
+        username=settings.FIRST_SUPERUSER_USERNAME,
+        is_superuser=True,
+    )
 
 
 def _get_unique_values(dataframe: pd.DataFrame, col: str) -> list:
