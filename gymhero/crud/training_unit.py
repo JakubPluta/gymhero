@@ -28,7 +28,7 @@ class TrainingUnitCRUD(CRUDRepository):
         for existing_exercise in training_unit.exercises:
             if existing_exercise.id == exercise.id:
                 log.warning("Exercise already exists in training unit")
-                return None
+                raise ValueError("Exercise already exists in training unit")
 
         training_unit.exercises.append(exercise)
         db.add(training_unit)
@@ -52,9 +52,9 @@ class TrainingUnitCRUD(CRUDRepository):
         """
         try:
             training_unit.exercises.remove(exercise)
-        except ValueError:
+        except ValueError as ve:
             log.error("Exercise not found in training unit")
-            return None
+            raise ValueError("Exercise not found in training unit") from ve
 
         db.add(training_unit)
         db.commit()

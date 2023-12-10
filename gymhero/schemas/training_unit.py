@@ -8,7 +8,7 @@ from gymhero.schemas.exercise import ExerciseInDB
 
 class TrainingUnitBase(BaseModel):
     name: str
-    description: str
+    description: Optional[str] = None
 
 
 class TrainingUnitCreate(TrainingUnitBase):

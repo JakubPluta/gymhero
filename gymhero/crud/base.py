@@ -96,6 +96,7 @@ class CRUDRepository:
         Returns:
             ORMModel: The newly created record.
         """
+        print(">>>>> db", db)
         log.debug(
             "creating record for %s with data %s",
             str(self._model.__name__),
