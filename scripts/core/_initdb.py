@@ -47,6 +47,10 @@ def seed_database(env):
     body_parts: list[str] = _get_unique_values(df, "BodyPart")
     levels: list[str] = _get_unique_values(df, "Level")
 
+    log.debug("Exercise types: %s", exercise_types)
+    log.debug("Body parts: %s", body_parts)
+    log.debug("Levels: %s", levels)
+
     with get_db() as session:
         superuser = create_first_superuser(session)
         superuser_id = superuser.id

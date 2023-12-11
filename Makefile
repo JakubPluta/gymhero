@@ -6,6 +6,10 @@ docker-up-full:
 	docker compose up -d --force-recreate
 	alembic downgrade base && alembic upgrade head && python -m scripts.initdb --env=dev
 
+docker-up:
+	docker compose build
+	docker compose up -d
+	alembic downgrade base && alembic upgrade head && python -m scripts.initdb --env=dev
 
 docker-down:
 	docker compose down

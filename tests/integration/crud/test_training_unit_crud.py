@@ -86,12 +86,12 @@ def test_cant_add_exercise_to_training_unit_if_already_in(
     )
     assert len(training_unit.exercises) == 1
 
-    with pytest.raises(ValueError) as exc:
-        training_unit = training_unit_crud.add_exercise_to_training_unit(
-            get_test_db, training_unit, exercise
-        )
+    training_unit_crud.add_exercise_to_training_unit(
+        get_test_db, training_unit, exercise
+    )
 
-    assert str(exc.value) == "Exercise already exists in training unit"
+    training_unit = training_unit_crud.get_one(get_test_db, TrainingUnit.id == 1)
+    assert len(training_unit.exercises) == 1
 
 
 def test_can_remove_exercise_from_training_unit(get_test_db, seed_test_database):

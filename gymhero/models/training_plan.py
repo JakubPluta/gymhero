@@ -1,4 +1,12 @@
-from sqlalchemy import Column, DateTime, ForeignKey, Integer, String, Table
+from sqlalchemy import (
+    Column,
+    DateTime,
+    ForeignKey,
+    Integer,
+    String,
+    Table,
+    UniqueConstraint,
+)
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
@@ -14,6 +22,11 @@ training_plan_training_unit = Table(
 
 class TrainingPlan(Base):
     __tablename__ = "training_plans"
+
+    __table_args__ = (
+        # this can be db.PrimaryKeyConstraint if you want it to be a primary key
+        UniqueConstraint("name", "owner_id"),
+    )
 
     id = Column(Integer, primary_key=True)
     name = Column(String, nullable=False, unique=False)
