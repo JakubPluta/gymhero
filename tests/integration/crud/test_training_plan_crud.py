@@ -1,7 +1,4 @@
-from unittest.mock import MagicMock
-
 import pytest
-from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 from gymhero.crud.training_plan import training_plan_crud
 from gymhero.models.training_plan import TrainingPlan
@@ -10,11 +7,6 @@ from gymhero.schemas.training_plan import TrainingPlanCreate, TrainingPlanUpdate
 
 from gymhero.crud import exercise_crud
 from scripts.core.utils import _create_first_user
-
-
-@pytest.fixture
-def db():
-    return MagicMock(spec=Session)
 
 
 @pytest.fixture

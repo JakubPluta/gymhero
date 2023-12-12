@@ -13,3 +13,7 @@ def _get_credential_exception(
         headers={"WWW-Authenticate": "Bearer"},
     )
     return credentials_exception
+
+
+class SQLAlchemyException(Exception):
+    pass

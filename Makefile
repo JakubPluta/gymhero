@@ -31,7 +31,7 @@ test-integration:
 
 
 cov:
-	ENV=test pytest --cov=gymhero tests/
+	ENV=test pytest --cov-report html --cov=gymhero tests/ 
 
 echos:
 	echo $(if ${env},${env},dev)

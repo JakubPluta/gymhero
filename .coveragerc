@@ -1,0 +1,17 @@
+[run]
+ omit =
+  gymhero/server.py
+  gymhero/**/__init__.py
+  gymhero/*/__init__.py
+  gymhero/exceptions.py
+  gymhero/log.py
+
+[report]
+exclude_also =
+    def __repr__
+    if self.debug:
+    if settings.DEBUG
+    raise AssertionError
+    raise NotImplementedError
+    if 0:
+    if __name__ == .__main__.:

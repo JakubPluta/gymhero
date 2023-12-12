@@ -21,6 +21,7 @@ passlib = {extras = ["bcrypt"], version = "^1.7.4"}
 python-jose = "^3.3.0"
 python-multipart = "^0.0.6"
 httpx = "^0.25.2"
+pytest-mock = "^3.12.0"
 
 
 [tool.poetry.group.dev.dependencies]
@@ -57,5 +58,17 @@ extend-exclude = ["tests", "migrations/*", "__init__.py"]
 skip = "migrations/**/*,migrations,migrations/*.py"
 
 
-
+[tool.coverage.report]
+exclude_also = [
+    "def __repr__",
+    "if self.debug:",
+    "if settings.DEBUG",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if 0:",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+    "class .*\\bProtocol\\):",
+    "@(abc\\.)?abstractmethod",
+]
 

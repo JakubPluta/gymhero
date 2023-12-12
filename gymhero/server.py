@@ -2,7 +2,7 @@ import uvicorn
 
 from gymhero.config import settings
 
-if __name__ == "__main__":
+if __name__ == "__main__":  # pragma: no cover
     uvicorn.run(
         "gymhero.main:app",
         host=settings.SERVER_HOST,

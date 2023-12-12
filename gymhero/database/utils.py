@@ -1,4 +1,4 @@
-def key_column_from(column_name):
+def key_column_from(column_name: str):  # coverage: ignore
     """Retrieves the value of the specified column from the given context."""
 
     def default_function(context) -> str:

@@ -10,6 +10,7 @@ from gymhero.database import get_db
 from gymhero.log import get_logger
 from gymhero.main import app
 from gymhero.models import Base
+from gymhero.security import create_access_token
 from scripts.core._initdb import seed_database
 from scripts.core.utils import (
     _get_unique_values,
@@ -28,6 +29,11 @@ TEST_SQLALCHEMY_DATABASE_URL = (
     f"postgresql://{_test_settings.POSTGRES_USER}:{_test_settings.POSTGRES_PASSWORD}@"
     f"{_test_settings.POSTGRES_HOST}:{_test_settings.POSTGRES_PORT}/{_test_settings.POSTGRES_DB}"
 )
+
+
+@pytest.fixture
+def test_sqlalchemy_database_url():
+    return TEST_SQLALCHEMY_DATABASE_URL
 
 
 @pytest.fixture(scope="function", autouse=True)
@@ -73,10 +79,12 @@ TestSession = sessionmaker(bind=engine, autocommit=False, autoflush=False)
 
 
 def override_get_db():
+    log.debug("getting test database session")
+    db = TestSession()
     try:
-        db = TestSession()
         yield db
     finally:
+        log.debug("closing test database session")
         db.close()
 
 
@@ -90,6 +98,11 @@ def get_test_db():
 
 
 app.dependency_overrides[get_db] = override_get_db
+
+
+@pytest.fixture
+def test_client():
+    return TestClient(app)
 
 
 @pytest.fixture
@@ -125,3 +138,9 @@ def initial_exercise_types(exercises_df):
 @pytest.fixture
 def seed_exercise_types(get_test_db, initial_exercise_types):
     create_initial_exercise_types(get_test_db, initial_exercise_types)
+
+
+@pytest.fixture
+def valid_jwt_token():
+    token = create_access_token("1")
+    return f"Bearer {token}"
