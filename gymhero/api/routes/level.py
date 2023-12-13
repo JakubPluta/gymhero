@@ -113,25 +113,19 @@ def create_level(
         HTTPException: If the user is not a superuser or if
         there is an error creating the level.
     """
-    if not user.is_superuser:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="The user does not have enough privileges",
-        )
     try:
         return level_crud.create(db, obj_create=level_create)
     except IntegrityError as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Couldn't create level. \
-                Level with name: {level_create.name} already exists",
+            detail=f"Couldn't create level. Level with name: {level_create.name} already exists",
         ) from e
 
-    except Exception as e:
+    except Exception as e:  # pragma: no cover
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Couldn't create level. Error: {str(e)}",
-        ) from e
+        ) from e  # pragma: no cover
 
 
 @router.delete("/{level_id}", response_model=dict, status_code=status.HTTP_200_OK)
@@ -163,11 +157,6 @@ def delete_level(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Level with id {level_id} not found. Cannot delete.",
-        )
-    if not user.is_superuser:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="The user does not have enough privileges",
         )
     try:
         level_crud.delete(db, level)
@@ -207,12 +196,6 @@ def update_level(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Level with id {level_id} not found. Cannot update.",
-        )
-
-    if not user.is_superuser:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="The user does not have enough privileges",
         )
     try:
         level = level_crud.update(db, level, level_update)

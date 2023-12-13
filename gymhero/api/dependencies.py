@@ -50,8 +50,8 @@ def get_token(token: str = Depends(oauth2_scheme)) -> TokenPayload:
             token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM]
         )
         token_data = TokenPayload(**payload)
-    except (jwt.JWTError, ValidationError):
-        raise _get_credential_exception(status_code=status.HTTP_403_FORBIDDEN)
+    except (jwt.JWTError, ValidationError) as e:
+        raise _get_credential_exception(status_code=status.HTTP_403_FORBIDDEN) from e
     return token_data
 
 
@@ -119,7 +119,7 @@ def get_current_superuser(
     """
     if not user_crud.is_super_user(current_user):
         raise _get_credential_exception(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            details="User is not a super user",
+            status_code=status.HTTP_403_FORBIDDEN,
+            details="The user does not have enough privileges",
         )
     return current_user

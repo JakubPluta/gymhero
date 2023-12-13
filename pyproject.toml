@@ -53,6 +53,7 @@ line-ending = "auto"
 
 [tool.ruff]
 extend-exclude = ["tests", "migrations/*", "__init__.py"]
+ignore = ["E501"]
 
 [tool.codespell]
 skip = "migrations/**/*,migrations,migrations/*.py"

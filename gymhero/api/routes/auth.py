@@ -57,8 +57,7 @@ def register(user_register: UserRegister, db: Session = Depends(get_db)):
     if user:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail=f"The user with this {user_register.email} already \
-            exists in the system",
+            detail=f"The user with this {user_register.email} already exists in the system",
         )
 
     user_in = UserInDB(
