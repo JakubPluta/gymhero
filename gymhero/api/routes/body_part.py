@@ -115,12 +115,13 @@ def create_body_part(
     Returns:
         The created body part.
     """
-    if not user.is_superuser:
+    try:
+        return bodypart_crud.create(db, obj_create=body_part)
+    except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Not enough permissions. Only super user can create body parts.",
-        )
-    return bodypart_crud.create(db, obj_create=body_part)
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"Body part with name {body_part.name} already exists",
+        ) from e
 
 
 @router.delete(
@@ -154,20 +155,13 @@ def delete_body_part(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Body part with id {body_part_id} not found. Cannot delete.",
         )
-
-    if not user.is_superuser:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail=f"User {user.email} does not have permission \
-                to delete body part with id {body_part_id}.",
-        )
     try:
         bodypart_crud.delete(db, body_part)
-    except Exception as e:
+    except Exception as e:  # pragma: no cover
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Couldn't delete body part with id {body_part_id}. Error: {str(e)}",
-        ) from e
+        ) from e  # pragma: no cover
     return {"detail": f"Body part with id {body_part_id} deleted."}
 
 
@@ -205,17 +199,12 @@ def update_body_part(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Body part with id {body_part_id} not found. Cannot update.",
         )
-    if not user.is_superuser:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail=f"User {user.email} does not have permission \
-                to update body part with id {body_part_id}.",
-        )
+
     try:
         body_part = bodypart_crud.update(db, body_part, body_part_update)
-    except Exception as e:
+    except Exception as e:  # pragma: no cover
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Couldn't update body part with id {body_part_id}. Error: {str(e)}",
-        ) from e
+        ) from e  # pragma: no cover
     return body_part

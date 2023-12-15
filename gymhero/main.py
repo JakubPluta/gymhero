@@ -7,6 +7,8 @@ from gymhero.api import (
     exercise_type_router,
     level_router,
     user_router,
+    training_plan_router,
+    training_unit_router,
 )
 
 app = FastAPI(title="GymHero API", version="0.1.0")
@@ -17,8 +19,14 @@ app.include_router(
 )
 app.include_router(user_router, prefix="/users", tags=["users"])
 app.include_router(level_router, prefix="/levels", tags=["levels"])
-app.include_router(bodypart_router, prefix="/bodyparts", tags=["bodyparts"])
+app.include_router(bodypart_router, prefix="/body-parts", tags=["bodyparts"])
 app.include_router(auth_router, prefix="/auth", tags=["auth"])
+app.include_router(
+    training_plan_router, prefix="/training-plans", tags=["training_plans"]
+)
+app.include_router(
+    training_unit_router, prefix="/training-units", tags=["training_units"]
+)
 
 
 @app.get("/")

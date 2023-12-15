@@ -126,7 +126,7 @@ def create_user(
     return user
 
 
-@router.delete("/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/{user_id}", status_code=status.HTTP_200_OK)
 def delete_user(
     user_id: int,
     db: Session = Depends(get_db),
@@ -162,11 +162,13 @@ def delete_user(
         )
     try:
         user_crud.delete(db, user)
-    except Exception as e:
+    except Exception as e:  # pragma: no cover
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Couldn't delete user with id {user_id}. Error: {str(e)}",
-        ) from e
+        ) from e  # pragma: no cover
+
+    return {"detail": f"User with id {user_id} deleted."}
 
 
 @router.put("/{user_id}", response_model=UserOut, status_code=status.HTTP_200_OK)
@@ -200,9 +202,9 @@ def update_user(
         )
     try:
         user = user_crud.update(db, user, user_update)
-    except Exception as e:
+    except Exception as e:  # pragma: no cover
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Couldn't update user with id {user_id}. Error: {str(e)}",
-        ) from e
+        ) from e  # pragma: no cover
     return user

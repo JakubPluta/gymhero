@@ -3,7 +3,11 @@ from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
-from gymhero.api.dependencies import get_current_active_user, get_pagination_params
+from gymhero.api.dependencies import (
+    get_current_active_user,
+    get_pagination_params,
+    get_current_superuser,
+)
 from gymhero.crud import exercise_crud, training_unit_crud
 from gymhero.database.db import get_db
 from gymhero.log import get_logger
@@ -30,6 +34,7 @@ router = APIRouter()
 def get_all_training_units(
     db: Session = Depends(get_db),
     pagination_params: dict = Depends(get_pagination_params),
+    user: User = Depends(get_current_superuser),
 ):
     """
     Retrieves all training units with pagination.
@@ -77,7 +82,11 @@ def get_all_training_units_for_owner(
     response_model=Optional[TrainingUnitInDB],
     status_code=status.HTTP_200_OK,
 )
-def get_training_unit_by_id(training_unit_id: int, db: Session = Depends(get_db)):
+def get_training_unit_by_id(
+    training_unit_id: int,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_active_user),
+):
     """
     Retrieves a training unit by ID.
 
@@ -89,7 +98,14 @@ def get_training_unit_by_id(training_unit_id: int, db: Session = Depends(get_db)
         Optional[TrainingUnitInDB]: The training unit retrieved
         from the database, or None if not found.
     """
-    training_unit = training_unit_crud.get_one(db, TrainingUnit.id == training_unit_id)
+    if user.is_superuser:
+        training_unit = training_unit_crud.get_one(
+            db, TrainingUnit.id == training_unit_id
+        )
+    else:
+        training_unit = training_unit_crud.get_one(
+            db, TrainingUnit.id == training_unit_id, owner_id=user.id
+        )
     if training_unit is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -98,12 +114,17 @@ def get_training_unit_by_id(training_unit_id: int, db: Session = Depends(get_db)
     return training_unit
 
 
+# TODO: how to handle this? because superuser can get many training units with the same name
 @router.get(
     "/name/{training_unit_name}",
     response_model=Optional[TrainingUnitInDB],
     status_code=status.HTTP_200_OK,
 )
-def get_training_unit_by_name(training_unit_name: str, db: Session = Depends(get_db)):
+def get_training_unit_by_name(
+    training_unit_name: str,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_active_user),
+):
     """
     Retrieves a training unit by name.
 
@@ -115,9 +136,14 @@ def get_training_unit_by_name(training_unit_name: str, db: Session = Depends(get
         Optional[TrainingUnitInDB]: The training unit retrieved
         from the database, or None if not found.
     """
-    training_unit = training_unit_crud.get_one(
-        db, TrainingUnit.name == training_unit_name
-    )
+    if user.is_superuser:
+        training_unit = training_unit_crud.get_one(
+            db, TrainingUnit.name == training_unit_name
+        )
+    else:
+        training_unit = training_unit_crud.get_one(
+            db, TrainingUnit.name == training_unit_name, owner_id=user.id
+        )
     if training_unit is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

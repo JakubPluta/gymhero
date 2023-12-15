@@ -162,7 +162,15 @@ def create_exercise(
         ExerciseInDB: The created exercise.
 
     """
-    exercise = exercise_crud.create_with_owner(db, exercise_create, owner_id=user.id)
+    try:
+        exercise = exercise_crud.create_with_owner(
+            db, exercise_create, owner_id=user.id
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"Exercise with name {exercise_create.name} already exists",
+        ) from e
     return exercise
 
 
@@ -212,11 +220,11 @@ def update_exercise(
 
     try:
         exercise = exercise_crud.update(db, exercise, exercise_update)
-    except Exception as e:
+    except Exception as e:  # pragma: no cover
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Couldn't update exercise with id {exercise_id}. Error: {str(e)}",
-        ) from e
+        ) from e  # pragma: no cover
     return exercise
 
 
@@ -260,10 +268,10 @@ def delete_exercise(
 
     try:
         exercise_crud.delete(db, exercise)
-    except Exception as e:
+    except Exception as e:  # pragma: no cover
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Couldn't delete exercise with id {exercise_id}. Error: {str(e)}",
-        ) from e
+        ) from e  # pragma: no cover
 
     return {"detail": f"Exercise with id {exercise_id} deleted."}

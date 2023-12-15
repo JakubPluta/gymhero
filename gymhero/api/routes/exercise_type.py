@@ -122,12 +122,13 @@ def create_exercise_type(
     Returns:
         ExerciseTypeInDB: The newly created exercise type.
     """
-    if not user.is_superuser:
+    try:
+        exercise_type = exercise_type_crud.create(db, exercise_type_create)
+    except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only superusers can create exercise types",
-        )
-    exercise_type = exercise_type_crud.create(db, exercise_type_create)
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"Exercise type with name {exercise_type_create.name} already exists",
+        ) from e
     return exercise_type
 
 
@@ -158,30 +159,23 @@ def update_exercise_type(
         HTTPException: If the exercise type with the specified ID
         is not found or if there is an internal server error during the update process.
     """
-
-    if not user.is_superuser:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only superusers can update exercise types",
-        )
-
     exercise_type = exercise_type_crud.get_one(db, ExerciseType.id == exercise_type_id)
     if exercise_type is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Exercise type with id {exercise_type_id} not found",
+            detail=f"Exercise type with id {exercise_type_id} not found.",
         )
 
     try:
         exercise_type = exercise_type_crud.update(
             db, exercise_type, exercise_type_update
         )
-    except Exception as e:
+    except Exception as e:  # pragma no cover
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Couldn't update exercise type with id {exercise_type_id}. \
                 Error: {str(e)}",
-        ) from e
+        ) from e  # pragma no cover
     return exercise_type
 
 
@@ -207,11 +201,6 @@ def delete_exercise_type(
         dict: A dictionary with a detail message indicating whether the
               exercise type was successfully deleted or not.
     """
-    if not user.is_superuser:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only superusers can delete exercise types",
-        )
     exercise_type = exercise_type_crud.get_one(db, ExerciseType.id == exercise_type_id)
     if exercise_type is None:
         raise HTTPException(
@@ -220,10 +209,10 @@ def delete_exercise_type(
         )
     try:
         exercise_type_crud.delete(db, exercise_type)
-    except Exception as e:
+    except Exception as e:  # pragma: no cover
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Couldn't delete exercise type with id {exercise_type_id}. \
                 Error: {str(e)}",
-        ) from e
+        ) from e  # pragma: no cover
     return {"detail": f"Exercise type with id {exercise_type_id} deleted."}
