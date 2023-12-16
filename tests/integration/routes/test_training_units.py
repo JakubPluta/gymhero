@@ -86,3 +86,134 @@ def test_get_one_training_unit(test_client, get_test_db, valid_jwt_token):
         "/training-units/name/test_6", headers={"Authorization": jwt_2}
     )
     assert response.status_code == 200
+
+
+def test_get_training_units_for_superuser(test_client, get_test_db, valid_jwt_token):
+    response = test_client.get(
+        "/training-units/name/test_0/superuser",
+        headers={"Authorization": valid_jwt_token},
+    )
+    assert response.status_code == 200 and isinstance(response.json(), list)
+
+    response = test_client.get(
+        "/training-units/name/test_6/superuser",
+        headers={"Authorization": valid_jwt_token},
+    )
+    assert response.status_code == 200 and isinstance(response.json(), list)
+
+    jwt_2 = "Bearer " + create_access_token(2)
+    response = test_client.get(
+        "/training-units/name/test_0/superuser", headers={"Authorization": jwt_2}
+    )
+    assert (
+        response.status_code == 403
+        and response.json()["detail"] == "The user does not have enough privileges"
+    )
+
+
+def test_can_create_training_unit(test_client, valid_jwt_token):
+    response = test_client.post(
+        "/training-units/",
+        headers={"Authorization": valid_jwt_token},
+        json={"name": "test", "description": "test"},
+    )
+    assert response.status_code == 201 and response.json()["name"] == "test"
+
+
+def test_can_update_training_unit(test_client, valid_jwt_token):
+    response = test_client.put(
+        "/training-units/1",
+        headers={"Authorization": valid_jwt_token},
+        json={"name": "test", "description": "test"},
+    )
+    assert response.status_code == 200 and response.json()["name"] == "test"
+
+    response = test_client.put(
+        "/training-units/22",
+        headers={"Authorization": valid_jwt_token},
+        json={"name": "test", "description": "test"},
+    )
+    assert response.status_code == 404
+
+    another_token = "Bearer " + create_access_token(2)
+    response = test_client.put(
+        "/training-units/1",
+        headers={"Authorization": another_token},
+        json={"name": "test", "description": "test"},
+    )
+    assert response.status_code == 403
+
+    response = test_client.put(
+        "/training-units/6",
+        headers={"Authorization": valid_jwt_token},
+        json={"name": "test", "description": "test"},
+    )
+    assert response.status_code == 200 and response.json()["name"] == "test"
+
+
+def test_can_delete_training_unit(test_client, valid_jwt_token):
+    response = test_client.delete(
+        "/training-units/1", headers={"Authorization": valid_jwt_token}
+    )
+    assert response.status_code == 200
+
+    response = test_client.delete(
+        "/training-units/22", headers={"Authorization": valid_jwt_token}
+    )
+    assert response.status_code == 404
+
+    another_token = "Bearer " + create_access_token(2)
+    response = test_client.delete(
+        "/training-units/2", headers={"Authorization": another_token}
+    )
+    assert response.status_code == 403
+
+    response = test_client.delete(
+        "/training-units/6", headers={"Authorization": valid_jwt_token}
+    )
+    assert response.status_code == 200
+
+
+def test_can_add_exercise_to_training_unit(
+    test_client, valid_jwt_token, seed_test_database
+):
+    response = test_client.put(
+        "/training-units/1/exercises/1/add",
+        headers={"Authorization": valid_jwt_token},
+    )
+
+    exercise_response = test_client.get(
+        "/exercises/1", headers={"Authorization": valid_jwt_token}
+    )
+    exercises = response.json()["exercises"]
+    assert (
+        response.status_code == 200
+        and exercises == [exercise_response.json()]
+        and len(exercises) == 1
+    )
+
+    response = test_client.put(
+        "/training-units/1/exercises/1/add",
+        headers={"Authorization": valid_jwt_token},
+    )
+    assert response.status_code == 409
+
+    response = test_client.put(
+        "/training-units/55/exercises/1/add",
+        headers={"Authorization": valid_jwt_token},
+    )
+    assert response.status_code == 404
+
+    response = test_client.put(
+        "/training-units/1/exercises/34341/add",
+        headers={"Authorization": valid_jwt_token},
+    )
+    assert response.status_code == 404
+
+    jwt_token = "Bearer " + create_access_token(2)
+
+    response = test_client.put(
+        "/training-units/1/exercises/1/add",
+        headers={"Authorization": jwt_token},
+    )
+    assert response.status_code == 403

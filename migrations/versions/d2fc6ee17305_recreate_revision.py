@@ -1,8 +1,8 @@
 """recreate revision
 
-Revision ID: 9e93e0e69b93
+Revision ID: d2fc6ee17305
 Revises: 1ee564d3b257
-Create Date: 2023-12-11 20:21:29.184711
+Create Date: 2023-12-16 13:20:10.164760
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = "9e93e0e69b93"
+revision: str = "d2fc6ee17305"
 down_revision: Union[str, None] = "1ee564d3b257"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -178,6 +178,7 @@ def upgrade() -> None:
             ["users.id"],
         ),
         sa.PrimaryKeyConstraint("id"),
+        sa.UniqueConstraint("name", "owner_id"),
     )
     op.create_table(
         "training_plan_training_unit",

@@ -114,7 +114,6 @@ def get_training_unit_by_id(
     return training_unit
 
 
-# TODO: how to handle this? because superuser can get many training units with the same name
 @router.get(
     "/name/{training_unit_name}",
     response_model=Optional[TrainingUnitInDB],
@@ -136,18 +135,49 @@ def get_training_unit_by_name(
         Optional[TrainingUnitInDB]: The training unit retrieved
         from the database, or None if not found.
     """
-    if user.is_superuser:
-        training_unit = training_unit_crud.get_one(
-            db, TrainingUnit.name == training_unit_name
-        )
-    else:
-        training_unit = training_unit_crud.get_one(
-            db, TrainingUnit.name == training_unit_name, owner_id=user.id
-        )
+
+    training_unit = training_unit_crud.get_one(
+        db, TrainingUnit.name == training_unit_name, owner_id=user.id
+    )
     if training_unit is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Training unit with name {training_unit_name} not found",
+            detail=f"Training unit with name {training_unit_name} not found for user {user.id}",
+        )
+    return training_unit
+
+
+# For superuser
+@router.get(
+    "/name/{training_unit_name}/superuser",
+    response_model=List[Optional[TrainingUnitInDB]],
+    status_code=status.HTTP_200_OK,
+    include_in_schema=False,
+)
+def get_training_units_by_name(
+    training_unit_name: str,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_superuser),
+):
+    """
+    Retrieves a training units by name.
+
+    Parameters:
+        training_unit_name (str): The name of the training unit.
+        db (Session): The database session.
+
+    Returns:
+        List[Optional[TrainingUnitInDB]]: The training unit retrieved
+        from the database, or None if not found.
+    """
+
+    training_unit = training_unit_crud.get_many(
+        db, TrainingUnit.name == training_unit_name
+    )
+    if training_unit is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Training unit with name {training_unit_name} not found for user {user.id}",
         )
     return training_unit
 
@@ -168,9 +198,16 @@ def create_training_unit(
     Returns:
         TrainingUnitInDB: The created training unit.
     """
-    training_unit = training_unit_crud.create_with_owner(
-        db, training_unit_in, owner_id=user.id
-    )
+    try:
+        training_unit = training_unit_crud.create_with_owner(
+            db, training_unit_in, owner_id=user.id
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"Training unit with name {training_unit_in.name} already exists for user {user.id}",
+        ) from e
+
     return training_unit
 
 
@@ -205,16 +242,17 @@ def update_training_unit(
             detail=f"Training unit with id {training_unit_id} not found",
         )
 
-    if training_unit.owner_id != user.id or not user.is_superuser:
+    if training_unit.owner_id != user.id and not user.is_superuser:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You do not have permission to perform this action",
         )
+
     try:
         training_unit = training_unit_crud.update(
             db, training_unit, training_unit_update
         )
-    except Exception as e:
+    except Exception as e:  # pragma: no cover
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Could not update training unit. Error: " + str(e),
@@ -222,7 +260,7 @@ def update_training_unit(
     return training_unit
 
 
-@router.delete("/{training_unit_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/{training_unit_id}", status_code=status.HTTP_200_OK)
 def delete_training_unit(
     training_unit_id: int,
     db: Session = Depends(get_db),
@@ -247,11 +285,12 @@ def delete_training_unit(
             detail=f"Training unit with id {training_unit_id} not found",
         )
 
-    if training_unit.owner_id != user.id or not user.is_superuser:
+    if training_unit.owner_id != user.id and not user.is_superuser:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You do not have permission to perform this action",
         )
+
     try:
         training_unit_crud.delete(db, training_unit)
     except Exception as e:
@@ -264,6 +303,7 @@ def delete_training_unit(
 
 @router.put(
     "/{training_unit_id}/exercises/{exercise_id}/add",
+    response_model=Optional[TrainingUnitInDB],
 )
 def add_exercise_to_training_unit(
     training_unit_id: int,
@@ -298,13 +338,21 @@ def add_exercise_to_training_unit(
             detail=f"Exercise with id {exercise_id} not found",
         )
 
-    if training_unit.owner_id != user.id or not user.is_superuser:
+    if training_unit.owner_id != user.id and not user.is_superuser:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You do not have permission to perform this action",
         )
 
-    return training_unit_crud.add_exercise_to_training_unit(db, training_unit, exercise)
+    training_unit = training_unit_crud.add_exercise_to_training_unit(
+        db, training_unit, exercise
+    )
+    if training_unit is None:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"Exercise with id {exercise_id} already exists in training unit with id {training_unit_id}",
+        )
+    return training_unit
 
 
 @router.get(
