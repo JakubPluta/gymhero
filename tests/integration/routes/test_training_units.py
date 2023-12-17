@@ -120,6 +120,15 @@ def test_can_create_training_unit(test_client, valid_jwt_token):
     assert response.status_code == 201 and response.json()["name"] == "test"
 
 
+def test_can_create_training_unit(test_client, valid_jwt_token):
+    response = test_client.post(
+        "/training-units/",
+        headers={"Authorization": valid_jwt_token},
+        json={"name": "test_0", "description": "test"},
+    )
+    assert response.status_code == 409
+
+
 def test_can_update_training_unit(test_client, valid_jwt_token):
     response = test_client.put(
         "/training-units/1",
@@ -215,5 +224,87 @@ def test_can_add_exercise_to_training_unit(
     response = test_client.put(
         "/training-units/1/exercises/1/add",
         headers={"Authorization": jwt_token},
+    )
+    assert response.status_code == 403
+
+
+def test_can_remove_exercise_from_training_unit(
+    test_client, valid_jwt_token, seed_test_database
+):
+    response = test_client.put(
+        "/training-units/1/exercises/1/add",
+        headers={"Authorization": valid_jwt_token},
+    )
+    exercise_response = test_client.get(
+        "/exercises/1", headers={"Authorization": valid_jwt_token}
+    )
+
+    assert response.json()["exercises"] == [exercise_response.json()]
+
+    response = test_client.put(
+        "/training-units/1/exercises/1/remove",
+        headers={"Authorization": valid_jwt_token},
+    )
+
+    exercises = response.json()["exercises"]
+    assert response.status_code == 200 and exercises == [] and len(exercises) == 0
+
+    response = test_client.put(
+        "/training-units/1/exercises/55555/remove",
+        headers={"Authorization": valid_jwt_token},
+    )
+    assert response.status_code == 404
+
+    response = test_client.put(
+        "/training-units/51/exercises/1/remove",
+        headers={"Authorization": valid_jwt_token},
+    )
+    assert response.status_code == 404
+
+    jwt_token_u2 = "Bearer " + create_access_token(2)
+    response = test_client.put(
+        "/training-units/1/exercises/1/remove",
+        headers={"Authorization": jwt_token_u2},
+    )
+    assert response.status_code == 403
+
+    response = test_client.put(
+        "/training-units/1/exercises/2/remove",
+        headers={"Authorization": valid_jwt_token},
+    )
+    assert response.status_code == 409
+
+
+def test_can_get_exercises_in_training_unit(
+    test_client, valid_jwt_token, seed_test_database
+):
+    response = test_client.get(
+        "/training-units/1/exercises",
+        headers={"Authorization": valid_jwt_token},
+    )
+    assert response.status_code == 200 and len(response.json()) == 0
+
+    test_client.put(
+        "/training-units/1/exercises/2/add",
+        headers={"Authorization": valid_jwt_token},
+    )
+
+    response = test_client.get(
+        "/training-units/1/exercises",
+        headers={"Authorization": valid_jwt_token},
+    )
+
+    assert response.status_code == 200 and len(response.json()) == 1
+
+    response = test_client.get(
+        "/training-units/3242/exercises",
+        headers={"Authorization": valid_jwt_token},
+    )
+    assert response.status_code == 404
+
+    jwt_token_v2 = "Bearer " + create_access_token(2)
+    response = test_client.get(
+        "/training-units/1/exercises",
+        headers={"Authorization": jwt_token_v2},
     )
     assert response.status_code == 403

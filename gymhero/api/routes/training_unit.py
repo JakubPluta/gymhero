@@ -198,15 +198,18 @@ def create_training_unit(
     Returns:
         TrainingUnitInDB: The created training unit.
     """
-    try:
-        training_unit = training_unit_crud.create_with_owner(
-            db, training_unit_in, owner_id=user.id
-        )
-    except Exception as e:
+    training_unit = training_unit_crud.get_one(
+        db, TrainingUnit.name == training_unit_in.name, owner_id=user.id
+    )
+    if training_unit is not None:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail=f"Training unit with name {training_unit_in.name} already exists for user {user.id}",
-        ) from e
+        )
+
+    training_unit = training_unit_crud.create_with_owner(
+        db, training_unit_in, owner_id=user.id
+    )
 
     return training_unit
 
@@ -293,11 +296,11 @@ def delete_training_unit(
 
     try:
         training_unit_crud.delete(db, training_unit)
-    except Exception as e:
+    except Exception as e:  # pragma: no cover
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Could not delete training unit. Error: " + str(e),
-        ) from e
+        ) from e  # pragma: no cover
     return {"detail": f"Training unit type with id {training_unit_id} deleted."}
 
 
@@ -385,7 +388,7 @@ def get_exercises_in_training_unit(
             detail=f"Training unit with id {training_unit_id} not found",
         )
 
-    if training_unit.owner_id != user.id or not user.is_superuser:
+    if training_unit.owner_id != user.id and not user.is_superuser:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You do not have permission to perform this action",
@@ -396,6 +399,7 @@ def get_exercises_in_training_unit(
 
 @router.put(
     "/{training_unit_id}/exercises/{exercise_id}/remove",
+    response_model=Optional[TrainingUnitInDB],
 )
 def remove_exercise_from_training_unit(
     training_unit_id: int,
@@ -435,12 +439,19 @@ def remove_exercise_from_training_unit(
             detail=f"Exercise with id {exercise_id} not found",
         )
 
-    if training_unit.owner_id != user.id or not user.is_superuser:
+    if training_unit.owner_id != user.id and not user.is_superuser:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You do not have permission to perform this action",
         )
 
-    return training_unit_crud.remove_exercise_from_training_unit(
-        db, training_unit, exercise
-    )
+    try:
+        training_unit_crud.remove_exercise_from_training_unit(
+            db, training_unit, exercise
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"Exercise with id {exercise_id} not found in training unit with id {training_unit_id}",
+        ) from e
+    return training_unit
