@@ -3,7 +3,11 @@ from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
-from gymhero.api.dependencies import get_current_active_user, get_pagination_params
+from gymhero.api.dependencies import (
+    get_current_active_user,
+    get_pagination_params,
+    get_current_superuser,
+)
 from gymhero.crud import training_plan_crud, training_unit_crud
 from gymhero.database.db import get_db
 from gymhero.log import get_logger
@@ -29,6 +33,7 @@ router = APIRouter()
 def get_all_training_plans(
     db: Session = Depends(get_db),
     pagination_params: dict = Depends(get_pagination_params),
+    user: User = Depends(get_current_superuser),
 ):
     """
     Retrieves all training plans with pagination.
@@ -46,7 +51,7 @@ def get_all_training_plans(
 
 
 @router.get(
-    "/all/mine",
+    "/all/my",
     response_model=List[Optional[TrainingPlanInDB]],
     status_code=status.HTTP_200_OK,
 )
@@ -77,7 +82,11 @@ def get_all_training_plans_for_owner(
     response_model=Optional[TrainingPlanInDB],
     status_code=status.HTTP_200_OK,
 )
-def get_training_plan_by_id(training_plan_id: int, db: Session = Depends(get_db)):
+def get_training_plan_by_id(
+    training_plan_id: int,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_active_user),
+):
     """
     Retrieves a training plan from the database by its ID.
 
@@ -92,7 +101,15 @@ def get_training_plan_by_id(training_plan_id: int, db: Session = Depends(get_db)
         HTTPException: If the training plan with the specified ID is not found.
 
     """
-    training_plan = training_plan_crud.get_one(db, TrainingPlan.id == training_plan_id)
+    if user.is_superuser:
+        training_plan = training_plan_crud.get_one(
+            db, TrainingPlan.id == training_plan_id
+        )
+    else:
+        training_plan = training_plan_crud.get_one(
+            db, TrainingPlan.id == training_plan_id, owner_id=user.id
+        )
+
     if training_plan is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

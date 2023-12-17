@@ -46,6 +46,14 @@ def test_get_all_training_units(test_client, valid_jwt_token):
     )
 
 
+def test_get_all_training_units_for_owner(test_client, valid_jwt_token):
+    response = test_client.get(
+        "/training-units/all/my?skip=0&limit=3",
+        headers={"Authorization": valid_jwt_token},
+    )
+    assert response.status_code == 200 and len(response.json()) == 3
+
+
 def test_get_one_training_unit(test_client, get_test_db, valid_jwt_token):
     response = test_client.get(
         "/training-units/1", headers={"Authorization": valid_jwt_token}

@@ -51,7 +51,7 @@ def get_all_training_units(
 
 
 @router.get(
-    "/all/mine",
+    "/all/my",
     response_model=List[Optional[TrainingUnitInDB]],
     status_code=status.HTTP_200_OK,
 )
@@ -307,6 +307,7 @@ def delete_training_unit(
 @router.put(
     "/{training_unit_id}/exercises/{exercise_id}/add",
     response_model=Optional[TrainingUnitInDB],
+    status_code=status.HTTP_200_OK,
 )
 def add_exercise_to_training_unit(
     training_unit_id: int,
@@ -400,6 +401,7 @@ def get_exercises_in_training_unit(
 @router.put(
     "/{training_unit_id}/exercises/{exercise_id}/remove",
     response_model=Optional[TrainingUnitInDB],
+    status_code=status.HTTP_200_OK,
 )
 def remove_exercise_from_training_unit(
     training_unit_id: int,
