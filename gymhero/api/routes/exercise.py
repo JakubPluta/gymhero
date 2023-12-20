@@ -41,7 +41,7 @@ def fetch_all_exercises(
 
 
 @router.get(
-    "/mine", response_model=List[Optional[ExerciseInDB]], status_code=status.HTTP_200_OK
+    "/my", response_model=List[Optional[ExerciseInDB]], status_code=status.HTTP_200_OK
 )
 def fetch_all_exercises_for_owner(
     db: Session = Depends(get_db),
