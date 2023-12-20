@@ -1,4 +1,5 @@
 import pytest
+
 from scripts.core.utils import _create_first_user
 
 

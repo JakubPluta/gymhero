@@ -5,8 +5,8 @@ from sqlalchemy.orm import Session
 
 from gymhero.api.dependencies import (
     get_current_active_user,
-    get_pagination_params,
     get_current_superuser,
+    get_pagination_params,
 )
 from gymhero.crud import exercise_crud, training_unit_crud
 from gymhero.database.db import get_db

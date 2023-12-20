@@ -1,4 +1,5 @@
 import pytest
+
 from scripts.core.utils import _create_first_user
 
 
@@ -114,7 +115,7 @@ def test_can_update_body_part(
         json={"name": "test", "description": "test"},
         headers={"Authorization": valid_jwt_token},
     )
-    assert response.status_code == 201 and response.json()["name"] == "test"
+    assert response.status_code == 200 and response.json()["name"] == "test"
 
     response = test_client.put(
         "/body-parts/100",

@@ -5,8 +5,8 @@ from sqlalchemy.orm import Session
 
 from gymhero.api.dependencies import (
     get_current_active_user,
-    get_pagination_params,
     get_current_superuser,
+    get_pagination_params,
 )
 from gymhero.crud import training_plan_crud, training_unit_crud
 from gymhero.database.db import get_db
@@ -19,6 +19,7 @@ from gymhero.schemas.training_plan import (
     TrainingPlanInDB,
     TrainingPlanUpdate,
 )
+from gymhero.schemas.training_unit import TrainingUnitInDB
 
 log = get_logger(__name__)
 
@@ -123,7 +124,11 @@ def get_training_plan_by_id(
     response_model=Optional[TrainingPlanInDB],
     status_code=status.HTTP_200_OK,
 )
-def get_training_plan_by_name(training_plan_name: str, db: Session = Depends(get_db)):
+def get_training_plan_by_name(
+    training_plan_name: str,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_active_user),
+):
     """
     Get a training plan by its name.
 
@@ -141,13 +146,43 @@ def get_training_plan_by_name(training_plan_name: str, db: Session = Depends(get
     """
 
     training_plan = training_plan_crud.get_one(
-        db, TrainingPlan.name == training_plan_name
+        db, TrainingPlan.name == training_plan_name, owner_id=user.id
     )
     if training_plan is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Training plan with name {training_plan_name} not found",
         )
+    return training_plan
+
+
+@router.get(
+    "/name/{training_plan_name}/superuser",
+    response_model=List[Optional[TrainingPlanInDB]],
+    status_code=status.HTTP_200_OK,
+    include_in_schema=False,
+)
+def get_training_plans_by_name_for_super_user(
+    training_plan_name: str,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_superuser),
+):
+    """
+    Get a training plan by name for a super user.
+
+    Parameters:
+        training_plan_name (str): The name of the training plan.
+        db (Session, optional): The database session. Defaults to Depends(get_db).
+        user (User, optional): The current superuser. Defaults to Depends(get_current_superuser).
+
+    Returns:
+        Optional[TrainingPlanInDB]: The training plan with the specified name, if found.
+
+
+    """
+    training_plan = training_plan_crud.get_many(
+        db, TrainingPlan.name == training_plan_name
+    )
     return training_plan
 
 
@@ -175,6 +210,14 @@ def create_training_plan(
     Raises:
         HTTPException: If there is an error creating the training plan.
     """
+    training_plan = training_plan_crud.get_one(
+        db, TrainingPlan.name == training_plan_create.name, owner_id=user.id
+    )
+    if training_plan is not None:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"Training plan with name {training_plan_create.name} already exists",
+        )
     return training_plan_crud.create_with_owner(
         db, obj_create=training_plan_create, owner_id=user.id
     )
@@ -213,25 +256,25 @@ def delete_training_plan(
             detail=f"Training plan with id {training_plan_id} not found. \
             Cannot delete.",
         )
-    if not user.is_superuser or training_plan.owner_id != user.id:
+    if training_plan.owner_id != user.id and not user.is_superuser:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="The user does not have enough privileges",
         )
     try:
         training_plan_crud.delete(db, training_plan)
-    except Exception as e:
+    except Exception as e:  # pragma: no cover
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(e),
-        ) from e
-    return
+        ) from e  # pragma: no cover
+    return {"detail": "Training plan with id {training_plan_id} deleted"}
 
 
 @router.put(
     "/{training_plan_id}",
     response_model=Optional[TrainingPlanInDB],
-    status_code=status.HTTP_201_CREATED,
+    status_code=status.HTTP_200_OK,
 )
 def update_training_plan(
     training_plan_id: int,
@@ -264,7 +307,7 @@ def update_training_plan(
             detail=f"Training plan with id {training_plan_id} not found. \
             Cannot update.",
         )
-    if not user.is_superuser or training_plan.owner_id != user.id:
+    if training_plan.owner_id != user.id and not user.is_superuser:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="The user does not have enough privileges",
@@ -275,7 +318,9 @@ def update_training_plan(
 
 
 @router.put(
-    "/{training_plan_id}/training_units/{training_unit_id}/add",
+    "/{training_plan_id}/training-units/{training_unit_id}/add",
+    response_model=Optional[TrainingPlanInDB],
+    status_code=status.HTTP_200_OK,
 )
 def add_training_unit_to_training_plan(
     training_plan_id: int,
@@ -316,7 +361,7 @@ def add_training_unit_to_training_plan(
             detail=f"Training unit with id {training_unit_id} not found. \
             Cannot update.",
         )
-    if not user.is_superuser or training_plan.owner_id != user.id:
+    if training_plan.owner_id != user.id and not user.is_superuser:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="The user does not have enough privileges",
@@ -324,11 +369,18 @@ def add_training_unit_to_training_plan(
     training_plan = training_plan_crud.add_training_unit_to_training_plan(
         db, training_plan=training_plan, training_unit=training_unit
     )
+    if training_plan is None:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"Training unit with id {training_unit_id} already exists in training plan with id {training_plan_id}",
+        )
     return training_plan
 
 
 @router.put(
-    "/{training_plan_id}/training_units/{training_unit_id}/remove",
+    "/{training_plan_id}/training-units/{training_unit_id}/remove",
+    response_model=Optional[TrainingPlanInDB],
+    status_code=status.HTTP_200_OK,
 )
 def remove_training_unit_from_training_plan(
     training_plan_id: int,
@@ -364,6 +416,13 @@ def remove_training_unit_from_training_plan(
             detail=f"Training plan with id {training_plan_id} not found. \
             Cannot update.",
         )
+
+    if training_plan.owner_id != user.id and not user.is_superuser:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="The user does not have enough privileges",
+        )
+
     training_unit = training_unit_crud.get_one(db, TrainingUnit.id == training_unit_id)
     if training_unit is None:
         raise HTTPException(
@@ -371,18 +430,22 @@ def remove_training_unit_from_training_plan(
             detail=f"Training unit with id {training_unit_id} not found. \
             Cannot update.",
         )
-    if not user.is_superuser or training_plan.owner_id != user.id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="The user does not have enough privileges",
-        )
-    return training_plan_crud.remove_training_unit_from_training_plan(
+
+    training_plan = training_plan_crud.remove_training_unit_from_training_plan(
         db, training_plan=training_plan, training_unit=training_unit
     )
+    if training_plan is None:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"Training unit with id {training_unit_id} does not exist in training plan with id {training_plan_id}",
+        )
+    return training_plan
 
 
 @router.get(
-    "/{training_plan_id}/training_units",
+    "/{training_plan_id}/training-units",
+    response_model=List[TrainingUnitInDB],
+    status_code=status.HTTP_200_OK,
 )
 def get_training_units_in_training_plan(
     training_plan_id: int,
@@ -413,7 +476,7 @@ def get_training_units_in_training_plan(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Training plan with id {training_plan_id} not found. ",
         )
-    if not user.is_superuser or training_plan.owner_id != user.id:
+    if training_plan.owner_id != user.id and not user.is_superuser:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="The user does not have enough privileges",

@@ -1,11 +1,11 @@
 from typing import Generator
+from unittest.mock import patch
+
 import pytest
 from sqlalchemy.orm import Session
+
 from gymhero.database.db import get_ctx_db, get_db
-from unittest.mock import patch
 from gymhero.exceptions import SQLAlchemyException
-
-
 from tests.conftest import override_get_db
 
 

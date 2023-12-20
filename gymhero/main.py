@@ -6,9 +6,9 @@ from gymhero.api import (
     exercise_router,
     exercise_type_router,
     level_router,
-    user_router,
     training_plan_router,
     training_unit_router,
+    user_router,
 )
 
 app = FastAPI(title="GymHero API", version="0.1.0")

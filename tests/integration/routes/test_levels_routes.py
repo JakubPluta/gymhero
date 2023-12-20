@@ -1,7 +1,9 @@
 import json
 import unittest
+
 import pytest
 from fastapi.exceptions import HTTPException, RequestValidationError
+
 from scripts.core._initsu import seed_superuser
 from scripts.core.utils import _create_first_user
 
@@ -202,7 +204,7 @@ def test_can_update_level(test_client, seed_levels, valid_jwt_token):
             {"name": "Updated Beginner", "description": "Updated Beginner"}
         ),
     )
-    assert response.status_code == 201 and response.json()["name"] == "Updated Beginner"
+    assert response.status_code == 200 and response.json()["name"] == "Updated Beginner"
 
 
 def test_should_rise_internal_error_while_updating(

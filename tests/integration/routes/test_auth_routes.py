@@ -3,8 +3,10 @@ import json
 import unittest
 from unittest import mock
 from unittest.mock import patch
+
 import pytest
 from fastapi.exceptions import HTTPException, RequestValidationError
+
 from scripts.core._initsu import seed_superuser
 from scripts.core.utils import _create_first_user
 

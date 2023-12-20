@@ -1,5 +1,7 @@
 from collections import UserDict
+
 import pytest
+
 from gymhero.database.utils import key_column_from
 
 

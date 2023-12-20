@@ -1,25 +1,19 @@
+from unittest.mock import MagicMock, patch
+
+import pytest
+from fastapi import HTTPException, status
+from sqlalchemy.orm import Session
+
 from gymhero.api.dependencies import (
+    get_current_active_user,
+    get_current_superuser,
     get_current_user,
     get_pagination_params,
     get_token,
-    get_current_active_user,
-    get_current_superuser,
 )
-import pytest
 from gymhero.crud.user import user_crud
 from gymhero.models.user import User
-import pytest
-
-from fastapi import HTTPException, status
-from unittest.mock import MagicMock
 from gymhero.schemas.auth import TokenPayload
-
-from fastapi import HTTPException
-from unittest.mock import patch
-
-import pytest
-from fastapi import HTTPException
-from sqlalchemy.orm import Session
 
 
 @pytest.fixture

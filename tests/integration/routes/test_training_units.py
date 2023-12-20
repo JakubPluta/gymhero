@@ -1,6 +1,6 @@
 import pytest
-from gymhero.crud.training_unit import training_unit_crud
 
+from gymhero.crud.training_unit import training_unit_crud
 from gymhero.models.training_unit import TrainingUnit
 from gymhero.schemas.training_unit import TrainingUnitCreate
 from gymhero.security import create_access_token
