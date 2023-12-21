@@ -1,27 +1,32 @@
-run:
-	python -m gymhero.server
-
-docker-up-full:
+recreate:
 	docker compose build --no-cache
 	docker compose up -d --force-recreate
-	alembic downgrade base && alembic upgrade head && python -m scripts.initdb --env=dev
+	docker exec -it app alembic downgrade base && alembic upgrade head
+	docker exec -it app python -m scripts.initdb --env=dev
 
-docker-up:
+up:
 	docker compose build
 	docker compose up -d
-	alembic downgrade base && alembic upgrade head && python -m scripts.initdb --env=dev
 
-docker-down:
+run:
+	docker compose build
+	docker compose up -d
+
+initdb:
+	docker exec -it app alembic downgrade base && alembic upgrade head
+	docker exec -it app python -m scripts.initdb --env=dev
+
+down:
 	docker compose down
 
-docker-kill:
+kill:
 	docker compose kill
 
 test-all:
-	ENV=test pytest tests/
+	ENV=local pytest tests/
 
 test-all-verbose:
-	ENV=test pytest tests/ -s -v
+	ENV=local pytest tests/ -s -vv
 
 test-unit:
 	ENV=test pytest tests/unit/
@@ -29,44 +34,43 @@ test-unit:
 test-integration:
 	ENV=test pytest tests/integration/
 
-
 cov:
 	ENV=test pytest --cov-report html --cov=gymhero tests/ 
 
-echos:
-	echo $(if ${env},${env},dev)
 
 pretty:
 	isort gymhero/ && isort tests/
 	black gymhero/ && black tests/
 
 initsu:
-	python -m scripts.initsu --env=$(if ${env},${env}, dev)
+	docker exec -it app python -m scripts.initsu --env=dev
 
 initdb:
-	python -m scripts.initdb --env=$(if ${env},${env},dev)
+	docker exec -it app python -m scripts.initdb --env=dev
 
-initsu-test:
-	python -m scripts.initdb --env=test
-initdb-test:
-	python -m scripts.initdb --env=test
+ah:
+	docker exec -it app alembic upgrade head
 
+ab:
+	docker exec -it app alembic downgrade base
 
-alembic-head:
-	alembic upgrade head
+aup:
+	docker exec -it app alembic upgrade +1
 
-alembic-base:
-	alembic downgrade base
+aup:
+	docker exec -it app alembic downgrade -1
 
-alembic-up:
-	alembic upgrade +1 
+arc:
+	docker exec -it app alembic downgrade base && alembic upgrade head
+ari:
+	docker exec -it app alembic downgrade base && alembic upgrade head
+	docker exec -it app python -m scripts.initdb --env=dev
 
-alembic-down:
-	alembic downgrade -1
+local-run:
+	python -m gymhero.server
 
-alembic-recreate:
-	alembic downgrade base && alembic upgrade head
-
-reinit:
-	alembic downgrade base && alembic upgrade head && python -m scripts.initdb --env=dev
-
+local-recreate:
+	docker compose build --no-cache
+	docker compose up -d --force-recreate
+	ENV=local alembic downgrade base && alembic upgrade head
+	python -m scripts.initdb --env=local

@@ -10,7 +10,7 @@ log = get_logger(__name__)
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
-        env_file="./.env.example", env_file_encoding="utf-8", case_sensitive=True
+        env_file="./.env.dev", env_file_encoding="utf-8", case_sensitive=True
     )
 
     API_VERSION: str
@@ -34,21 +34,27 @@ class Settings(BaseSettings):
     FIRST_SUPERUSER_PASSWORD: str
 
 
-class DevSettings(Settings):
+class ContainerDevSettings(Settings):
     model_config = SettingsConfigDict(
-        env_file="./.env.example", env_file_encoding="utf-8", case_sensitive=True
+        env_file="./.env.dev", env_file_encoding="utf-8", case_sensitive=True
     )
     ENV: str = "dev"
 
 
-class TestSettings(Settings):
+class LocalTestSettings(Settings):
     model_config = SettingsConfigDict(
         env_file="./.env.test", env_file_encoding="utf-8", case_sensitive=True
     )
     ENV: str = "test"
 
 
-# TODO: Think about overwriting config for tests from file
+class LocalDevSettings(Settings):
+    model_config = SettingsConfigDict(
+        env_file="./.env.local", env_file_encoding="utf-8", case_sensitive=True
+    )
+    ENV: str = "local"
+
+
 def get_settings(env: str = "dev") -> Settings:
     """
     Return the settings object based on the environment.
@@ -65,13 +71,15 @@ def get_settings(env: str = "dev") -> Settings:
     log.debug("getting settings for env: %s", env)
 
     if env.lower() == "dev":
-        return DevSettings()
+        return ContainerDevSettings()
     if env.lower() == "test":
-        return TestSettings()
+        return LocalTestSettings()
+    if env.lower() == "local":
+        return LocalDevSettings()
 
-    raise ValueError("Invalid environment. Must be 'dev' or 'test'.")
+    raise ValueError("Invalid environment. Must be 'dev' or 'test' ,'local'.")
 
 
-_env = os.environ.get("ENV", "dev")
+_env = os.environ.get("ENV", "local")
 
 settings = get_settings(env=_env)

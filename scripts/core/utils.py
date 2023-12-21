@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session
 from gymhero.log import get_logger
 from gymhero.models.body_part import BodyPart
 from gymhero.models.exercise import Exercise, ExerciseType
+from gymhero.models.user import User
 from gymhero.models.level import Level
 from gymhero.security import get_password_hash
 from gymhero.config import settings
@@ -28,26 +29,26 @@ def _create_first_user(
     username: Optional[str] = None,
     is_superuser: bool = True,
     is_active: bool = True,
-):
+) -> User:
     """Create first user"""
     user = user_crud.get_user_by_email(db, email=email)
+    if user:
+        log.debug("First user already exists")
+        return user
 
-    if not user:
-        user_in = UserInDB(
-            email=email,
-            hashed_password=get_password_hash(password),
-            full_name=username,
-            is_superuser=is_superuser,
-            is_active=is_active,
-        )
-        user = user_crud.create(db, obj_create=user_in)
-        log.debug("Created first user: %s", user)
-    else:
-        log.debug("First user already exists: %s", user)
+    user_in = UserInDB(
+        email=email,
+        hashed_password=get_password_hash(password),
+        full_name=username,
+        is_superuser=is_superuser,
+        is_active=is_active,
+    )
+    user = user_crud.create(db, obj_create=user_in)
+    log.debug("Created first user: %s", user)
     return user
 
 
-def create_first_superuser(db: Session):
+def create_first_superuser(db: Session) -> User:
     """Create first superuser"""
     return _create_first_user(
         db,
@@ -213,10 +214,10 @@ def get_argparser() -> ArgumentParser:
     parser = ArgumentParser()
     parser.add_argument(
         "--env",
-        default="dev",
+        default="local",
         dest="env",
         help="Environment for which to seed the database",
-        choices=["dev", "test"],
+        choices=["dev", "test", "local"],
     )
     return parser
 

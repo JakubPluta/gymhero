@@ -1,37 +1,38 @@
 version: '3.8'
 services:
+  app:
+    container_name: app
+    build: .
+    ports:
+      - '8000:8000'
+    depends_on:
+      - db
+      - test-db
+    env_file:
+      - .env.dev
   db:
-    build:
-      context: ./docker/dev
-      dockerfile: Dockerfile
-    restart: always
+    container_name: db
+    image: postgres:16-alpine
     ports:
       - '5432:5432'
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
     volumes:
       - db:/var/lib/postgresql/data
+    env_file: 
+      - .env.dev
   test-db:
-    build:
-      context: ./docker/test
-      dockerfile: Dockerfile
-    restart: always
+    container_name: test-db
+    image: postgres:16-alpine
     ports:
       - '5433:5432'
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
     volumes:
       - test-db:/var/lib/postgresql/data
+    env_file: 
+      - .env.test
 volumes:
   db:
     driver: local
   test-db:
     driver: local
+
 
 

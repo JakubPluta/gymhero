@@ -38,6 +38,7 @@ def seed_database(env):
     database_url = build_sqlalchemy_database_url_from_settings(settings)
     get_db = partial(get_ctx_db, database_url=database_url)
     log.info("Seeding database %s", str(database_url.split("@")[-1]))
+    log.info("Seeding database %s", str(database_url))
     exercise_path = os.path.join(RESOURCE_DIR_PATH, "exercises.csv")
     df = pd.read_csv(exercise_path, header=0, index_col=0)
     df.replace({"": None, "nan": None, "N/A": None, np.nan: None}, inplace=True)
@@ -80,3 +81,4 @@ def seed_database(env):
         create_initial_exercises(
             session, df, bodyparts_dict, levels_dict, exercise_types_dict, superuser_id
         )
+        log.debug("Exercises seeded")

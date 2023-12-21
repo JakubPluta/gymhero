@@ -43,13 +43,13 @@ def test_can_get_one_exercise(test_client, seed_test_database):
 
 
 def test_can_get_my_exercises(test_client, seed_test_database, valid_jwt_token):
-    response = test_client.get("/exercises/mine")
+    response = test_client.get("/exercises/my")
     assert (
         response.status_code == 401 and response.json()["detail"] == "Not authenticated"
     )
 
     response = test_client.get(
-        "/exercises/mine", headers={"Authorization": valid_jwt_token}
+        "/exercises/my", headers={"Authorization": valid_jwt_token}
     )
     assert response.status_code == 200 and len(response.json()) > 0
 
