@@ -30,7 +30,7 @@ def setup_and_teardown():
         log.debug("database dropped")
     except Exception:
         pass
-
+    log.debug("engine url %s", str(engine.url))
     log.debug(" gymhero test started ".center(70, "*"))
     Base.metadata.create_all(bind=engine)
     yield

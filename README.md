@@ -44,7 +44,7 @@ To build an CRUD API with FastAPI, SQLAlchemy, Postgres, Docker
 - Register endpoint [x]
 
 **Add first unit/integration tests**
-- pytest []
+- pytest [x]
 
 
 **Upgrade docker-compose** 
@@ -80,15 +80,22 @@ To build an CRUD API with FastAPI, SQLAlchemy, Postgres, Docker
 
 ### Levels
 
-| Routes           | Method | Endpoint         | Access     |
-|------------------|--------|------------------|------------|
-| /levels          | GET    | /all             | All        |
-| /levels          | GET    | /{level_id}      | All        |
-| /levels          | DELETE | /{level_id}      | Superuser  |
-| /levels          | PUT    | /{level_id}      | Superuser  |
-| /levels          | GET    | /name/{level_id} | All        |
-| /levels          | POST   |                  | Superuser  |
+| Routes           | Method | Endpoint           | Access     |
+|------------------|--------|--------------------|------------|
+| /levels          | GET    | /all               | All        |
+| /levels          | GET    | /{level_id}        | All        |
+| /levels          | DELETE | /{level_id}        | Superuser  |
+| /levels          | PUT    | /{level_id}        | Superuser  |
+| /levels          | GET    | /name/{level_name} | All        |
+| /levels          | POST   |                    | Superuser  |
 
 
-### Users
-
+### Body Parts
+| Routes           | Method | Endpoint              | Access     |
+|------------------|--------|-----------------------|------------|
+| /body-parts      | GET    | /all                  | All        |
+| /body-parts      | GET    | /{bodypart_id}        | All        |
+| /body-parts      | DELETE | /{bodypart_id}        | Superuser  |
+| /body-parts      | PUT    | /{bodypart_id}        | Superuser  |
+| /body-parts      | GET    | /name/{bodypart_name} | All        |
+| /body-parts      | POST   |                       | Superuser  |

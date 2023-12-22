@@ -205,8 +205,8 @@ def test_can_add_exercise_to_training_unit(
     exercises = response.json()["exercises"]
     assert (
         response.status_code == 200
-        and exercises == [exercise_response.json()]
         and len(exercises) == 1
+        and exercises[0]["name"] == exercise_response.json()["name"]
     )
 
     response = test_client.put(
@@ -247,7 +247,7 @@ def test_can_remove_exercise_from_training_unit(
         "/exercises/1", headers={"Authorization": valid_jwt_token}
     )
 
-    assert response.json()["exercises"] == [exercise_response.json()]
+    assert response.json()["exercises"][0]["name"] == exercise_response.json()["name"]
 
     response = test_client.put(
         "/training-units/1/exercises/1/remove",

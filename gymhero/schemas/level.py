@@ -24,4 +24,4 @@ class LevelInDB(LevelBase):
 
 
 class LevelOut(LevelBase):
-    name: str
+    id: int

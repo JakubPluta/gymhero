@@ -3,7 +3,7 @@ from typing import List, Optional
 
 from pydantic import BaseModel
 
-from gymhero.schemas.exercise import ExerciseInDB
+from gymhero.schemas.exercise import ExerciseOut
 
 
 class TrainingUnitBase(BaseModel):
@@ -23,5 +23,11 @@ class TrainingUnitInDB(TrainingUnitBase):
     id: int
     created_at: datetime.datetime
     updated_at: datetime.datetime
-    exercises: Optional[List[ExerciseInDB]] = []
+    exercises: Optional[List[ExerciseOut]] = []
+    owner_id: int
+
+
+class TrainingUnitOut(TrainingUnitBase):
+    id: int
+    exercises: Optional[List[ExerciseOut]] = []
     owner_id: int

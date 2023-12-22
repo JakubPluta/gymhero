@@ -8,11 +8,11 @@ from gymhero.config import get_settings
 from gymhero.database import get_db
 from gymhero.log import get_logger
 from gymhero.main import app
-
+from gymhero.config import settings as _test_settings
 
 log = get_logger()
 
-_test_settings = get_settings("test")
+# _test_settings = get_settings("test")
 
 
 TEST_SQLALCHEMY_DATABASE_URL = (
