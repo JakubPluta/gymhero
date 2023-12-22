@@ -1,0 +1,17 @@
+FROM python:3.10-slim
+
+ENV POETRY_NO_INTERACTION=1 \
+    POETRY_VIRTUALENVS_IN_PROJECT=1 \
+    POETRY_VIRTUALENVS_CREATE=1 \
+    POETRY_CACHE_DIR=/tmp/poetry_cache
+
+RUN pip install poetry==1.7.0 && pip install psycopg2-binary && poetry config virtualenvs.create false
+
+WORKDIR /app
+COPY . .
+
+RUN poetry install --without dev && rm -rf $POETRY_CACHE_DIR
+
+EXPOSE 8000
+
+ENTRYPOINT ["poetry", "run", "python", "-m", "gymhero.server"]

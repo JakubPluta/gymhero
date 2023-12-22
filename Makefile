@@ -23,7 +23,8 @@ kill:
 	docker compose kill
 
 test-all:
-	ENV=local pytest tests/
+	docker exec -it --env-file .env.test app pip install pytest pytest-cov pytest-mock
+	docker exec -it --env-file .env.test app pytest tests/ -s -vv
 
 test-all-verbose:
 	ENV=local pytest tests/ -s -vv

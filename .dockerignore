@@ -40,3 +40,11 @@ coverage.xml
 *__pycache__*
 __pycache__/*
 **/__pycache__/
+.pre-commit-config.yaml
+
+README.md
+Makefile
+LICENSE
+docker-compose.yaml
+Dockerfile
+.coverage
