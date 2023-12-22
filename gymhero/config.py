@@ -41,9 +41,16 @@ class ContainerDevSettings(Settings):
     ENV: str = "dev"
 
 
-class LocalTestSettings(Settings):
+class ContainerTestSettings(Settings):
     model_config = SettingsConfigDict(
         env_file="./.env.test", env_file_encoding="utf-8", case_sensitive=True
+    )
+    ENV: str = "test"
+
+
+class LocalTestSettings(Settings):
+    model_config = SettingsConfigDict(
+        env_file="./.env.test.local", env_file_encoding="utf-8", case_sensitive=True
     )
     ENV: str = "test"
 
@@ -70,11 +77,11 @@ def get_settings(env: str = "dev") -> Settings:
     """
     log.debug("getting settings for env: %s", env)
 
-    if env.lower() == "dev":
+    if env.lower() in ["dev", "d", "development"]:
         return ContainerDevSettings()
-    if env.lower() == "test":
-        return LocalTestSettings()
-    if env.lower() == "local":
+    if env.lower() in ["test", "t", "testing"]:
+        return ContainerTestSettings()
+    if env.lower() in ["local", "l"]:
         return LocalDevSettings()
 
     raise ValueError("Invalid environment. Must be 'dev' or 'test' ,'local'.")

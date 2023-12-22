@@ -1,11 +1,6 @@
-import pytest
-
-from scripts.core.utils import _create_first_user
-
-
-def test_get_all_body_parts(test_client, get_test_db, seed_body_parts, valid_jwt_token):
-    _create_first_user(get_test_db, "admin@admin.com", "admin", "Admin", True, True)
-
+def test_get_all_body_parts(
+    test_client, seed_body_parts, valid_jwt_token, first_active_superuser
+):
     response = test_client.get(
         "/body-parts/all",
         params={"limit": 3, "skip": 0},
@@ -21,9 +16,9 @@ def test_get_all_body_parts(test_client, get_test_db, seed_body_parts, valid_jwt
     assert len(data) == 1
 
 
-def test_get_one_body_part(test_client, get_test_db, seed_body_parts, valid_jwt_token):
-    _create_first_user(get_test_db, "admin@admin.com", "admin", "Admin", True, True)
-
+def test_get_one_body_part(
+    test_client, seed_body_parts, valid_jwt_token, first_active_superuser
+):
     response = test_client.get(
         "/body-parts/1", headers={"Authorization": valid_jwt_token}
     )
@@ -51,9 +46,7 @@ def test_get_one_body_part(test_client, get_test_db, seed_body_parts, valid_jwt_
     assert response.json()["detail"] == "Body part with name abc not found"
 
 
-def test_can_create_body_part(test_client, get_test_db, valid_jwt_token):
-    _create_first_user(get_test_db, "admin@admin.com", "admin", "Admin", True, True)
-
+def test_can_create_body_part(test_client, valid_jwt_token, first_active_superuser):
     response = test_client.post(
         "/body-parts",
         json={"name": "test", "description": "test"},
@@ -81,10 +74,8 @@ def test_can_create_body_part(test_client, get_test_db, valid_jwt_token):
 
 
 def test_can_delete_body_part(
-    test_client, get_test_db, seed_body_parts, valid_jwt_token
+    test_client, seed_body_parts, valid_jwt_token, first_active_superuser
 ):
-    _create_first_user(get_test_db, "admin@admin.com", "admin", "Admin", True, True)
-
     response = test_client.delete(
         "/body-parts/1", headers={"Authorization": valid_jwt_token}
     )
@@ -106,10 +97,8 @@ def test_can_delete_body_part(
 
 
 def test_can_update_body_part(
-    test_client, get_test_db, seed_body_parts, valid_jwt_token
+    test_client, seed_body_parts, valid_jwt_token, first_active_superuser
 ):
-    _create_first_user(get_test_db, "admin@admin.com", "admin", "Admin", True, True)
-
     response = test_client.put(
         "/body-parts/1",
         json={"name": "test", "description": "test"},

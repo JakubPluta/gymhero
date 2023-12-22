@@ -26,7 +26,7 @@ RESOURCE_DIR_PATH = os.path.join(
 log = get_logger(__name__)
 
 
-def seed_database(env):
+def seed_database(env, limit=None):
     """
     Seed the database with initial data.
 
@@ -76,6 +76,9 @@ def seed_database(env):
     log.debug("Levels: %s", levels_dict)
     log.debug("BodyParts: %s", bodyparts_dict)
     log.debug("ExerciseTypes: %s", exercise_types_dict)
+
+    if limit:
+        df = df.head(limit)
 
     with get_db() as session:
         create_initial_exercises(

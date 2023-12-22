@@ -217,7 +217,7 @@ def get_argparser() -> ArgumentParser:
         default="local",
         dest="env",
         help="Environment for which to seed the database",
-        choices=["dev", "test", "local"],
+        choices=["dev", "test", "local", "d", "l", "t"],
     )
     return parser
 

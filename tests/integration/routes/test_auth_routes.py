@@ -1,19 +1,4 @@
-import datetime
-import json
-import unittest
-from unittest import mock
-from unittest.mock import patch
-
-import pytest
-from fastapi.exceptions import HTTPException, RequestValidationError
-
-from scripts.core._initsu import seed_superuser
-from scripts.core.utils import _create_first_user
-
-
-def test_can_login_for_access_token(test_client, get_test_db):
-    _create_first_user(get_test_db, "admin@admin.com", "admin", "Admin", True, True)
-
+def test_can_login_for_access_token(test_client, first_active_superuser):
     response = test_client.post(
         "/auth/login", data={"username": "admin@admin.com", "password": "admin"}
     )
@@ -25,9 +10,7 @@ def test_can_login_for_access_token(test_client, get_test_db):
     )
 
 
-def test_cant_login_for_wrong_password(test_client, get_test_db):
-    _create_first_user(get_test_db, "admin@admin.com", "admin", "Admin", True, True)
-
+def test_cant_login_for_wrong_password(test_client, first_active_superuser):
     response = test_client.post(
         "/auth/login", data={"username": "admin@admin.com", "password": "wrong"}
     )
@@ -37,9 +20,7 @@ def test_cant_login_for_wrong_password(test_client, get_test_db):
     )
 
 
-def test_cant_login_for_wrong_username(test_client, get_test_db):
-    _create_first_user(get_test_db, "admin@admin.com", "admin", "Admin", True, True)
-
+def test_cant_login_for_wrong_username(test_client, first_active_superuser):
     response = test_client.post(
         "/auth/login", data={"username": "wrong@admin.com", "password": "admin"}
     )
@@ -49,9 +30,7 @@ def test_cant_login_for_wrong_username(test_client, get_test_db):
     )
 
 
-def test_cant_login_if_not_active_user(test_client, get_test_db):
-    _create_first_user(get_test_db, "admin@admin.com", "admin", "Admin", True, False)
-
+def test_cant_login_if_not_active_user(test_client, first_incative_user):
     response = test_client.post(
         "/auth/login", data={"username": "admin@admin.com", "password": "admin"}
     )
@@ -74,9 +53,7 @@ def test_can_register(test_client):
     }
 
 
-def test_cannot_register_if_user_exists(test_client, get_test_db):
-    _create_first_user(get_test_db, "admin@admin.com", "admin", "Admin", True, True)
-
+def test_cannot_register_if_user_exists(test_client, first_active_superuser):
     response = test_client.post(
         "/auth/register",
         json={
