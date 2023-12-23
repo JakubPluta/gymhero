@@ -1,13 +1,14 @@
 dev:
 	docker compose build
 	docker compose up -d 
-	docker exec -it app alembic downgrade base && alembic upgrade head
+	docker exec -it app alembic upgrade head
 	docker exec -it app python -m scripts.initdb --env=dev
 
 install:
 	docker compose build --no-cache
 	docker compose up -d --force-recreate
-	docker exec -it app alembic downgrade base && alembic upgrade head
+	docker exec -it app alembic downgrade base
+	docker exec -it app alembic upgrade head
 	docker exec -it app python -m scripts.initdb --env=dev
 
 up:
@@ -81,3 +82,11 @@ local-recreate:
 	docker compose up -d --force-recreate
 	ENV=local alembic downgrade base && alembic upgrade head
 	python -m scripts.initdb --env=local
+
+
+get-token:
+	curl -X 'POST' \
+	'http://localhost:8000/auth/login' \
+	-H 'accept: application/json' \
+	-H 'Content-Type: application/x-www-form-urlencoded' \
+	-d 'grant_type=&username=gymhero%40mail.com&password=gymhero&scope=&client_id=&client_secret='
