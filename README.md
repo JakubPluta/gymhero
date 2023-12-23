@@ -331,3 +331,12 @@ curl -X 'POST' \
 ```
 
 You can also do everything by using fast api docs which are more user friendly and more convinient way to play with api. To do that check http://localhost:8000/docs (you app needs to run)
+
+
+
+#### TODO:
+- Add couple of default training plans e.g FBW, PPL, Splits etc - that every registered use can access
+- Add environment for local testsing etc.
+- Add redis cache
+- Improve test fixtures
+- Migrate to async 
