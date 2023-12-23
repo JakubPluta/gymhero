@@ -34,7 +34,7 @@ test-all-verbose:
 	docker exec -it --env-file .env.test app pytest tests/ -s -vv
 
 test-unit:
-	docker exec -it --env-file .env.test app pytest tests/unit $(args)
+	docker exec -it --env-file .env.test app pytest tests/unit 
 
 test-integration:
 	docker exec -it --env-file .env.test app pytest tests/integration
@@ -52,9 +52,6 @@ pretty:
 initsu:
 	docker exec -it app python -m scripts.initsu --env=dev
 
-initdb:
-	docker exec -it app python -m scripts.initdb --env=dev
-
 alembic-head:
 	docker exec -it app alembic upgrade head
 
@@ -66,6 +63,9 @@ alembic-up:
 
 alembic-down:
 	docker exec -it app alembic downgrade -1
+
+alembic-migrate:
+	docker exec -it app alembic revision --autogenerate -m "new migration"
 
 alembic-recreate:
 	docker exec -it app alembic downgrade base && alembic upgrade head

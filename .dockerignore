@@ -48,3 +48,6 @@ LICENSE
 docker-compose.yaml
 Dockerfile
 .coverage
+media/
+media/*
+media
