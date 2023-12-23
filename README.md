@@ -1,6 +1,8 @@
 # GymHero
 
-Simple application to create training plans, workouts, add own exercise and many others....
+Simple application to manage your gym training workouts.
+You have the flexibility to create your own exercises, you can develop custom training units and these units can be easily integrated into personalized training plans. You can manage your training units by adding or removing exercises as needed.
+By default application contains database od more than 1000 exercises.
 
 
 ### Motivation
