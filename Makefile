@@ -1,11 +1,16 @@
-recreate:
+dev:
+	docker compose build
+	docker compose up -d 
+	docker exec -it app alembic downgrade base && alembic upgrade head
+	docker exec -it app python -m scripts.initdb --env=dev
+
+install:
 	docker compose build --no-cache
 	docker compose up -d --force-recreate
 	docker exec -it app alembic downgrade base && alembic upgrade head
 	docker exec -it app python -m scripts.initdb --env=dev
 
 up:
-	docker compose build
 	docker compose up -d
 
 run:
@@ -23,21 +28,22 @@ kill:
 	docker compose kill
 
 test-all:
-	docker exec -it --env-file .env.test app pip install pytest pytest-cov pytest-mock
-	docker exec -it --env-file .env.test app pytest tests/ -s -vv
+	docker exec -it --env-file .env.test app pytest tests/
 
 test-all-verbose:
-	ENV=local pytest tests/ -s -vv
+	docker exec -it --env-file .env.test app pytest tests/ -s -vv
 
 test-unit:
-	ENV=test pytest tests/unit/
+	docker exec -it --env-file .env.test app pytest tests/unit $(args)
 
 test-integration:
-	ENV=test pytest tests/integration/
+	docker exec -it --env-file .env.test app pytest tests/integration
+
+cov-report:
+	docker exec -it --env-file .env.test app pytest --cov-report html --cov=gymhero tests/ 
 
 cov:
-	ENV=test pytest --cov-report html --cov=gymhero tests/ 
-
+	docker exec -it --env-file .env.test app pytest --cov=gymhero tests/ 
 
 pretty:
 	isort gymhero/ && isort tests/
@@ -49,21 +55,21 @@ initsu:
 initdb:
 	docker exec -it app python -m scripts.initdb --env=dev
 
-ah:
+alembic-head:
 	docker exec -it app alembic upgrade head
 
-ab:
+alembic-base:
 	docker exec -it app alembic downgrade base
 
-aup:
+alembic-up:
 	docker exec -it app alembic upgrade +1
 
-aup:
+alembic-down:
 	docker exec -it app alembic downgrade -1
 
-arc:
+alembic-recreate:
 	docker exec -it app alembic downgrade base && alembic upgrade head
-ari:
+alembic-init:
 	docker exec -it app alembic downgrade base && alembic upgrade head
 	docker exec -it app python -m scripts.initdb --env=dev
 

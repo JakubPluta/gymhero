@@ -35,7 +35,7 @@ COPY poetry.lock pyproject.toml ./
 
 # install runtime deps - uses $POETRY_VIRTUALENVS_IN_PROJECT internally
 RUN --mount=type=cache,target=/root/.cache \
-    poetry install --without=dev && pip install psycopg2-binary
+    poetry install --without=dev && pip install psycopg2-binary pytest pytest-cov pytest-mock
 
 
 FROM python-base as development
@@ -46,7 +46,7 @@ COPY --from=builder-base $POETRY_HOME $POETRY_HOME
 COPY --from=builder-base $PYSETUP_PATH $PYSETUP_PATH
 
 RUN --mount=type=cache,target=/root/.cache \
-    poetry install --with=dev
+    poetry install --with=dev 
 
 WORKDIR /app
 
