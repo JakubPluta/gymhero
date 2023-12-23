@@ -18,7 +18,7 @@ To build an CRUD API with FastAPI, SQLAlchemy, Postgres, Docker
 
 **Entity Relationship Diagram**
 
-![ER Diagram](media\ermodel.png?raw=true "ER Diagram")
+![ER Diagram](media/ermodel.png?raw=true "ER Diagram")
 
 #### Core technologies
 - FastAPI - web framework for building APIs with Python 3.8+ based on standard Python type hints.
