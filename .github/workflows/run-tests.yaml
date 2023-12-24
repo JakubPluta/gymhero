@@ -4,8 +4,12 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - name: Build the stack
-        run: docker-compose up -d
-      - name: Test
-        run: docker exec -it --env-file .env.test app pytest tests/ -s -vv
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Tests
+        uses: cloudposse/github-action-docker-compose-test-run@main
+        with:
+          file: docker-compose.yml
+          service: app
+          command: pytest tests/ -s -vv
