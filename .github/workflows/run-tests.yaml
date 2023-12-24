@@ -1,0 +1,11 @@
+name: Run tests in container
+on: push
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Build the stack
+        run: docker-compose up -d
+      - name: Test
+        run: docker exec -it --env-file .env.test app pytest tests/ -s -vv
