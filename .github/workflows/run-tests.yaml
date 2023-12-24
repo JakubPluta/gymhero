@@ -1,0 +1,23 @@
+name: Run tests in container
+on: push
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - uses: adambirds/docker-compose-action@v1.3.0
+      with:
+        compose-file: "docker-compose.yaml"
+        down-flags: "--volumes"
+        test-container: "app"
+        test-command: "pytest --cov=./ --cov-report=xml -vv -ss"
+      env:
+        POSTGRES_USER: "test"
+        POSTGRES_PASSWORD: "test"
+        POSTGRES_DB: "workout"
+        POSTGRES_HOST: "test-db"
+        POSTGRES_PORT: 5432
+        FIRST_SUPERUSER_USERNAME: "testuser"
+        FIRST_SUPERUSER_EMAIL: "testuser@mail.com"
+        FIRST_SUPERUSER_PASSWORD: "password"
+        ENV: "test"
