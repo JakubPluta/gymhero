@@ -12,4 +12,4 @@ jobs:
         with:
           file: docker-compose.yaml
           service: app
-          command: ENV=test pytest tests/ -s -vv
+          command: pytest tests/ -s -vv
