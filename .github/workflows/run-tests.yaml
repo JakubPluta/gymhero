@@ -10,6 +10,6 @@ jobs:
       - name: Tests
         uses: cloudposse/github-action-docker-compose-test-run@main
         with:
-          file: docker-compose.yml
+          file: docker-compose.yaml
           service: app
-          command: pytest tests/ -s -vv
+          command: ENV=test pytest tests/ -s -vv
