@@ -1,66 +1,33 @@
-from datetime import timedelta
-
 import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy.orm import sessionmaker
 
-from gymhero.config import get_settings
 from gymhero.log import get_logger
 from gymhero.main import app
 from gymhero.models import Base
 from gymhero.security import create_access_token
-from scripts.core._initdb import seed_database
-from scripts.core.utils import (
-    _create_first_user,
-    _get_unique_values,
-    create_initial_body_parts,
-    create_initial_exercise_types,
-    create_initial_levels,
-    load_exercise_resource,
+from scripts.core.catalog import (
+    create_body_parts,
+    create_exercise_types,
+    create_levels,
 )
-from tests.conftest import engine
+from scripts.core.resources import load_exercises, unique_values
+from scripts.core.seed import seed_database
+from scripts.core.users import get_or_create_user
 
 log = get_logger("conftest")
 
 
 @pytest.fixture(scope="function", autouse=True)
-def setup_and_teardown():
-    try:
-        Base.metadata.drop_all(bind=engine)
-        log.debug("database dropped")
-    except Exception:
-        pass
-    log.debug("engine url %s", str(engine.url))
-    log.debug(" gymhero test started ".center(70, "*"))
-    Base.metadata.create_all(bind=engine)
+def setup_and_teardown(sync_engine):
+    Base.metadata.drop_all(bind=sync_engine)
+    Base.metadata.create_all(bind=sync_engine)
     yield
-    Base.metadata.drop_all(bind=engine)
-    log.debug(" gymhero test ended ".center(70, "*"))
+    Base.metadata.drop_all(bind=sync_engine)
 
 
 @pytest.fixture
-def seed_test_database():
-    seed_database("test", limit=10)
-
-
-@pytest.fixture
-def test_settings():
-    return get_settings("test")
-
-
-@pytest.fixture
-def subject():
-    return "user123"
-
-
-@pytest.fixture
-def expires_delta():
-    return timedelta(minutes=30)
-
-
-@pytest.fixture
-def get_test_db(_test_session):
-    db = _test_session()
+def get_test_db(_sync_session_factory):
+    db = _sync_session_factory()
     try:
         yield db
     finally:
@@ -69,79 +36,70 @@ def get_test_db(_test_session):
 
 @pytest.fixture
 def test_client():
+    # TestClient drives the async app synchronously (via its portal), so route
+    # tests stay plain sync functions.
     return TestClient(app)
 
 
 @pytest.fixture
-def exercises_df():
-    return load_exercise_resource()
+def seed_test_database():
+    seed_database("test", limit=10)
 
 
 @pytest.fixture
-def initial_levels(exercises_df):
-    return _get_unique_values(exercises_df, "Level")
+def exercise_rows():
+    return load_exercises()
+
+
+@pytest.fixture
+def initial_levels(exercise_rows):
+    return unique_values(exercise_rows, "Level")
 
 
 @pytest.fixture
 def seed_levels(get_test_db, initial_levels):
-    create_initial_levels(get_test_db, initial_levels)
+    create_levels(get_test_db, initial_levels)
 
 
 @pytest.fixture
-def initial_body_parts(exercises_df):
-    return _get_unique_values(exercises_df, "BodyPart")
+def initial_body_parts(exercise_rows):
+    return unique_values(exercise_rows, "BodyPart")
 
 
 @pytest.fixture
 def seed_body_parts(get_test_db, initial_body_parts):
-    create_initial_body_parts(get_test_db, initial_body_parts)
+    create_body_parts(get_test_db, initial_body_parts)
 
 
 @pytest.fixture
-def initial_exercise_types(exercises_df):
-    return _get_unique_values(exercises_df, "Type")
+def initial_exercise_types(exercise_rows):
+    return unique_values(exercise_rows, "Type")
 
 
 @pytest.fixture
 def seed_exercise_types(get_test_db, initial_exercise_types):
-    create_initial_exercise_types(get_test_db, initial_exercise_types)
+    create_exercise_types(get_test_db, initial_exercise_types)
 
 
 @pytest.fixture
 def valid_jwt_token():
-    token = create_access_token("1")
-    return f"Bearer {token}"
+    return f"Bearer {create_access_token('1')}"
 
 
 @pytest.fixture
 def invalid_jwt_token():
-    token = create_access_token("1")
-    return f"Bearer23 {token}"
+    return f"Bearer23 {create_access_token('1')}"
 
 
 @pytest.fixture
 def first_active_superuser(get_test_db):
-    return _create_first_user(
+    return get_or_create_user(
         get_test_db, "admin@admin.com", "admin", "Admin", True, True
     )
 
 
 @pytest.fixture
-def first_incative_superuser(get_test_db):
-    return _create_first_user(
-        get_test_db, "admin@admin.com", "admin", "Admin", True, False
-    )
-
-
-@pytest.fixture
-def first_incative_user(get_test_db):
-    return _create_first_user(
+def first_inactive_user(get_test_db):
+    return get_or_create_user(
         get_test_db, "admin@admin.com", "admin", "Admin", False, False
-    )
-
-
-@pytest.fixture
-def first_incative_superuser(get_test_db):
-    return _create_first_user(
-        get_test_db, "admin@admin.com", "admin", "Admin", True, False
     )

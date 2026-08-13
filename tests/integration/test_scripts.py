@@ -1,7 +1,6 @@
 from sqlalchemy import CursorResult, text
 
-from scripts.core._initdb import seed_database
-from scripts.core._initsu import seed_superuser
+from scripts.core.seed import seed_database, seed_superuser
 
 
 def test_can_seed_database(get_test_db) -> None:

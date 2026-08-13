@@ -1,36 +1,40 @@
-from typing import Generator
-from unittest.mock import patch
+import inspect
 
 import pytest
+from sqlalchemy.ext.asyncio import (
+    AsyncSession,
+    async_sessionmaker,
+    create_async_engine,
+)
 from sqlalchemy.orm import Session
+from sqlalchemy.pool import NullPool
 
 from gymhero.database.db import get_ctx_db, get_db
 from gymhero.exceptions import SQLAlchemyException
-from tests.conftest import override_get_db
 
 
-@patch("gymhero.database.db.get_db", return_value=override_get_db())
-def test_get_db(mock_get_db):
-    # Test case 1: Check if the function returns a generator
-    db = mock_get_db()
-    print(db)
-    assert isinstance(db, Generator)
+async def test_get_db_yields_async_session(_database_urls, monkeypatch):
+    engine = create_async_engine(_database_urls["async"], poolclass=NullPool)
+    factory = async_sessionmaker(engine, expire_on_commit=False)
+    monkeypatch.setattr("gymhero.database.db.async_session_factory", factory)
 
-    # Test case 2: Check if the generator yields a session object
-    session: Session = next(db)
-    assert isinstance(session, Session)
+    agen = get_db()
+    assert inspect.isasyncgen(agen)
 
-    with pytest.raises(StopIteration) as e:
-        session = next(db)
-    assert e.type == StopIteration
+    session = await agen.__anext__()
+    assert isinstance(session, AsyncSession)
+
+    with pytest.raises(StopAsyncIteration):
+        await agen.__anext__()
+
+    await engine.dispose()
 
 
-def test_get_ctx_db(test_sqlalchemy_database_url):
-    with get_ctx_db(test_sqlalchemy_database_url) as db:
+def test_get_ctx_db(sync_database_url):
+    with get_ctx_db(sync_database_url) as db:
         assert isinstance(db, Session)
-        assert db.is_active == True
+        assert db.is_active is True
 
-    with pytest.raises(SQLAlchemyException) as e:
-        with get_ctx_db(test_sqlalchemy_database_url) as db:
+    with pytest.raises(SQLAlchemyException):
+        with get_ctx_db(sync_database_url) as db:
             db.add(1)
-    assert e.type == SQLAlchemyException

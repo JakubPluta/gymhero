@@ -1,10 +1,15 @@
-from datetime import datetime, timedelta
-from typing import Any, Union
+from datetime import datetime, timedelta, timezone
 
+import jwt
 import pytest
-from jose import jwt
 
-from gymhero.security import create_access_token, get_password_hash, verify_password
+from gymhero.security import (
+    create_access_token,
+    create_refresh_token,
+    decode_token,
+    get_password_hash,
+    verify_password,
+)
 
 
 def test_password_hash():
@@ -50,8 +55,28 @@ def test_create_access_token(subject, expires_delta, test_settings):
     )
     assert decoded_token is not None
 
-    # Verify that the token contains the correct subject
+    # Verify that the token contains the correct subject and type
     assert decoded_token["sub"] == subject
+    assert decoded_token["type"] == "access"
 
     # Verify that the token expires in the future
-    assert decoded_token["exp"] > datetime.utcnow().timestamp()
+    assert decoded_token["exp"] > datetime.now(timezone.utc).timestamp()
+
+
+def test_create_refresh_token_has_refresh_type(test_settings):
+    token = create_refresh_token("user123")
+    decoded = jwt.decode(
+        token, test_settings.SECRET_KEY, algorithms=[test_settings.ALGORITHM]
+    )
+    assert decoded["sub"] == "user123"
+    assert decoded["type"] == "refresh"
+    assert decoded["exp"] > datetime.now(timezone.utc).timestamp()
+
+
+def test_decode_token_rejects_wrong_type():
+    access = create_access_token("1")
+    # An access token must not pass where a refresh token is expected.
+    with pytest.raises(jwt.InvalidTokenError):
+        decode_token(access, expected_type="refresh")
+    # ...and the happy path returns the payload.
+    assert decode_token(access, expected_type="access")["sub"] == "1"

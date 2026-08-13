@@ -50,12 +50,10 @@ def test_negative_skip():
 def test_get_token_valid_token():
     # Arrange
     token = "valid_token"
-    expected_payload = TokenPayload(sub="1234567890", username="john_doe")
+    expected_payload = TokenPayload(sub=1234567890, type="access")
 
-    # Act
-    with patch(
-        "jose.jwt.decode", return_value={"sub": "1234567890", "username": "john_doe"}
-    ):
+    # Act — an access token must carry the "access" type claim.
+    with patch("jwt.decode", return_value={"sub": "1234567890", "type": "access"}):
         result = get_token(token)
 
     # Assert
@@ -71,35 +69,35 @@ def test_get_token_invalid_token():
         get_token(token)
 
 
-def test_get_current_user_user_exists(mocker):
+async def test_get_current_user_user_exists(mocker):
     # Mock the dependencies
-    db_mock = mocker.Mock(spec=Session)
+    db_mock = mocker.AsyncMock()
     token_mock = mocker.Mock()
     token_mock.sub = 1
 
-    # Mock the user_crud.get_one function to return a user
+    # Mock the async user_crud.get_one to return a user
     user_mock = mocker.Mock(spec=User)
-    user_crud.get_one = mocker.Mock(return_value=user_mock)
+    mocker.patch.object(user_crud, "get_one", mocker.AsyncMock(return_value=user_mock))
 
     # Call the function being tested
-    result = get_current_user(db=db_mock, token=token_mock)
+    result = await get_current_user(db=db_mock, token=token_mock)
 
     # Assert that the function returns the user object
     assert result == user_mock
 
 
-def test_get_current_user_user_not_found(mocker):
+async def test_get_current_user_user_not_found(mocker):
     # Mock the dependencies
-    db_mock = mocker.Mock(spec=Session)
+    db_mock = mocker.AsyncMock()
     token_mock = mocker.Mock()
     token_mock.sub = 1
 
-    # Mock the user_crud.get_one function to return None
-    user_crud.get_one = mocker.Mock(return_value=None)
+    # Mock the async user_crud.get_one to return None
+    mocker.patch.object(user_crud, "get_one", mocker.AsyncMock(return_value=None))
 
     # Call the function being tested and assert that it raises an HTTPException
     with pytest.raises(HTTPException) as exc_info:
-        get_current_user(db=db_mock, token=token_mock)
+        await get_current_user(db=db_mock, token=token_mock)
 
     # Assert that the raised exception has the correct status code and details
     assert exc_info.value.status_code == 404

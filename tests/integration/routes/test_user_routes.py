@@ -1,59 +1,59 @@
 import pytest
 
-from scripts.core.utils import _create_first_user
+from scripts.core.users import get_or_create_user
 
 
 @pytest.fixture
 def seed_users(get_test_db):
-    _create_first_user(get_test_db, "admin@admin.com", "admin", "Admin", True, True)
-    _create_first_user(get_test_db, "user1@test.com", "user1", "User1", False, True)
-    _create_first_user(get_test_db, "user2@test.com", "user2", "User2", False, True)
+    get_or_create_user(get_test_db, "admin@admin.com", "admin", "Admin", True, True)
+    get_or_create_user(get_test_db, "user1@test.com", "user1", "User1", False, True)
+    get_or_create_user(get_test_db, "user2@test.com", "user2", "User2", False, True)
 
 
 def test_cant_get_all_user_if_not_superuser(test_client):
-    response = test_client.get("/users/all")
+    response = test_client.get("/api/v1/users/all")
     assert response.status_code == 401
 
 
 def test_can_get_all_user(test_client, seed_users, valid_jwt_token):
-    response = test_client.get("/users/all", headers={"Authorization": valid_jwt_token})
+    response = test_client.get("/api/v1/users/all", headers={"Authorization": valid_jwt_token})
     assert response.status_code == 200
     data = response.json()
-    assert len(data) == 3
+    assert len(data["items"]) == 3
 
 
 def test_cant_get_all_user_if_not_authenticated(test_client):
-    response = test_client.get("/users/all")
+    response = test_client.get("/api/v1/users/all")
     assert response.status_code == 401
 
 
 def test_can_get_user_by_id(test_client, seed_users, valid_jwt_token):
-    response = test_client.get("/users/2", headers={"Authorization": valid_jwt_token})
+    response = test_client.get("/api/v1/users/2", headers={"Authorization": valid_jwt_token})
     assert response.status_code == 200
     data = response.json()
     assert data["id"] == 2
 
-    response = test_client.get("/users/100")
+    response = test_client.get("/api/v1/users/100")
     assert response.status_code == 401
 
 
 def test_can_get_user_by_name(test_client, seed_users, valid_jwt_token):
     response = test_client.get(
-        "/users/email/user2@test.com", headers={"Authorization": valid_jwt_token}
+        "/api/v1/users/email/user2@test.com", headers={"Authorization": valid_jwt_token}
     )
     assert response.status_code == 200
     data = response.json()
     assert data["id"] == 3
 
-    response = test_client.get("/users/email/user2@test.com")
+    response = test_client.get("/api/v1/users/email/user2@test.com")
     assert response.status_code == 401
 
 
 def test_can_create_user(test_client, get_test_db, valid_jwt_token):
-    _create_first_user(get_test_db, "admin@test.com", "admin", "admin", True, True)
+    get_or_create_user(get_test_db, "admin@test.com", "admin", "admin", True, True)
 
     response = test_client.post(
-        "/users",
+        "/api/v1/users",
         json={
             "email": "test@test.com",
             "password": "test",
@@ -66,7 +66,7 @@ def test_can_create_user(test_client, get_test_db, valid_jwt_token):
     assert response.status_code == 201
 
     response = test_client.post(
-        "/users",
+        "/api/v1/users",
         json={
             "email": "test@test.com",
             "password": "test",
@@ -79,7 +79,7 @@ def test_can_create_user(test_client, get_test_db, valid_jwt_token):
     assert response.status_code == 409
 
     response = test_client.post(
-        "/users",
+        "/api/v1/users",
         json={
             "email": "tes1t@test.com",
             "password": "test",
@@ -93,10 +93,10 @@ def test_can_create_user(test_client, get_test_db, valid_jwt_token):
 
 
 def test_can_update_user(test_client, get_test_db, valid_jwt_token):
-    _create_first_user(get_test_db, "admin@test.com", "admin", "admin", True, True)
+    get_or_create_user(get_test_db, "admin@test.com", "admin", "admin", True, True)
 
     response = test_client.put(
-        "/users/1",
+        "/api/v1/users/1",
         json={
             "email": "test@test.com",
             "password": "test",
@@ -110,23 +110,23 @@ def test_can_update_user(test_client, get_test_db, valid_jwt_token):
 
 
 def test_can_delete_user(test_client, get_test_db, valid_jwt_token):
-    _create_first_user(get_test_db, "admin@test.com", "admin", "admin", True, True)
-    _create_first_user(get_test_db, "test@test.com", "test", "test", False, True)
+    get_or_create_user(get_test_db, "admin@test.com", "admin", "admin", True, True)
+    get_or_create_user(get_test_db, "test@test.com", "test", "test", False, True)
 
     response = test_client.delete(
-        "/users/2",
+        "/api/v1/users/2",
         headers={"Authorization": valid_jwt_token},
     )
 
-    assert response.status_code == 200
+    assert response.status_code == 204
 
 
 def test_cant_delete_user_if_not_superuser(test_client, get_test_db, valid_jwt_token):
-    _create_first_user(get_test_db, "admin@test.com", "admin", "admin", False, True)
-    _create_first_user(get_test_db, "test@test.com", "test", "test", False, True)
+    get_or_create_user(get_test_db, "admin@test.com", "admin", "admin", False, True)
+    get_or_create_user(get_test_db, "test@test.com", "test", "test", False, True)
 
     response = test_client.delete(
-        "/users/1",
+        "/api/v1/users/1",
         headers={"Authorization": valid_jwt_token},
     )
 
@@ -137,10 +137,10 @@ def test_cant_delete_user_if_not_superuser(test_client, get_test_db, valid_jwt_t
 
 
 def test_cannot_delete_myself(test_client, get_test_db, valid_jwt_token):
-    _create_first_user(get_test_db, "admin@test.com", "admin", "admin", True, True)
+    get_or_create_user(get_test_db, "admin@test.com", "admin", "admin", True, True)
 
     response = test_client.delete(
-        "/users/1",
+        "/api/v1/users/1",
         headers={"Authorization": valid_jwt_token},
     )
 
@@ -151,9 +151,9 @@ def test_cannot_delete_myself(test_client, get_test_db, valid_jwt_token):
 
 
 def test_cannot_delete_non_existing_user(test_client, valid_jwt_token, get_test_db):
-    _create_first_user(get_test_db, "admin@test.com", "admin", "admin", True, True)
+    get_or_create_user(get_test_db, "admin@test.com", "admin", "admin", True, True)
     response = test_client.delete(
-        "/users/100",
+        "/api/v1/users/100",
         headers={"Authorization": valid_jwt_token},
     )
 
@@ -161,9 +161,9 @@ def test_cannot_delete_non_existing_user(test_client, valid_jwt_token, get_test_
 
 
 def test_cannot_update_non_existing_user(test_client, valid_jwt_token, get_test_db):
-    _create_first_user(get_test_db, "admin@test.com", "admin", "admin", True, True)
+    get_or_create_user(get_test_db, "admin@test.com", "admin", "admin", True, True)
     response = test_client.put(
-        "/users/100",
+        "/api/v1/users/100",
         json={
             "email": "test@test.com",
             "password": "test",
@@ -178,16 +178,16 @@ def test_cannot_update_non_existing_user(test_client, valid_jwt_token, get_test_
 
 
 def test_cannot_fetch_non_existing_user(test_client, valid_jwt_token, get_test_db):
-    _create_first_user(get_test_db, "admin@test.com", "admin", "admin", True, True)
+    get_or_create_user(get_test_db, "admin@test.com", "admin", "admin", True, True)
     response = test_client.get(
-        "/users/100",
+        "/api/v1/users/100",
         headers={"Authorization": valid_jwt_token},
     )
 
     assert response.status_code == 404
 
     response = test_client.get(
-        "/users/email/test",
+        "/api/v1/users/email/test",
         headers={"Authorization": valid_jwt_token},
     )
     assert response.status_code == 404

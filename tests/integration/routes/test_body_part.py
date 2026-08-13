@@ -2,45 +2,45 @@ def test_get_all_body_parts(
     test_client, seed_body_parts, valid_jwt_token, first_active_superuser
 ):
     response = test_client.get(
-        "/body-parts/all",
+        "/api/v1/body-parts/all",
         params={"limit": 3, "skip": 0},
         headers={"Authorization": valid_jwt_token},
     )
     assert response.status_code == 200
     data = response.json()
-    assert len(data) == 3
+    assert len(data["items"]) == 3
 
-    response = test_client.get("/body-parts/all", params={"limit": 1, "skip": 1})
+    response = test_client.get("/api/v1/body-parts/all", params={"limit": 1, "skip": 1})
     assert response.status_code == 200
     data = response.json()
-    assert len(data) == 1
+    assert len(data["items"]) == 1
 
 
 def test_get_one_body_part(
     test_client, seed_body_parts, valid_jwt_token, first_active_superuser
 ):
     response = test_client.get(
-        "/body-parts/1", headers={"Authorization": valid_jwt_token}
+        "/api/v1/body-parts/1", headers={"Authorization": valid_jwt_token}
     )
     assert response.status_code == 200
     data = response.json()
     assert data["id"] == 1
 
     response = test_client.get(
-        "/body-parts/name/Biceps", headers={"Authorization": valid_jwt_token}
+        "/api/v1/body-parts/name/Biceps", headers={"Authorization": valid_jwt_token}
     )
     assert response.status_code == 200
     data = response.json()
     assert data["name"] == "Biceps"
 
     response = test_client.get(
-        "/body-parts/100", headers={"Authorization": valid_jwt_token}
+        "/api/v1/body-parts/100", headers={"Authorization": valid_jwt_token}
     )
     assert response.status_code == 404
     assert response.json()["detail"] == "Body part with id 100 not found"
 
     response = test_client.get(
-        "/body-parts/name/abc", headers={"Authorization": valid_jwt_token}
+        "/api/v1/body-parts/name/abc", headers={"Authorization": valid_jwt_token}
     )
     assert response.status_code == 404
     assert response.json()["detail"] == "Body part with name abc not found"
@@ -48,14 +48,14 @@ def test_get_one_body_part(
 
 def test_can_create_body_part(test_client, valid_jwt_token, first_active_superuser):
     response = test_client.post(
-        "/body-parts",
+        "/api/v1/body-parts",
         json={"name": "test", "description": "test"},
         headers={"Authorization": valid_jwt_token},
     )
     assert response.status_code == 201
 
     response = test_client.post(
-        "/body-parts",
+        "/api/v1/body-parts",
         json={"name": "test", "description": "test"},
     )
     assert (
@@ -63,7 +63,7 @@ def test_can_create_body_part(test_client, valid_jwt_token, first_active_superus
     )
 
     response = test_client.post(
-        "/body-parts",
+        "/api/v1/body-parts",
         json={"name": "test", "description": "test"},
         headers={"Authorization": valid_jwt_token},
     )
@@ -77,12 +77,12 @@ def test_can_delete_body_part(
     test_client, seed_body_parts, valid_jwt_token, first_active_superuser
 ):
     response = test_client.delete(
-        "/body-parts/1", headers={"Authorization": valid_jwt_token}
+        "/api/v1/body-parts/1", headers={"Authorization": valid_jwt_token}
     )
-    assert response.status_code == 200
+    assert response.status_code == 204
 
     response = test_client.delete(
-        "/body-parts/100", headers={"Authorization": valid_jwt_token}
+        "/api/v1/body-parts/100", headers={"Authorization": valid_jwt_token}
     )
     assert (
         response.status_code == 404
@@ -90,7 +90,7 @@ def test_can_delete_body_part(
         == "Body part with id 100 not found. Cannot delete."
     )
 
-    response = test_client.delete("/body-parts/1")
+    response = test_client.delete("/api/v1/body-parts/1")
     assert (
         response.status_code == 401 and response.json()["detail"] == "Not authenticated"
     )
@@ -100,14 +100,14 @@ def test_can_update_body_part(
     test_client, seed_body_parts, valid_jwt_token, first_active_superuser
 ):
     response = test_client.put(
-        "/body-parts/1",
+        "/api/v1/body-parts/1",
         json={"name": "test", "description": "test"},
         headers={"Authorization": valid_jwt_token},
     )
     assert response.status_code == 200 and response.json()["name"] == "test"
 
     response = test_client.put(
-        "/body-parts/100",
+        "/api/v1/body-parts/100",
         json={"name": "test", "description": "test"},
         headers={"Authorization": valid_jwt_token},
     )
@@ -118,7 +118,7 @@ def test_can_update_body_part(
     )
 
     response = test_client.put(
-        "/body-parts/1",
+        "/api/v1/body-parts/1",
         json={"name": "test", "description": "test"},
     )
     assert (
