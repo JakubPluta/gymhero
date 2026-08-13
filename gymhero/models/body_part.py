@@ -1,18 +1,14 @@
-from sqlalchemy import Column, DateTime, Integer, String
-from sqlalchemy.sql import func
+from sqlalchemy import String
+from sqlalchemy.orm import Mapped, mapped_column
 
-from gymhero.database.base_class import Base
+from gymhero.database.base_class import Base, TimestampMixin
 
 
-class BodyPart(Base):
+class BodyPart(TimestampMixin, Base):
     __tablename__ = "body_parts"
 
-    id = Column(Integer, primary_key=True)
-    name = Column(String, nullable=False, unique=True)
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
-    updated_at = Column(
-        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
-    )
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(String, nullable=False, unique=True)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"<BodyPart(id={self.id}, name={self.name})>"

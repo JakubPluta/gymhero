@@ -1,17 +1,14 @@
-from sqlalchemy import Column, DateTime, Integer, String
-from sqlalchemy.sql import func
+from sqlalchemy import String
+from sqlalchemy.orm import Mapped, mapped_column
 
-from gymhero.database.base_class import Base
+from gymhero.database.base_class import Base, TimestampMixin
 
 
-class Level(Base):
+class Level(TimestampMixin, Base):
     __tablename__ = "levels"
-    id = Column(Integer, primary_key=True)
-    name = Column(String, nullable=False, unique=True)
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
-    updated_at = Column(
-        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
-    )
 
-    def __repr__(self):
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(String, nullable=False, unique=True)
+
+    def __repr__(self) -> str:
         return f"<Level(id={self.id}, name={self.name})>"

@@ -1,5 +1,4 @@
 import datetime
-from typing import Optional
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -11,7 +10,7 @@ from gymhero.schemas.user import UserOut
 
 class ExerciseBase(BaseModel):
     name: str
-    description: Optional[str] = Field(
+    description: str | None = Field(
         default=None, title="The description of the exercise"
     )
 
@@ -22,16 +21,15 @@ class ExerciseBase(BaseModel):
     level_id: int = Field(..., gt=0, description="The id of the level")
 
 
-class ExerciseCreate(ExerciseBase):
-    ...
+class ExerciseCreate(ExerciseBase): ...
 
 
-class ExerciseUpdate(ExerciseBase):
-    name: Optional[str] = None
-    description: Optional[str] = None
-    target_body_part_id: Optional[int] = None
-    exercise_type_id: Optional[int] = None
-    level_id: Optional[int] = None
+class ExerciseUpdate(BaseModel):
+    name: str | None = None
+    description: str | None = None
+    target_body_part_id: int | None = None
+    exercise_type_id: int | None = None
+    level_id: int | None = None
 
 
 class ExerciseInDB(ExerciseBase):
@@ -48,10 +46,10 @@ class ExerciseInDB(ExerciseBase):
 class ExerciseOut(BaseModel):
     id: int
     name: str
-    description: Optional[str] = None
-    owner: Optional[UserOut]
-    target_body_part: Optional[BodyPartOut]
-    exercise_type: Optional[ExerciseTypeOut]
-    level: Optional[LevelOut]
+    description: str | None = None
+    owner: UserOut | None
+    target_body_part: BodyPartOut | None
+    exercise_type: ExerciseTypeOut | None
+    level: LevelOut | None
 
     model_config = ConfigDict(from_attributes=True)

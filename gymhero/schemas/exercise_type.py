@@ -1,5 +1,4 @@
 import datetime
-from typing import Optional
 
 from pydantic import BaseModel, ConfigDict
 
@@ -12,8 +11,8 @@ class ExerciseTypeCreate(ExerciseTypeBase):
     pass
 
 
-class ExerciseTypeUpdate(ExerciseTypeBase):
-    name: Optional[str] = None
+class ExerciseTypeUpdate(BaseModel):
+    name: str | None = None
 
 
 class ExerciseTypeInDB(ExerciseTypeBase):

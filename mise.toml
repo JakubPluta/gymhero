@@ -1,0 +1,60 @@
+[tools]
+python = "3.13"
+uv = "0.12.3"
+
+[env]
+_.python.venv = { path = ".venv", create = true }
+
+# --- dev workflow ---------------------------------------------------------
+
+[tasks.install]
+description = "Install dependencies and git hooks"
+run = ["uv sync --frozen --all-groups", "pre-commit install"]
+
+[tasks.lint]
+description = "Check formatting, lint and types"
+run = ["ruff format --check", "ruff check", "mypy"]
+
+[tasks.lint-fix]
+description = "Format and auto-fix lint issues"
+run = ["ruff format", "ruff check --fix"]
+
+[tasks.test]
+description = "Run the test suite (spins a Postgres testcontainer)"
+env = { ENV = "test" }
+run = "pytest tests/"
+
+[tasks.test-cov]
+description = "Run the test suite with coverage"
+env = { ENV = "test" }
+run = "pytest --cov=gymhero tests/"
+
+# --- docker stack ---------------------------------------------------------
+
+[tasks.up]
+description = "Build and start the app + db stack"
+run = "docker compose up -d --build"
+
+[tasks.down]
+description = "Stop the stack"
+run = "docker compose down"
+
+[tasks.migrate]
+description = "Apply Alembic migrations inside the app container"
+run = "docker compose exec app alembic upgrade head"
+
+[tasks.makemigration]
+description = "Autogenerate an Alembic revision"
+run = 'docker compose exec app alembic revision --autogenerate -m "new migration"'
+
+[tasks.seed]
+description = "Seed the dev database"
+run = "docker compose exec app python -m scripts.seed --env=dev"
+
+[tasks.dev]
+description = "Build, start, migrate and seed the dev stack"
+run = [
+    "docker compose up -d --build",
+    "docker compose exec app alembic upgrade head",
+    "docker compose exec app python -m scripts.seed --env=dev",
+]

@@ -1,5 +1,4 @@
 import datetime
-from typing import Optional
 
 from pydantic import BaseModel, ConfigDict
 
@@ -12,8 +11,8 @@ class BodyPartCreate(BodyPartBase):
     pass
 
 
-class BodyPartUpdate(BodyPartBase):
-    name: Optional[str] = None
+class BodyPartUpdate(BaseModel):
+    name: str | None = None
 
 
 class BodyPartInDB(BodyPartBase):

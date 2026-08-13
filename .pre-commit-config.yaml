@@ -1,6 +1,6 @@
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.4.0
+    rev: v5.0.0
     hooks:
       - id: check-yaml
       - id: end-of-file-fixer
@@ -9,30 +9,14 @@ repos:
         exclude_types: [html, markdown, text]
       - id: check-merge-conflict
       - id: detect-private-key
-  - repo: https://github.com/psf/black
-    rev: 23.1.0
-    hooks:
-      - id: black
-  - repo: https://github.com/codespell-project/codespell
-    rev: v2.2.5
-    hooks:
-      - id: codespell
-        entry: codespell
-        types: [python]
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    # Ruff version.
-    rev: v0.0.291
+    rev: v0.8.0
     hooks:
       - id: ruff
-        exclude: __init__.py, migrations
-  - repo: local
+        args: [--fix]
+      - id: ruff-format
+  - repo: https://github.com/codespell-project/codespell
+    rev: v2.3.0
     hooks:
-      - id: pylint
-        name: pylint
-        entry: pylint
-        language: system
-        types: [ python ]
-        args:
-          [
-            "--rcfile=.pylintrc"
-          ]
+      - id: codespell
+        types: [python]

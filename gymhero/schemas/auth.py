@@ -1,22 +1,26 @@
-from typing import Optional
-
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr, Field, SecretStr
 
 
 class Token(BaseModel):
-    """Bearer Access Token"""
+    """Bearer access + refresh tokens."""
 
     access_token: str
+    refresh_token: str
     token_type: str
 
 
 class TokenPayload(BaseModel):
-    """Payload for Bearer Access Token"""
+    """Decoded JWT payload."""
 
-    sub: Optional[int] = None
+    sub: int | None = None
+    type: str | None = None
+
+
+class RefreshRequest(BaseModel):
+    refresh_token: str
 
 
 class UserRegister(BaseModel):
-    email: str
-    password: str
-    full_name: Optional[str] = None
+    email: EmailStr
+    password: SecretStr = Field(min_length=8)
+    full_name: str | None = None

@@ -1,5 +1,4 @@
 import datetime
-from typing import Optional
 
 from pydantic import BaseModel, ConfigDict
 
@@ -12,8 +11,8 @@ class LevelCreate(LevelBase):
     pass
 
 
-class LevelUpdate(LevelBase):
-    name: Optional[str] = None
+class LevelUpdate(BaseModel):
+    name: str | None = None
 
 
 class LevelInDB(LevelBase):

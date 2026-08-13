@@ -1,59 +1,63 @@
-[tool.poetry]
-name = "gymfreak-diary"
+[project]
+name = "gymhero"
 version = "0.1.0"
 description = "Simple application to note down your workouts details"
-authors = ["jp <plutakuba@gmail.com>"]
+authors = [{ name = "jp", email = "plutakuba@gmail.com" }]
 license = "MIT"
 readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "fastapi>=0.115.0",
+    "uvicorn>=0.32.0",
+    "sqlalchemy[asyncio]>=2.0.36",
+    "asyncpg>=0.30.0",
+    "greenlet>=3.1.0",
+    "alembic>=1.14.0",
+    "pydantic-settings>=2.6.0",
+    "pydantic[email]>=2.10.0",
+    "pwdlib[bcrypt]>=0.2.1",
+    "pyjwt>=2.10.0",
+    "python-multipart>=0.0.12",
+    "httpx>=0.28.0",
+    "structlog>=24.4.0",
+]
 
-[tool.poetry.dependencies]
-python = "^3.10"
-fastapi = "^0.104.1"
-uvicorn = "^0.24.0"
-sqlalchemy = "^2.0.23"
-alembic = "^1.12.1"
-pydantic-settings = "^2.0.3"
-pydantic = {extras = ["email"], version = "^2.4.2"}
-pathlib = "^1.0.1"
-pandas = "^2.1.3"
-passlib = {extras = ["bcrypt"], version = "^1.7.4"}
-python-jose = "^3.3.0"
-python-multipart = "^0.0.6"
-httpx = "^0.25.2"
+[dependency-groups]
+dev = [
+    "ruff>=0.8.0",
+    "mypy>=1.13.0",
+    "pre-commit>=4.0.0",
+]
+test = [
+    "pytest>=8.3.0",
+    "pytest-asyncio>=0.24.0",
+    "pytest-mock>=3.14.0",
+    "pytest-cov>=6.0.0",
+    "psycopg2-binary>=2.9.10",
+    "testcontainers[postgres]>=4.8.0",
+    "python-dotenv>=1.0.0",
+]
 
-
-[tool.poetry.group.dev.dependencies]
-psycopg2 = "^2.9.9"
-pytest = "^7.4.3"
-pytest-cov = "^4.1.0"
-black = "^23.11.0"
-pre-commit = "^3.5.0"
-isort = "^5.12.0"
-pylint = "^3.0.2"
-ruff = "^0.1.6"
-pytest-mock = "^3.12.0"
-
-[build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+[tool.uv]
+package = false
+default-groups = "all"
 
 
 [tool.ruff.format]
-# Like Black, use double quotes for strings.
 quote-style = "double"
-
-# Like Black, indent with spaces, rather than tabs.
 indent-style = "space"
-
-# Like Black, respect magic trailing commas.
 skip-magic-trailing-comma = false
-
-# Like Black, automatically detect the appropriate line ending.
 line-ending = "auto"
 
 [tool.ruff]
+target-version = "py313"
 extend-exclude = ["tests", "migrations/*", "__init__.py"]
-ignore = ["E501"]
+lint.ignore = ["E501"]
+
+# FastAPI dependency-injection defaults (Depends/Query/Body) are the framework
+# idiom, not the mutable-default anti-pattern B008 targets.
+[tool.ruff.lint.flake8-bugbear]
+extend-immutable-calls = ["fastapi.Depends", "fastapi.Query", "fastapi.Body"]
 
 [tool.codespell]
 skip = "migrations/**/*,migrations,migrations/*.py"
@@ -73,3 +77,18 @@ exclude_also = [
     "@(abc\\.)?abstractmethod",
 ]
 
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+markers = [
+    "docker: tests that require a Docker daemon (spawn a Postgres testcontainer)",
+]
+
+
+[tool.mypy]
+python_version = "3.13"
+plugins = ["pydantic.mypy"]
+packages = ["gymhero"]
+ignore_missing_imports = true
+warn_unused_ignores = true

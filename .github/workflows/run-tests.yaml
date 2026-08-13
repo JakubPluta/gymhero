@@ -1,23 +1,32 @@
-name: Run tests in container
-on: push
+name: CI
+on:
+  push:
+  pull_request:
+
 jobs:
-  test:
-    runs-on: ubuntu-latest
+  lint:
+    runs-on: ubuntu-24.04
     steps:
-    - uses: actions/checkout@v3
-    - uses: adambirds/docker-compose-action@v1.3.0
-      with:
-        compose-file: "docker-compose.yaml"
-        down-flags: "--volumes"
-        test-container: "app"
-        test-command: "pytest --cov=./ --cov-report=xml -vv -ss"
-      env:
-        POSTGRES_USER: "test"
-        POSTGRES_PASSWORD: "test"
-        POSTGRES_DB: "workout"
-        POSTGRES_HOST: "test-db"
-        POSTGRES_PORT: 5432
-        FIRST_SUPERUSER_USERNAME: "testuser"
-        FIRST_SUPERUSER_EMAIL: "testuser@mail.com"
-        FIRST_SUPERUSER_PASSWORD: "password"
-        ENV: "test"
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          version: "0.12.3"
+          python-version: "3.13"
+      - run: uv sync --frozen --all-groups
+      - run: uv run ruff format --check
+      - run: uv run ruff check
+      - run: uv run mypy
+
+  test:
+    runs-on: ubuntu-24.04
+    env:
+      ENV: test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          version: "0.12.3"
+          python-version: "3.13"
+      - run: uv sync --frozen --all-groups
+      # Testcontainers uses the Docker daemon preinstalled on the runner.
+      - run: uv run pytest --cov=gymhero --cov-report=xml tests/
