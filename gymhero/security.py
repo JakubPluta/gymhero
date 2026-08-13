@@ -1,62 +1,52 @@
-from datetime import datetime, timedelta
-from typing import Any, Union
+from datetime import UTC, datetime, timedelta
+from typing import Any
 
-from jose import jwt
-from passlib.context import CryptContext
+import jwt
+from pwdlib import PasswordHash
+from pwdlib.hashers.bcrypt import BcryptHasher
 
 from gymhero.config import settings
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+# bcrypt-only: verifies the existing bcrypt hashes and keeps producing bcrypt.
+password_hash = PasswordHash((BcryptHasher(),))
+
+
+def _create_token(
+    subject: str | int, *, token_type: str, expires_delta: timedelta
+) -> str:
+    to_encode = {
+        "sub": str(subject),
+        "type": token_type,
+        "exp": datetime.now(UTC) + expires_delta,
+    }
+    return jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
 
 
 def create_access_token(
-    subject: Union[str, Any], expires_delta: timedelta = None
+    subject: str | int, expires_delta: timedelta | None = None
 ) -> str:
-    """
-    Creates an access token.
+    delta = expires_delta or timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+    return _create_token(subject, token_type="access", expires_delta=delta)
 
-    Parameters:
-        subject (Union[str, Any]): The subject for which the access token is created.
-        expires_delta (timedelta, optional): The expiration time for the access token. Defaults to None.
 
-    Returns:
-        str: The encoded access token.
-    """
-    if expires_delta:
-        expire = datetime.utcnow() + expires_delta
-    else:
-        expire = datetime.utcnow() + timedelta(
-            minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES
-        )
-    to_encode = {"exp": expire, "sub": str(subject)}
-    encoded_jwt = jwt.encode(
-        to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM
-    )
-    return encoded_jwt
+def create_refresh_token(
+    subject: str | int, expires_delta: timedelta | None = None
+) -> str:
+    delta = expires_delta or timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
+    return _create_token(subject, token_type="refresh", expires_delta=delta)
+
+
+def decode_token(token: str, *, expected_type: str) -> dict[str, Any]:
+    """Decode a JWT and assert its ``type`` claim, else raise ``InvalidTokenError``."""
+    payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+    if payload.get("type") != expected_type:
+        raise jwt.InvalidTokenError(f"expected a {expected_type} token")
+    return payload
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    """
-    Verify if a plain password matches a hashed password.
-
-    Parameters:
-        plain_password (str): The plain password to be verified.
-        hashed_password (str): The hashed password to compare with.
-
-    Returns:
-        bool: True if the plain password matches the hashed password, False otherwise.
-    """
-    return pwd_context.verify(plain_password, hashed_password)
+    return password_hash.verify(plain_password, hashed_password)
 
 
 def get_password_hash(password: str) -> str:
-    """
-    Generate the hash value of a password.
-
-    Parameters:
-        password (str): The password to be hashed.
-
-    Returns:
-        str: The hash value of the password.
-    """
-    return pwd_context.hash(password)
+    return password_hash.hash(password)

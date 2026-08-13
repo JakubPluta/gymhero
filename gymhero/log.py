@@ -1,40 +1,48 @@
-"""Logging module"""
+"""Structured (JSON) logging: stdlib loggers routed through structlog."""
 
 import logging
 import sys
-from typing import Optional
 
-LOGGING_FORMATTER = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+import structlog
 
-
-DebugLevels = ["DEBUG", "INFO", "WARNING", "ERROR"]
-DebugLevelType = str
+_configured = False
 
 
-def get_logger(
-    name: Optional[str] = None, level: DebugLevelType = "DEBUG"
-) -> logging.Logger:
-    """
-    Creates and configures a logger for logging messages.
+def configure_logging(level: str = "INFO") -> None:
+    """Render stdlib + structlog logs as JSON on stdout. Idempotent."""
+    global _configured
+    if _configured:
+        return
 
-    Parameters:
-        name (Optional[str]): The name of the logger. Defaults to None.
-        level (DebugLevel): The logging level. Defaults to DebugLevel.DEBUG.
-
-    Returns:
-        logging.Logger: The configured logger object.
-    """
-    logger = logging.getLogger(name=name)
+    structlog.configure(
+        processors=[structlog.stdlib.ProcessorFormatter.wrap_for_formatter],
+        logger_factory=structlog.stdlib.LoggerFactory(),
+        cache_logger_on_first_use=True,
+    )
+    formatter = structlog.stdlib.ProcessorFormatter(
+        processors=[
+            structlog.contextvars.merge_contextvars,  # request_id etc.
+            structlog.stdlib.ExtraAdder(),
+            structlog.stdlib.add_logger_name,
+            structlog.stdlib.add_log_level,
+            structlog.processors.TimeStamper(fmt="iso"),
+            structlog.stdlib.ProcessorFormatter.remove_processors_meta,
+            structlog.processors.JSONRenderer(),
+        ],
+    )
     handler = logging.StreamHandler(sys.stdout)
-    formatter = logging.Formatter(LOGGING_FORMATTER)
     handler.setFormatter(formatter)
-    logger.addHandler(handler)
+    root = logging.getLogger()
+    root.handlers.clear()
+    root.addHandler(handler)
+    root.setLevel(level)
 
-    if not level or level not in DebugLevels:
-        logger.warning(
-            "Invalid logging level %s. Setting logging level to DEBUG.", level
-        )
-        level = "DEBUG"
+    for noisy in ("sqlalchemy.engine", "asyncio", "aiosqlite"):
+        logging.getLogger(noisy).setLevel(logging.WARNING)
 
-    logger.setLevel(level=level)
-    return logger
+    _configured = True
+
+
+def get_logger(name: str | None = None) -> logging.Logger:
+    configure_logging()
+    return logging.getLogger(name)

@@ -9,8 +9,9 @@ log = get_logger(__name__)
 
 
 class Settings(BaseSettings):
+    # Committed dummy defaults; a git-ignored `.env` or real env vars override them.
     model_config = SettingsConfigDict(
-        env_file="./.env.dev", env_file_encoding="utf-8", case_sensitive=True
+        env_file=".env.defaults", env_file_encoding="utf-8", case_sensitive=True
     )
 
     API_VERSION: str
@@ -19,6 +20,7 @@ class Settings(BaseSettings):
     SECRET_KEY: str
     ALGORITHM: str
     ACCESS_TOKEN_EXPIRE_MINUTES: int
+    REFRESH_TOKEN_EXPIRE_DAYS: int
 
     SERVER_HOST: str
     SERVER_PORT: int
@@ -35,58 +37,34 @@ class Settings(BaseSettings):
 
 
 class ContainerDevSettings(Settings):
-    model_config = SettingsConfigDict(
-        env_file="./.env.dev", env_file_encoding="utf-8", case_sensitive=True
-    )
     ENV: str = "dev"
 
 
 class ContainerTestSettings(Settings):
-    model_config = SettingsConfigDict(
-        env_file="./.env.test", env_file_encoding="utf-8", case_sensitive=True
-    )
+    # The database comes from a testcontainer (POSTGRES_* injected at runtime);
+    # everything else falls back to the committed defaults.
     ENV: str = "test"
 
 
-class LocalTestSettings(Settings):
-    model_config = SettingsConfigDict(
-        env_file="./.env.test.local", env_file_encoding="utf-8", case_sensitive=True
-    )
-    ENV: str = "test"
-
-
-class LocalDevSettings(Settings):
-    model_config = SettingsConfigDict(
-        env_file="./.env.local", env_file_encoding="utf-8", case_sensitive=True
-    )
-    ENV: str = "local"
+class ProductionSettings(Settings):
+    # Real deployments override every value via real env vars / a git-ignored `.env`.
+    ENV: str = "production"
 
 
 def get_settings(env: str = "dev") -> Settings:
-    """
-    Return the settings object based on the environment.
-
-    Parameters:
-        env (str): The environment to retrieve the settings for. Defaults to "dev".
-
-    Returns:
-        Settings: The settings object based on the environment.
-
-    Raises:
-        ValueError: If the environment is invalid.
-    """
     log.debug("getting settings for env: %s", env)
-
-    if env.lower() in ["dev", "d", "development"]:
+    if env.lower() in ("dev", "d", "development"):
         return ContainerDevSettings()
-    if env.lower() in ["test", "t", "testing"]:
+    if env.lower() in ("test", "t", "testing"):
         return ContainerTestSettings()
-    if env.lower() in ["local", "l"]:
-        return LocalDevSettings()
+    if env.lower() in ("prod", "production", "p"):
+        return ProductionSettings()
+    raise ValueError(
+        f"Invalid environment {env!r}. Must be 'dev', 'test' or 'production'."
+    )
 
-    raise ValueError("Invalid environment. Must be 'dev' or 'test' ,'local'.")
 
-
-_env = os.environ.get("ENV", "local")
+# The app runs in Docker (ENV=dev via docker-compose); tests set ENV=test.
+_env = os.environ.get("ENV", "dev")
 
 settings = get_settings(env=_env)

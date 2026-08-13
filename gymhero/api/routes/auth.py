@@ -1,37 +1,35 @@
-from datetime import timedelta
-from typing import Any, Dict
+from typing import Any
 
+import jwt
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from gymhero import security
-from gymhero.config import settings
 from gymhero.crud import user_crud
 from gymhero.database import get_db
-from gymhero.schemas.auth import Token, UserRegister
+from gymhero.models import User
+from gymhero.schemas.auth import RefreshRequest, Token, UserRegister
+from gymhero.schemas.common import Message
 from gymhero.schemas.user import UserInDB
 
 router = APIRouter()
 
 
+def _token_pair(user_id: int) -> dict[str, str]:
+    return {
+        "access_token": security.create_access_token(subject=user_id),
+        "refresh_token": security.create_refresh_token(subject=user_id),
+        "token_type": "bearer",
+    }
+
+
 @router.post("/login", response_model=Token)
-def login_for_access_token(
-    db: Session = Depends(get_db), form_data: OAuth2PasswordRequestForm = Depends()
-) -> Dict[str, Any]:
-    """
-    Endpoint for user login. Authenticates the user using the provided
-    email and password.
-
-    Parameters:
-        - db (Session): The database session.
-        - form_data (OAuth2PasswordRequestForm): The form data
-        containing the username and password.
-
-    Returns:
-        - Dict[str, Any]: A dictionary containing the access token and token type.
-    """
-    user = user_crud.authenticate_user(
+async def login_for_access_token(
+    db: AsyncSession = Depends(get_db),
+    form_data: OAuth2PasswordRequestForm = Depends(),
+) -> dict[str, Any]:
+    user = await user_crud.authenticate_user(
         db, email=form_data.username, password=form_data.password
     )
     if not user:
@@ -43,17 +41,30 @@ def login_for_access_token(
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="Inactive user"
         )
+    return _token_pair(user.id)
 
-    access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
-    access_token = security.create_access_token(
-        subject=user.id, expires_delta=access_token_expires
+
+@router.post("/refresh", response_model=Token)
+async def refresh_access_token(
+    body: RefreshRequest, db: AsyncSession = Depends(get_db)
+) -> dict[str, Any]:
+    invalid = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh token"
     )
-    return {"access_token": access_token, "token_type": "bearer"}
+    try:
+        payload = security.decode_token(body.refresh_token, expected_type="refresh")
+    except jwt.InvalidTokenError as e:
+        raise invalid from e
+
+    user = await user_crud.get_one(db, User.id == int(payload["sub"]))
+    if user is None or not user_crud.is_active_user(user):
+        raise invalid
+    return _token_pair(user.id)
 
 
-@router.post("/register", response_model=dict, status_code=status.HTTP_201_CREATED)
-def register(user_register: UserRegister, db: Session = Depends(get_db)):
-    user = user_crud.get_user_by_email(db, email=user_register.email)
+@router.post("/register", response_model=Message, status_code=status.HTTP_201_CREATED)
+async def register(user_register: UserRegister, db: AsyncSession = Depends(get_db)):
+    user = await user_crud.get_user_by_email(db, email=user_register.email)
     if user:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
@@ -61,9 +72,10 @@ def register(user_register: UserRegister, db: Session = Depends(get_db)):
         )
 
     user_in = UserInDB(
-        **user_register.model_dump(exclude_unset=True, exclude_defaults=True),
-        hashed_password=security.get_password_hash(user_register.password),
+        **user_register.model_dump(exclude={"password"}, exclude_unset=True),
+        hashed_password=security.get_password_hash(
+            user_register.password.get_secret_value()
+        ),
     )
-
-    user_crud.create(db, user_in)
+    await user_crud.create(db, user_in)
     return {"message": "User created successfully"}
