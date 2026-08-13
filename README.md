@@ -36,12 +36,11 @@ To build an CRUD API with FastAPI, SQLAlchemy, Postgres, Docker
     - pytest-cov
     - pytest-mock
 - For development
-    - precommit-hook
-    - pylint
-    - black
-    - ruff
-    - poetry
-    - venv
+    - mise - toolchain manager (pins Python + uv)
+    - uv - dependency management and virtualenvs
+    - ruff - linting and formatting
+    - mypy - static type checking
+    - pre-commit
 
 ### Implemented functionalities
 - JWT Authentication
@@ -171,7 +170,7 @@ To build an CRUD API with FastAPI, SQLAlchemy, Postgres, Docker
 
 ### You should have
 - Running Docker
-- Installed Make (not mandatory) - use makefile to run all commands
+- [mise](https://mise.jdx.dev) — manages Python + uv and runs the project tasks (`mise run <task>`)
 
 
 clone repository:
@@ -184,115 +183,77 @@ and navigate to cloned project
 build and run project:
 
 ```bash
-# this command will build docker image, up container in detached mode and run db initialization scripts
-make dev
+# build image, start containers (detached) and run migrations + db seed
+mise run dev
 ```
 
-you can also re-build container 
-```bash
-make install
-```
-
-alternatively if you don't have make installed you can use directly docker commands:
+alternatively you can use docker commands directly:
 ```bash
 
 docker compose build
 docker compose up -d 
 docker exec -it app alembic downgrade base && alembic upgrade head
-docker exec -it app python -m scripts.initdb --env=dev
+docker exec -it app python -m scripts.seed --env=dev
 ```
 or 
 ```bash
 docker compose build --no-cache
 docker compose up -d --force-recreate
 docker exec -it app alembic downgrade base && alembic upgrade head
-docker exec -it app python -m scripts.initdb --env=dev
+docker exec -it app python -m scripts.seed --env=dev
 ```
 
-next time if you already have build container you can just type:
+next time you can just start the stack:
 ```bash
-make up
-# or if you did some changes in code
-make run
-```
-
-alternatively:
-```bash
-docker compose up -d
-# or
-docker compose build
+mise run up
+# or directly
 docker compose up -d
 ```
 
-to initialize db once more run:
+to (re)initialize the db:
 ```bash
-make initdb
-
-# or 
-docker exec -it app alembic downgrade base && alembic upgrade head
-docker exec -it app python -m scripts.initdb --env=dev
+mise run migrate && mise run seed
 ```
 
-to down or kill containers:
+to stop the stack:
 ```bash
-make down
-# or
-make kill
+mise run down
 ```
 
-to run tests:
+to run tests (spins a Postgres testcontainer — needs Docker):
 ```bash
-# to run all test
-make test-all
-# to run all test in vervose mode
-make test-all-verboose
-# unit tests
-make test-unit
-# integration test
-make test-integration
-# run coverage report
-make cov
+mise run test          # full suite
+mise run test-cov      # with coverage
 ```
 
-alternatively:
+to lint / type-check:
+```bash
+mise run lint          # ruff format --check + ruff check + mypy
+mise run lint-fix      # auto-format and fix
+```
+
+alembic commands (run inside the app container):
 
 ```bash
-docker exec -it --env-file .env.test app pytest tests/
-docker exec -it --env-file .env.test app pytest tests/ -s -vv
-docker exec -it --env-file .env.test app pytest --cov=gymhero tests/ 
+mise run migrate         # upgrade to head
+mise run makemigration   # autogenerate a revision
+# or directly:
+docker compose exec app alembic upgrade head
+docker compose exec app alembic downgrade -1
 ```
 
-alembic commands:
+### Configuration
+All settings come from `.env.defaults` (committed dummy values). Override any of
+them with a git-ignored `.env` or real environment variables. Tests set `ENV=test`
+and get their database from a Postgres testcontainer.
 
-```bash
-# downgrade to base revisions
-make alembic-base
-# upgrade to head revisions
-make alembic-head
-# up + 1
-make alembic-up
-# down -1
-make alembic-down
-# generate migration
-make alembic-migrate
-# downgrade base & upgrade head
-make alembic-recreate
-# downgrade base & upgrade head & and run init db scripts
-make alembic-init
+`mise run dev` seeds the database and creates the first superuser from those defaults:
 ```
-
-### Main configuration is located in files:
-- env.dev - dev environemnt in container
-- env.test - testing environment
-- env.local - alternative to run app locally (you need to create venv and install all dependencies)
-
-If you run `make install` or `make dev` or `make run` command then by default database will be initialized with data and first superuser will be created:
+FIRST_SUPERUSER_USERNAME=admin
+FIRST_SUPERUSER_EMAIL=admin@example.com
+FIRST_SUPERUSER_PASSWORD=changeme
 ```
-FIRST_SUPERUSER_USERNAME=gymhero
-FIRST_SUPERUSER_EMAIL=gymhero@mail.com
-FIRST_SUPERUSER_PASSWORD=gymhero
-```
-Feel free to change it after cloning repository.
+Change them via a local `.env` before running against anything real.
 
 So as you first user is created and app is running you need to generate JWT Token to access different endpoints. To do that use:
 ```bash
