@@ -1,4 +1,4 @@
-from sqlalchemy import Boolean, String
+from sqlalchemy import Boolean, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from gymhero.database.base_class import Base, TimestampMixin
@@ -13,6 +13,10 @@ class User(TimestampMixin, Base):
     hashed_password: Mapped[str] = mapped_column(String, nullable=False)
     is_active: Mapped[bool | None] = mapped_column(Boolean, default=True)
     is_superuser: Mapped[bool | None] = mapped_column(Boolean, default=False)
+    # Bumped to invalidate all of a user's refresh tokens (logout-all / password change).
+    token_version: Mapped[int] = mapped_column(
+        Integer, default=0, server_default="0", nullable=False
+    )
 
     training_plans = relationship("TrainingPlan", back_populates="owner")
     training_units = relationship("TrainingUnit", back_populates="owner")

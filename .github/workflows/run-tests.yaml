@@ -1,6 +1,7 @@
 name: CI
 on:
   push:
+    branches: [main]
   pull_request:
 
 jobs:
@@ -30,3 +31,41 @@ jobs:
       - run: uv sync --frozen --all-groups
       # Testcontainers uses the Docker daemon preinstalled on the runner.
       - run: uv run pytest --cov=gymhero --cov-report=xml tests/
+
+  build:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build -t gymhero:ci .
+
+  migrations:
+    runs-on: ubuntu-24.04
+    env:
+      ENV: test
+      POSTGRES_HOST: localhost
+      POSTGRES_USER: gymhero
+      POSTGRES_PASSWORD: gymhero
+      POSTGRES_DB: workout
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: gymhero
+          POSTGRES_PASSWORD: gymhero
+          POSTGRES_DB: workout
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U gymhero -d workout"
+          --health-interval 5s --health-timeout 3s --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          version: "0.12.3"
+          python-version: "3.13"
+      - run: uv sync --frozen --all-groups
+      # Exercises the sync driver (psycopg2) and proves migrations are reversible.
+      - run: uv run alembic upgrade head
+      - run: uv run alembic downgrade base
+      - run: uv run alembic upgrade head

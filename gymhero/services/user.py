@@ -1,5 +1,6 @@
 """User administration use-cases (superuser-only)."""
 
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from gymhero.crud import user_crud
@@ -36,12 +37,26 @@ async def create_user(db: AsyncSession, *, data: UserCreate) -> User:
         **data.model_dump(),
         hashed_password=get_password_hash(data.password),
     )
-    return await user_crud.create(db, user_in)
+    try:
+        return await user_crud.create(db, user_in)
+    except IntegrityError as exc:  # concurrent insert of the same email
+        await db.rollback()
+        raise EntityConflictError(
+            f"User with email {data.email} already exists"
+        ) from exc
 
 
 async def update_user(db: AsyncSession, *, user_id: int, data: UserUpdate) -> User:
     user = await get_user(db, user_id=user_id, not_found_suffix=". Cannot update.")
-    return await user_crud.update(db, user, data)
+    update_data = data.model_dump(exclude_unset=True)
+    # `User` has no `password` column; hash it into `hashed_password` instead of
+    # letting it silently no-op through the generic repo.
+    password = update_data.pop("password", None)
+    if password is not None:
+        update_data["hashed_password"] = get_password_hash(password)
+        # A password change revokes the user's existing refresh tokens.
+        update_data["token_version"] = user.token_version + 1
+    return await user_crud.update(db, user, update_data)
 
 
 async def delete_user(db: AsyncSession, *, user_id: int, actor: User) -> None:

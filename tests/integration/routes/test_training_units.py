@@ -286,6 +286,23 @@ async def test_add_exercise_to_training_unit_returns_200(
     assert [e["id"] for e in response.json()["exercises"]] == [exercise.id]
 
 
+async def test_added_exercise_output_hides_owner_email(
+    client: AsyncClient, world: UnitWorld, db: AsyncSession
+) -> None:
+    # PII regression: the nested exercise payload exposes owner_id, never the
+    # owner's email.
+    unit = world.owner_units[0]
+    exercise = await create_exercise(db, owner=world.owner)
+    response = await client.put(
+        f"/api/v1/training-units/{unit.id}/exercises/{exercise.id}/add",
+        headers=world.owner_headers,
+    )
+    item = response.json()["exercises"][0]
+    assert item["owner_id"] == world.owner.id
+    assert "owner" not in item
+    assert "email" not in item
+
+
 async def test_add_exercise_twice_returns_409(
     client: AsyncClient, world: UnitWorld, db: AsyncSession
 ) -> None:

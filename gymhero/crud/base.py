@@ -1,5 +1,7 @@
 """Async data-access repository. Holds no business rules."""
 
+from typing import Any
+
 from pydantic import BaseModel
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -54,9 +56,13 @@ class CRUDRepository[ModelT: Base]:
         return db_obj
 
     async def update(
-        self, db: AsyncSession, db_obj: ModelT, obj_update: BaseModel
+        self, db: AsyncSession, db_obj: ModelT, obj_update: BaseModel | dict[str, Any]
     ) -> ModelT:
-        obj_update_data = obj_update.model_dump(exclude_unset=True)
+        obj_update_data = (
+            obj_update
+            if isinstance(obj_update, dict)
+            else obj_update.model_dump(exclude_unset=True)
+        )
         for field, value in obj_update_data.items():
             setattr(db_obj, field, value)
         db.add(db_obj)

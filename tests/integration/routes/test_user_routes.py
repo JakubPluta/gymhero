@@ -2,7 +2,7 @@ from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from gymhero.models.user import User
-from tests.helpers import create_user, page_items
+from tests.helpers import DEFAULT_PASSWORD, create_user, page_items
 
 _NEW_USER = {
     "email": "new@example.com",
@@ -111,6 +111,17 @@ async def test_post_user_anonymous_returns_401(client: AsyncClient) -> None:
     assert response.status_code == 401
 
 
+async def test_post_user_short_password_returns_422(
+    client: AsyncClient, superuser_headers: dict[str, str]
+) -> None:
+    response = await client.post(
+        "/api/v1/users",
+        json={**_NEW_USER, "password": "short"},
+        headers=superuser_headers,
+    )
+    assert response.status_code == 422
+
+
 async def test_put_user_as_superuser_returns_200(
     client: AsyncClient, superuser_headers: dict[str, str], db: AsyncSession
 ) -> None:
@@ -131,6 +142,32 @@ async def test_put_user_missing_returns_404(
         "/api/v1/users/9999", json=_NEW_USER, headers=superuser_headers
     )
     assert response.status_code == 404
+
+
+async def test_put_user_rehashes_password(
+    client: AsyncClient, superuser_headers: dict[str, str], db: AsyncSession
+) -> None:
+    # Regression: an admin password change must actually re-hash and persist,
+    # not silently no-op through the generic repo.
+    target = await create_user(db, email="pwchange@example.com")
+    response = await client.put(
+        f"/api/v1/users/{target.id}",
+        json={**_NEW_USER, "email": "pwchange@example.com", "password": "new-password-123"},
+        headers=superuser_headers,
+    )
+    assert response.status_code == 200
+
+    new_login = await client.post(
+        "/api/v1/auth/login",
+        data={"username": "pwchange@example.com", "password": "new-password-123"},
+    )
+    assert new_login.status_code == 200
+
+    old_login = await client.post(
+        "/api/v1/auth/login",
+        data={"username": "pwchange@example.com", "password": DEFAULT_PASSWORD},
+    )
+    assert old_login.status_code == 400
 
 
 async def test_delete_user_as_superuser_returns_204(

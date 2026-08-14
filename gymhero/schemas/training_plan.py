@@ -1,13 +1,13 @@
 import datetime
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from gymhero.schemas.training_unit import TrainingUnitOut
 
 
 class TrainingPlanBase(BaseModel):
-    name: str
-    description: str | None = None
+    name: str = Field(max_length=255)
+    description: str | None = Field(default=None, max_length=2000)
 
 
 class TrainingPlanCreate(TrainingPlanBase):

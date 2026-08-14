@@ -52,9 +52,8 @@ description = "Seed the dev database"
 run = "docker compose exec app python -m scripts.seed --env=dev"
 
 [tasks.dev]
-description = "Build, start, migrate and seed the dev stack"
+description = "Build, start (migrations run via the migrate service) and seed the dev stack"
 run = [
     "docker compose up -d --build",
-    "docker compose exec app alembic upgrade head",
     "docker compose exec app python -m scripts.seed --env=dev",
 ]

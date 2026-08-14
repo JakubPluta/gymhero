@@ -2,6 +2,10 @@ services:
   app:
     container_name: app
     build: .
+    # The image defaults to ENV=production (guards against dev secrets); this
+    # compose stack is a dev environment, so downgrade it explicitly.
+    environment:
+      - ENV=dev
     # Dev: override the image's prod CMD with autoreload; the volume makes host
     # edits under gymhero/ hot-reload in the container.
     command: ["uvicorn", "gymhero.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
@@ -10,9 +14,24 @@ services:
     ports:
       - '8000:8000'
     depends_on:
-      - db
+      db:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
     env_file:
       - .env.defaults
+  migrate:
+    # One-shot: apply Alembic migrations, then exit. `app` waits for it to finish.
+    build: .
+    command: ["alembic", "upgrade", "head"]
+    environment:
+      - ENV=dev
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file:
+      - .env.defaults
+    restart: "no"
   db:
     container_name: db
     image: postgres:16-alpine
@@ -22,6 +41,11 @@ services:
       - db:/var/lib/postgresql/data
     env_file:
       - .env.defaults
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
 
 volumes:
   db:

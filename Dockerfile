@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 
-FROM python:3.13-slim AS python-base
+FROM python:3.13-slim-bookworm@sha256:00faa2debb87529f9f0764e9491d8ba400a3678976616c3bd7cb193745ac20d1 AS python-base
 
 ENV VIRTUAL_ENV=/venv \
     PYTHONUNBUFFERED=1 \
@@ -33,5 +33,6 @@ RUN useradd --create-home appuser && chown -R appuser /app
 USER appuser
 EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-    CMD ["python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
-CMD ["uvicorn", "gymhero.main:app", "--host", "0.0.0.0", "--port", "8000"]
+    CMD ["python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/ready')"]
+# Prod: gunicorn manages uvicorn workers (worker count via WEB_CONCURRENCY env).
+CMD ["gunicorn", "gymhero.main:app", "-k", "uvicorn.workers.UvicornWorker", "-b", "0.0.0.0:8000"]

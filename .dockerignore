@@ -1,53 +1,51 @@
-.idea
-htmlcov
-.editorconfig
+# Keep the production image to runtime code only.
+# Shipped: gymhero/, scripts/, migrations/, resources/, alembic.ini, pyproject.toml, uv.lock
+
+# Secrets / env — never bake into the image (prod injects real env vars)
+.env
+.env.*
+
+# Version control & CI
+.git
 .gitignore
 .gitattributes
-.pylintrc
-docker-compose.yaml
-.vscode
-.venv
-.ruff_cache
+.github
+
+# Tests & tooling not needed at runtime
+tests
 .pytest_cache
-Makefile
-LICENSE
-README
-__pycache__
-.coverage
-*__pycache__
-**/__pycache__
-**/*/__pycache__
-__pycache__
-*.pyc
-*.pyo
-*.pyd
-.Python
-env
-pip-log.txt
-pip-delete-this-directory.txt
-.tox
+.ruff_cache
+.mypy_cache
+.hypothesis
 .coverage
 .coverage.*
-.cache
-nosetests.xml
 coverage.xml
-*.cover
-*.log
-.git
-.mypy_cache
-.pytest_cache
-.hypothesis
-*__pycache__*
-__pycache__/*
-**/__pycache__/
-.pre-commit-config.yaml
+htmlcov
 
-README.md
-Makefile
-LICENSE
-docker-compose.yaml
+# Local dev / editor / agent
+.venv
+.vscode
+.idea
+.editorconfig
+.pre-commit-config.yaml
+.pylintrc
+mise.toml
+mise.lock
+.claude
 Dockerfile
-.coverage
-media/
-media/*
+docker-compose.yaml
+
+# Docs & notes
+*.md
+LICENSE
+REFACTOR.md
+review.md
+
+# Python caches
+__pycache__/
+**/__pycache__/
+*.py[cod]
+
+# Misc not needed at runtime
+.dockerignore
 media

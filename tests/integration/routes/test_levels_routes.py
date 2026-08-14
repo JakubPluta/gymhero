@@ -172,6 +172,7 @@ async def test_delete_level_missing_returns_404(
 class _FakeSuperuser:
     id = 4242
     is_superuser = True
+    is_active = True
 
 
 async def test_delete_level_db_error_returns_clean_500_without_leak(

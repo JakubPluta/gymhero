@@ -14,6 +14,7 @@ class TokenPayload(BaseModel):
 
     sub: int | None = None
     type: str | None = None
+    ver: int | None = None
 
 
 class RefreshRequest(BaseModel):
@@ -22,5 +23,6 @@ class RefreshRequest(BaseModel):
 
 class UserRegister(BaseModel):
     email: EmailStr
-    password: SecretStr = Field(min_length=8)
-    full_name: str | None = None
+    # max_length guards bcrypt's 72-byte truncation (char count; ASCII == bytes).
+    password: SecretStr = Field(min_length=8, max_length=72)
+    full_name: str | None = Field(default=None, max_length=255)

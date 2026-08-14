@@ -1,15 +1,15 @@
-from pydantic import BaseModel, ConfigDict, EmailStr
+from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
 
 class UserBase(BaseModel):
     email: EmailStr | None = None
     is_active: bool = True
-    full_name: str | None = None
+    full_name: str | None = Field(default=None, max_length=255)
 
 
 class UserCreate(UserBase):
     email: EmailStr
-    password: str
+    password: str = Field(min_length=8, max_length=72)
     is_superuser: bool = False
 
 
@@ -24,5 +24,5 @@ class UserInDB(UserBase):
 
 
 class UserUpdate(UserBase):
-    password: str | None = None
+    password: str | None = Field(default=None, min_length=8, max_length=72)
     is_superuser: bool = False

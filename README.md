@@ -2,7 +2,7 @@
 
 Simple application to manage your gym training workouts.
 You have the flexibility to create your own exercises, you can develop custom training units and these units can be easily integrated into personalized training plans. You can manage your training units by adding or removing exercises as needed.
-By default application contains database od more than 1000 exercises.
+By default application contains database of more than 1000 exercises.
 
 
 ### Motivation
@@ -58,17 +58,20 @@ To build an CRUD API with FastAPI, SQLAlchemy, Postgres, Docker
 
 ## Define use cases:
 
+> All API routes are served under the **`/api/v1`** prefix — e.g. `GET /api/v1/exercises/all`.
+> (`/health`, `/ready` and the Swagger docs at `/docs` are not prefixed.)
+
 ### Exercises
 
 | Routes     | Method | Endpoint                 | Access                 |
 |------------|--------|--------------------------|------------------------|
-| /exercises | GET    | /all                     | All                    |
+| /exercises | GET    | /all                     | Active User            |
 | /exercises | GET    | /my                      | Owner                  |
-| /exercises | GET    | /{exercise_id}           | All                    |
+| /exercises | GET    | /{exercise_id}           | Active User            |
 | /exercises | DELETE | /{exercise_id}           | Superuser, Owner       |
 | /exercises | PUT    | /{exercise_id}           | Superuser, Owner       |
-| /exercises | GET    | /name/{exercise_name}    | All                    |
-| /exercises | POST   |                          | Superuser, Active User |
+| /exercises | GET    | /name/{exercise_name}    | Active User            |
+| /exercises | POST   |                          | Active User            |
 
 ### ExerciseType
 
@@ -122,6 +125,7 @@ To build an CRUD API with FastAPI, SQLAlchemy, Postgres, Docker
 |----------------|---------|--------------------|------------|
 | /auth          | POST    | /login             | All        |
 | /auth          | POST    | /register          | All        |
+| /auth          | POST    | /refresh           | All        |
 
 
 ### Training Plans
@@ -192,15 +196,15 @@ alternatively you can use docker commands directly:
 
 docker compose build
 docker compose up -d 
-docker exec -it app alembic downgrade base && alembic upgrade head
-docker exec -it app python -m scripts.seed --env=dev
+docker compose exec app alembic upgrade head
+docker compose exec app python -m scripts.seed --env=dev
 ```
 or 
 ```bash
 docker compose build --no-cache
 docker compose up -d --force-recreate
-docker exec -it app alembic downgrade base && alembic upgrade head
-docker exec -it app python -m scripts.seed --env=dev
+docker compose exec app alembic upgrade head
+docker compose exec app python -m scripts.seed --env=dev
 ```
 
 next time you can just start the stack:
@@ -258,22 +262,23 @@ Change them via a local `.env` before running against anything real.
 So as you first user is created and app is running you need to generate JWT Token to access different endpoints. To do that use:
 ```bash
 curl -X 'POST' \
-  'http://localhost:8000/auth/login' \
+  'http://localhost:8000/api/v1/auth/login' \
   -H 'accept: application/json' \
   -H 'Content-Type: application/x-www-form-urlencoded' \
-  -d 'grant_type=&username=gymhero%40mail.com&password=gymhero&scope=&client_id=&client_secret='
+  -d 'grant_type=&username=admin%40example.com&password=changeme&scope=&client_id=&client_secret='
 ```
 In response you will receive something like this:
 ```json
 {
-  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3MDMzMzY3ODgsInN1YiI6IjEifQ.KXtcf8KziA50-xdwe0Fx6fjOFVeaSePp9B6h4EPUwno",
+  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ...",
+  "refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ...",
   "token_type": "bearer"
 }
 ```
 And you need to use it in headers when calling other endpoints eg:
 ```bash
 curl -X 'GET' \
-  'http://localhost:8000/exercises/my?skip=0&limit=10' \
+  'http://localhost:8000/api/v1/exercises/my?skip=0&limit=10' \
   -H 'accept: application/json' \
   -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3MDMzMzY5MDYsInN1YiI6IjEifQ.mnbKswazYV8pBv5JWlHv-qJ8fHZ4msW6yWwvRWzKUz4'
 ```
@@ -281,7 +286,7 @@ curl -X 'GET' \
 To register new user (it will be normal user not superuser, so some routes won't be available)
 ```bash
 curl -X 'POST' \
-  'http://localhost:8000/auth/register' \
+  'http://localhost:8000/api/v1/auth/register' \
   -H 'accept: application/json' \
   -H 'Content-Type: application/json' \
   -d '{
@@ -296,8 +301,8 @@ You can also do everything by using fast api docs which are more user friendly a
 
 
 #### TODO:
-- Add couple of default training plans e.g FBW, PPL, Splits etc - that every registered use can access
-- Add environment for local testsing etc.
-- Add redis cache
-- Improve test fixtures
-- Migrate to async 
+- Add a few default training plans (FBW, PPL, Splits) available to every registered user
+- Add Redis cache
+- Rate limiting + CORS / security headers on the API
+- Disable `/docs` in production; drop owner email from nested exercise output
+- Automated migrate-on-deploy (init container) and multi-worker serving (gunicorn)

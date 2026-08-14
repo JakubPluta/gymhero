@@ -62,8 +62,8 @@ def test_create_access_token(subject, expires_delta, test_settings) -> None:
     assert decoded_token["exp"] > datetime.now(timezone.utc).timestamp()
 
 
-def test_create_refresh_token_has_refresh_type(test_settings) -> None:
-    token = create_refresh_token("user123")
+def test_create_refresh_token_has_refresh_type_and_version(test_settings) -> None:
+    token = create_refresh_token("user123", token_version=7)
     decoded = jwt.decode(
         token,
         test_settings.SECRET_KEY.get_secret_value(),
@@ -71,6 +71,7 @@ def test_create_refresh_token_has_refresh_type(test_settings) -> None:
     )
     assert decoded["sub"] == "user123"
     assert decoded["type"] == "refresh"
+    assert decoded["ver"] == 7
     assert decoded["exp"] > datetime.now(timezone.utc).timestamp()
 
 

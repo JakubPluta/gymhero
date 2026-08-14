@@ -5,13 +5,12 @@ from pydantic import BaseModel, ConfigDict, Field
 from gymhero.schemas.body_part import BodyPartOut
 from gymhero.schemas.exercise_type import ExerciseTypeOut
 from gymhero.schemas.level import LevelOut
-from gymhero.schemas.user import UserOut
 
 
 class ExerciseBase(BaseModel):
-    name: str
+    name: str = Field(max_length=255)
     description: str | None = Field(
-        default=None, title="The description of the exercise"
+        default=None, max_length=2000, title="The description of the exercise"
     )
 
     target_body_part_id: int = Field(
@@ -25,8 +24,8 @@ class ExerciseCreate(ExerciseBase): ...
 
 
 class ExerciseUpdate(BaseModel):
-    name: str | None = None
-    description: str | None = None
+    name: str | None = Field(default=None, max_length=255)
+    description: str | None = Field(default=None, max_length=2000)
     target_body_part_id: int | None = None
     exercise_type_id: int | None = None
     level_id: int | None = None
@@ -47,7 +46,7 @@ class ExerciseOut(BaseModel):
     id: int
     name: str
     description: str | None = None
-    owner: UserOut | None
+    owner_id: int  # expose the owner id only — never the owner's email (PII)
     target_body_part: BodyPartOut | None
     exercise_type: ExerciseTypeOut | None
     level: LevelOut | None

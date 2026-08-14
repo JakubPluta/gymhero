@@ -141,3 +141,26 @@ async def test_refresh_rejects_garbage_token(client: AsyncClient) -> None:
 async def test_refresh_missing_body_returns_422(client: AsyncClient) -> None:
     response = await client.post("/api/v1/auth/refresh", json={})
     assert response.status_code == 422
+
+
+async def test_logout_revokes_refresh_tokens(
+    client: AsyncClient, regular_user: User
+) -> None:
+    tokens = await _login(client, regular_user)
+
+    logout = await client.post(
+        "/api/v1/auth/logout",
+        headers={"Authorization": f"Bearer {tokens['access_token']}"},
+    )
+    assert logout.status_code == 204
+
+    # The refresh token minted before logout is now rejected.
+    response = await client.post(
+        "/api/v1/auth/refresh", json={"refresh_token": tokens["refresh_token"]}
+    )
+    assert response.status_code == 401
+
+
+async def test_logout_requires_auth(client: AsyncClient) -> None:
+    response = await client.post("/api/v1/auth/logout")
+    assert response.status_code == 401

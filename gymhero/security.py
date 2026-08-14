@@ -12,13 +12,19 @@ password_hash = PasswordHash((BcryptHasher(),))
 
 
 def _create_token(
-    subject: str | int, *, token_type: str, expires_delta: timedelta
+    subject: str | int,
+    *,
+    token_type: str,
+    expires_delta: timedelta,
+    extra_claims: dict[str, Any] | None = None,
 ) -> str:
-    to_encode = {
+    to_encode: dict[str, Any] = {
         "sub": str(subject),
         "type": token_type,
         "exp": datetime.now(UTC) + expires_delta,
     }
+    if extra_claims:
+        to_encode.update(extra_claims)
     return jwt.encode(
         to_encode, settings.SECRET_KEY.get_secret_value(), algorithm=settings.ALGORITHM
     )
@@ -32,10 +38,17 @@ def create_access_token(
 
 
 def create_refresh_token(
-    subject: str | int, expires_delta: timedelta | None = None
+    subject: str | int,
+    token_version: int = 0,
+    expires_delta: timedelta | None = None,
 ) -> str:
     delta = expires_delta or timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
-    return _create_token(subject, token_type="refresh", expires_delta=delta)
+    return _create_token(
+        subject,
+        token_type="refresh",
+        expires_delta=delta,
+        extra_claims={"ver": token_version},
+    )
 
 
 def decode_token(token: str, *, expected_type: str) -> dict[str, Any]:

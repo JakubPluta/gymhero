@@ -1,5 +1,6 @@
 """Exercise use-cases."""
 
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from gymhero.api.authorization import authorize_owner_or_superuser
@@ -29,7 +30,13 @@ async def create_exercise(
 ) -> Exercise:
     if await exercise_crud.get_one(db, Exercise.name == data.name) is not None:
         raise EntityConflictError(f"Exercise with name {data.name} already exists")
-    return await exercise_crud.create_with_owner(db, data, owner_id=owner.id)
+    try:
+        return await exercise_crud.create_with_owner(db, data, owner_id=owner.id)
+    except IntegrityError as exc:  # concurrent insert of the same name
+        await db.rollback()
+        raise EntityConflictError(
+            f"Exercise with name {data.name} already exists"
+        ) from exc
 
 
 async def update_exercise(

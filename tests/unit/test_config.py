@@ -2,7 +2,7 @@ import os
 
 import dotenv
 import pytest
-from pydantic import SecretStr
+from pydantic import SecretStr, ValidationError
 
 from gymhero.config import get_settings
 
@@ -20,7 +20,18 @@ def test_get_settings_supports_production(monkeypatch) -> None:
     # ENV env var (set to "test" by the test runner) would otherwise override the
     # class default, so drop it to exercise ProductionSettings' own default.
     monkeypatch.delenv("ENV", raising=False)
+    # Real prod secrets override the committed dev defaults so the guard passes.
+    monkeypatch.setenv("SECRET_KEY", "a-real-production-secret-key-value")
+    monkeypatch.setenv("POSTGRES_PASSWORD", "real-db-password")
+    monkeypatch.setenv("FIRST_SUPERUSER_PASSWORD", "real-admin-password")
     assert get_settings("production").ENV == "production"
+
+
+def test_production_rejects_committed_dev_secret(monkeypatch) -> None:
+    # The committed dummy SECRET_KEY must be refused when ENV=production.
+    monkeypatch.delenv("ENV", raising=False)
+    with pytest.raises(ValidationError):
+        get_settings("production")
 
 
 def test_get_settings_rejects_unknown_env() -> None:

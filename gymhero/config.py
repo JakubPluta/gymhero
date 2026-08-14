@@ -1,11 +1,17 @@
 import os
+from typing import Self
 
-from pydantic import EmailStr, SecretStr
+from pydantic import EmailStr, SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from gymhero.log import get_logger
 
 log = get_logger(__name__)
+
+# Committed dev placeholders that must never be used in production.
+_DEV_SECRET_KEY = "dev-only-not-a-real-secret-change-me"
+_DEV_POSTGRES_PASSWORD = "gymhero"
+_DEV_SUPERUSER_PASSWORD = "changeme"
 
 
 class Settings(BaseSettings):
@@ -30,6 +36,10 @@ class Settings(BaseSettings):
     POSTGRES_PASSWORD: SecretStr
     POSTGRES_DB: str
     POSTGRES_PORT: int
+
+    DB_POOL_SIZE: int = 10
+    DB_MAX_OVERFLOW: int = 20
+    DB_POOL_RECYCLE_SECONDS: int = 1800
 
     FIRST_SUPERUSER_USERNAME: str
     FIRST_SUPERUSER_EMAIL: EmailStr
@@ -66,6 +76,24 @@ class ContainerTestSettings(Settings):
 class ProductionSettings(Settings):
     # Real deployments override every value via real env vars / a git-ignored `.env`.
     ENV: str = "production"
+
+    @model_validator(mode="after")
+    def _reject_committed_dev_defaults(self) -> Self:
+        insecure = [
+            name
+            for name, dummy in (
+                ("SECRET_KEY", _DEV_SECRET_KEY),
+                ("POSTGRES_PASSWORD", _DEV_POSTGRES_PASSWORD),
+                ("FIRST_SUPERUSER_PASSWORD", _DEV_SUPERUSER_PASSWORD),
+            )
+            if getattr(self, name).get_secret_value() == dummy
+        ]
+        if insecure:
+            raise ValueError(
+                "Refusing to start in production with committed dev defaults: "
+                + ", ".join(insecure)
+            )
+        return self
 
 
 def get_settings(env: str = "dev") -> Settings:

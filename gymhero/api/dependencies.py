@@ -25,7 +25,8 @@ def get_token(token: str = Depends(oauth2_scheme)) -> TokenPayload:
         payload = security.decode_token(token, expected_type="access")
         token_data = TokenPayload(**payload)
     except (jwt.InvalidTokenError, ValidationError) as e:
-        raise _get_credential_exception(status_code=status.HTTP_403_FORBIDDEN) from e
+        # Authentication failure (missing/invalid/expired token) is 401, not 403.
+        raise _get_credential_exception(status_code=status.HTTP_401_UNAUTHORIZED) from e
     return token_data
 
 
@@ -48,7 +49,9 @@ def get_current_active_user(current_user: User = Depends(get_current_user)) -> U
     return current_user
 
 
-def get_current_superuser(current_user: User = Depends(get_current_user)) -> User:
+def get_current_superuser(
+    current_user: User = Depends(get_current_active_user),
+) -> User:
     if not user_crud.is_super_user(current_user):
         raise _get_credential_exception(
             status_code=status.HTTP_403_FORBIDDEN,

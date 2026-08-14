@@ -38,9 +38,10 @@ def test_get_token_valid_token_returns_payload() -> None:
         assert get_token("valid_token") == expected
 
 
-def test_get_token_invalid_token_raises() -> None:
-    with pytest.raises(HTTPException):
+def test_get_token_invalid_token_raises_401() -> None:
+    with pytest.raises(HTTPException) as exc_info:
         get_token("invalid_token")
+    assert exc_info.value.status_code == 401
 
 
 async def test_get_current_user_returns_user_when_found(mocker) -> None:

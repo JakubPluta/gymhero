@@ -17,6 +17,7 @@ from gymhero.api import (
     user_router,
 )
 from gymhero.api.error_handlers import register_exception_handlers
+from gymhero.config import settings
 from gymhero.database.db import get_db
 from gymhero.database.session import async_engine
 
@@ -27,7 +28,17 @@ async def lifespan(_: FastAPI):
     await async_engine.dispose()
 
 
-app = FastAPI(title="GymHero API", version="0.1.0", lifespan=lifespan)
+# Interactive docs + the OpenAPI schema are dev conveniences; hide them in prod
+# so the API surface isn't advertised publicly.
+_docs_enabled = settings.ENV != "production"
+app = FastAPI(
+    title="GymHero API",
+    version="0.1.0",
+    lifespan=lifespan,
+    docs_url="/docs" if _docs_enabled else None,
+    redoc_url="/redoc" if _docs_enabled else None,
+    openapi_url="/openapi.json" if _docs_enabled else None,
+)
 
 register_exception_handlers(app)
 
