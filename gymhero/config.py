@@ -1,6 +1,6 @@
 import os
 
-from pydantic import EmailStr
+from pydantic import EmailStr, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from gymhero.log import get_logger
@@ -17,7 +17,7 @@ class Settings(BaseSettings):
     API_VERSION: str
     PROJECT_NAME: str
     ENV: str
-    SECRET_KEY: str
+    SECRET_KEY: SecretStr
     ALGORITHM: str
     ACCESS_TOKEN_EXPIRE_MINUTES: int
     REFRESH_TOKEN_EXPIRE_DAYS: int
@@ -27,13 +27,30 @@ class Settings(BaseSettings):
 
     POSTGRES_HOST: str
     POSTGRES_USER: str
-    POSTGRES_PASSWORD: str
+    POSTGRES_PASSWORD: SecretStr
     POSTGRES_DB: str
     POSTGRES_PORT: int
 
     FIRST_SUPERUSER_USERNAME: str
     FIRST_SUPERUSER_EMAIL: EmailStr
-    FIRST_SUPERUSER_PASSWORD: str
+    FIRST_SUPERUSER_PASSWORD: SecretStr
+
+    # Plain properties (not computed_field) so the password never lands in
+    # model_dump()/serialization.
+    @property
+    def database_url(self) -> str:
+        return (
+            f"postgresql://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD.get_secret_value()}"
+            f"@{self.POSTGRES_HOST}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
+        )
+
+    @property
+    def async_database_url(self) -> str:
+        return (
+            f"postgresql+asyncpg://{self.POSTGRES_USER}:"
+            f"{self.POSTGRES_PASSWORD.get_secret_value()}"
+            f"@{self.POSTGRES_HOST}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
+        )
 
 
 class ContainerDevSettings(Settings):

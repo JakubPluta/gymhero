@@ -1,439 +1,474 @@
+from dataclasses import dataclass
+
 import pytest
+from httpx import AsyncClient
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from gymhero.crud.training_plan import training_plan_crud
-from gymhero.crud.training_unit import training_unit_crud
 from gymhero.models.training_plan import TrainingPlan
-from gymhero.schemas.training_plan import TrainingPlanCreate
-from gymhero.security import create_access_token
-from scripts.core.users import get_or_create_user
+from gymhero.models.user import User
+from tests.helpers import create_training_plan, create_training_unit, page_items
 
 
-@pytest.fixture(autouse=True, scope="function")
-def seed_training_plans(get_test_db):
-    # Seed synchronously via the ORM: the CRUD repositories are async and the
-    # seed session is synchronous.
-    u = get_or_create_user(get_test_db, "admin@admin.com", "admin", "Admin", True, True)
-    for i in range(5):
-        get_test_db.add(
-            TrainingPlan(name=f"test_{i}", description=f"test_{i}", owner_id=u.id)
-        )
-
-    u2 = get_or_create_user(get_test_db, "abc@abc.com", "abc", "abc", False, True)
-    for i in range(6, 9):
-        get_test_db.add(
-            TrainingPlan(name=f"test_{i}", description=f"test_{i}", owner_id=u2.id)
-        )
-    get_test_db.commit()
+@dataclass(frozen=True)
+class PlanWorld:
+    owner: User
+    owner_headers: dict[str, str]
+    other: User
+    other_headers: dict[str, str]
+    owner_plans: list[TrainingPlan]
+    other_plans: list[TrainingPlan]
 
 
-def test_can_get_all_training_plans(test_client, valid_jwt_token):
-    response = test_client.get(
-        "/api/v1/training-plans/all?skip=0&limit=3",
-        headers={"Authorization": valid_jwt_token},
+@pytest.fixture
+async def world(
+    db: AsyncSession,
+    superuser: User,
+    superuser_headers: dict[str, str],
+    other_user: User,
+    other_user_headers: dict[str, str],
+) -> PlanWorld:
+    # `owner` is a superuser (the /all endpoint is superuser-only); `other` is a
+    # regular user, so both the privilege and owner checks get exercised.
+    owner_plans = [
+        await create_training_plan(db, owner=superuser, name=f"owner-plan-{i}")
+        for i in range(5)
+    ]
+    other_plans = [
+        await create_training_plan(db, owner=other_user, name=f"other-plan-{i}")
+        for i in range(3)
+    ]
+    return PlanWorld(
+        superuser, superuser_headers, other_user, other_user_headers,
+        owner_plans, other_plans,
     )
-    assert response.status_code == 200 and len(response.json()["items"]) == 3
 
-    response = test_client.get(
-        "/api/v1/training-plans/all?skip=-10&limit=-5",
-        headers={"Authorization": valid_jwt_token},
+
+async def test_get_all_training_plans_superuser_paginates(
+    client: AsyncClient, world: PlanWorld
+) -> None:
+    response = await client.get(
+        "/api/v1/training-plans/all",
+        params={"skip": 0, "limit": 3},
+        headers=world.owner_headers,
+    )
+    assert response.status_code == 200
+    assert len(page_items(response)) == 3
+
+
+async def test_get_all_training_plans_negative_params_returns_422(
+    client: AsyncClient, world: PlanWorld
+) -> None:
+    response = await client.get(
+        "/api/v1/training-plans/all",
+        params={"skip": -10, "limit": -5},
+        headers=world.owner_headers,
     )
     assert response.status_code == 422
 
-    response = test_client.get(
-        "/api/v1/training-plans/all?skip=10&limit=1",
-        headers={"Authorization": valid_jwt_token},
-    )
-    assert response.status_code == 200 and len(response.json()["items"]) == 0
 
-    response = test_client.get("/api/v1/training-plans/all?skip=0&limit=10")
-    assert (
-        response.status_code == 401 and response.json()["detail"] == "Not authenticated"
+async def test_get_all_training_plans_beyond_end_returns_empty(
+    client: AsyncClient, world: PlanWorld
+) -> None:
+    response = await client.get(
+        "/api/v1/training-plans/all",
+        params={"skip": 100, "limit": 1},
+        headers=world.owner_headers,
     )
+    assert response.status_code == 200
+    assert page_items(response) == []
 
-    jwt_token_2 = "Bearer " + create_access_token(2)
-    response = test_client.get(
-        "/api/v1/training-plans/all?skip=0&limit=3",
-        headers={"Authorization": jwt_token_2},
+
+async def test_get_all_training_plans_anonymous_returns_401(client: AsyncClient) -> None:
+    response = await client.get("/api/v1/training-plans/all")
+    assert response.status_code == 401
+    assert response.json()["detail"] == "Not authenticated"
+
+
+async def test_get_all_training_plans_non_superuser_returns_403(
+    client: AsyncClient, world: PlanWorld
+) -> None:
+    response = await client.get(
+        "/api/v1/training-plans/all",
+        params={"skip": 0, "limit": 3},
+        headers=world.other_headers,
     )
     assert response.status_code == 403
 
 
-def test_can_get_all_training_plans_for_owner(test_client, valid_jwt_token):
-    response = test_client.get(
-        "/api/v1/training-plans/all/my?skip=0&limit=3",
-        headers={"Authorization": valid_jwt_token},
-    )
-    assert response.status_code == 200 and len(response.json()["items"]) == 3
-
-    jwt_token_2 = "Bearer " + create_access_token(2)
-    response = test_client.get(
-        "/api/v1/training-plans/all/my?skip=0&limit=1",
-        headers={"Authorization": jwt_token_2},
-    )
-    assert response.status_code == 200 and len(response.json()["items"]) == 1
-
-    response = test_client.get(
-        "/api/v1/training-plans/all/my?skip=0&limit=1",
-    )
-    assert (
-        response.status_code == 401 and response.json()["detail"] == "Not authenticated"
-    )
-
-
-def test_can_get_one_training_plan(test_client, valid_jwt_token):
-    response = test_client.get(
-        "/api/v1/training-plans/1", headers={"Authorization": valid_jwt_token}
-    )
-    assert response.status_code == 200 and response.json()["id"] == 1
-
-    response = test_client.get(
-        "/api/v1/training-plans/10", headers={"Authorization": valid_jwt_token}
-    )
-    assert response.status_code == 404
-
-    # Test with JWT of another user
-    jwt_token_2 = "Bearer " + create_access_token(2)
-    response = test_client.get(
-        "/api/v1/training-plans/1", headers={"Authorization": jwt_token_2}
-    )
-    assert response.status_code == 404
-    response = test_client.get(
-        "/api/v1/training-plans/6", headers={"Authorization": jwt_token_2}
+async def test_get_my_training_plans_returns_only_owned(
+    client: AsyncClient, world: PlanWorld
+) -> None:
+    response = await client.get(
+        "/api/v1/training-plans/all/my",
+        params={"limit": 10},
+        headers=world.other_headers,
     )
     assert response.status_code == 200
+    assert len(page_items(response)) == len(world.other_plans)
 
-    response = test_client.get(
-        "/api/v1/training-plans/6", headers={"Authorization": valid_jwt_token}
+
+async def test_get_my_training_plans_anonymous_returns_401(client: AsyncClient) -> None:
+    response = await client.get("/api/v1/training-plans/all/my")
+    assert response.status_code == 401
+
+
+async def test_get_training_plan_by_id_owner_returns_it(
+    client: AsyncClient, world: PlanWorld
+) -> None:
+    plan = world.owner_plans[0]
+    response = await client.get(
+        f"/api/v1/training-plans/{plan.id}", headers=world.owner_headers
     )
     assert response.status_code == 200
+    assert response.json()["id"] == plan.id
 
 
-def test_can_get_one_training_plan_by_name(test_client, valid_jwt_token):
-    response = test_client.get(
-        "/api/v1/training-plans/name/test_0", headers={"Authorization": valid_jwt_token}
-    )
-    assert response.status_code == 200 and response.json()["name"] == "test_0"
-
-    response = test_client.get(
-        "/api/v1/training-plans/name/test200", headers={"Authorization": valid_jwt_token}
+async def test_get_training_plan_by_id_missing_returns_404(
+    client: AsyncClient, world: PlanWorld
+) -> None:
+    response = await client.get(
+        "/api/v1/training-plans/999999", headers=world.owner_headers
     )
     assert response.status_code == 404
 
-    response = test_client.get(
-        "/api/v1/training-plans/name/test_6", headers={"Authorization": valid_jwt_token}
+
+async def test_get_training_plan_by_id_not_owner_returns_404(
+    client: AsyncClient, world: PlanWorld
+) -> None:
+    plan = world.owner_plans[0]
+    response = await client.get(
+        f"/api/v1/training-plans/{plan.id}", headers=world.other_headers
     )
     assert response.status_code == 404
 
-    jwt_token_2 = "Bearer " + create_access_token(2)
-    response = test_client.get(
-        "/api/v1/training-plans/name/test_0", headers={"Authorization": jwt_token_2}
-    )
-    assert response.status_code == 404
 
-    response = test_client.get(
-        "/api/v1/training-plans/name/test_0",
-    )
-    assert (
-        response.status_code == 401 and response.json()["detail"] == "Not authenticated"
-    )
-
-
-def can_get_training_plans_by_name_for_super_user(
-    test_client,
-    valid_jwt_token,
-):
-    response = test_client.get(
-        "/api/v1/training-plans/name/test_0/superuser",
-        headers={"Authorization": valid_jwt_token},
+async def test_get_training_plan_by_name_owner_returns_it(
+    client: AsyncClient, world: PlanWorld
+) -> None:
+    plan = world.owner_plans[0]
+    response = await client.get(
+        f"/api/v1/training-plans/name/{plan.name}", headers=world.owner_headers
     )
     assert response.status_code == 200
+    assert response.json()["name"] == plan.name
 
-    response = test_client.get("/api/v1/training-plans/name/test_0/superuser")
-    assert (
-        response.status_code == 401 and response.json()["detail"] == "Not authenticated"
+
+async def test_get_training_plan_by_name_missing_returns_404(
+    client: AsyncClient, world: PlanWorld
+) -> None:
+    response = await client.get(
+        "/api/v1/training-plans/name/nope", headers=world.owner_headers
     )
+    assert response.status_code == 404
 
-    jwt_token_2 = "Bearer " + create_access_token(2)
-    response = test_client.get(
-        "/api/v1/training-plans/name/test_0/superuser", headers={"Authorization": jwt_token_2}
+
+async def test_get_training_plan_by_name_not_owner_returns_404(
+    client: AsyncClient, world: PlanWorld
+) -> None:
+    plan = world.owner_plans[0]
+    response = await client.get(
+        f"/api/v1/training-plans/name/{plan.name}", headers=world.other_headers
+    )
+    assert response.status_code == 404
+
+
+async def test_get_training_plan_by_name_anonymous_returns_401(
+    client: AsyncClient, world: PlanWorld
+) -> None:
+    plan = world.owner_plans[0]
+    response = await client.get(f"/api/v1/training-plans/name/{plan.name}")
+    assert response.status_code == 401
+
+
+async def test_get_training_plans_by_name_superuser_returns_list(
+    client: AsyncClient, world: PlanWorld
+) -> None:
+    plan = world.owner_plans[0]
+    response = await client.get(
+        f"/api/v1/training-plans/name/{plan.name}/superuser",
+        headers=world.owner_headers,
+    )
+    assert response.status_code == 200
+    assert [item["id"] for item in response.json()] == [plan.id]
+
+
+async def test_get_training_plans_by_name_superuser_missing_returns_empty(
+    client: AsyncClient, world: PlanWorld
+) -> None:
+    response = await client.get(
+        "/api/v1/training-plans/name/nope/superuser", headers=world.owner_headers
+    )
+    assert response.status_code == 200
+    assert response.json() == []
+
+
+async def test_get_training_plans_by_name_superuser_non_superuser_returns_403(
+    client: AsyncClient, world: PlanWorld
+) -> None:
+    plan = world.owner_plans[0]
+    response = await client.get(
+        f"/api/v1/training-plans/name/{plan.name}/superuser",
+        headers=world.other_headers,
     )
     assert response.status_code == 403
 
-    response = test_client.get(
-        "/api/v1/training-plans/name/test_12345/superuser",
-        headers={"Authorization": valid_jwt_token},
-    )
-    assert (
-        response.status_code == 404
-        and response.json()["detail"] == "Training plans with name test_12345 not found"
-    )
 
-
-def test_can_create_training_plan(test_client, valid_jwt_token):
-    response = test_client.post(
+async def test_post_training_plan_returns_201(
+    client: AsyncClient, world: PlanWorld
+) -> None:
+    response = await client.post(
         "/api/v1/training-plans",
-        json={"name": "test_0", "description": "test"},
-        headers={"Authorization": valid_jwt_token},
-    )
-    assert response.status_code == 409
-
-    jwt_token_2 = "Bearer " + create_access_token(2)
-    response = test_client.post(
-        "/api/v1/training-plans",
-        json={"name": "test_0", "description": "test"},
-    )
-    assert (
-        response.status_code == 401 and response.json()["detail"] == "Not authenticated"
-    )
-    response = test_client.post(
-        "/api/v1/training-plans",
-        headers={"Authorization": jwt_token_2},
-        json={"name": "test_0", "description": "test"},
+        json={"name": "brand-new", "description": "d"},
+        headers=world.owner_headers,
     )
     assert response.status_code == 201
+    assert response.json()["name"] == "brand-new"
 
 
-def test_can_delete_training_plan(test_client, valid_jwt_token):
-    response = test_client.delete(
-        "/api/v1/training-plans/1", headers={"Authorization": valid_jwt_token}
-    )
-    assert response.status_code == 204
-
-    response = test_client.delete(
-        "/api/v1/training-plans/1", headers={"Authorization": valid_jwt_token}
-    )
-    assert response.status_code == 404
-
-    response = test_client.delete(
-        "/api/v1/training-plans/432431", headers={"Authorization": valid_jwt_token}
-    )
-    assert response.status_code == 404
-
-    response = test_client.delete(
-        "/api/v1/training-plans/432431", headers={"Authorization": valid_jwt_token}
-    )
-    assert response.status_code == 404
-
-    jwt_two = "Bearer " + create_access_token(2)
-    response = test_client.delete(
-        "/api/v1/training-plans/2", headers={"Authorization": jwt_two}
-    )
-    assert response.status_code == 403
-
-    response = test_client.delete(
-        "/api/v1/training-plans/6", headers={"Authorization": jwt_two}
-    )
-    assert response.status_code == 204
-
-
-def test_can_update_training_plan(test_client, valid_jwt_token):
-    response = test_client.put(
-        "/api/v1/training-plans/1",
-        headers={"Authorization": valid_jwt_token},
-        json={"name": "test", "description": "test"},
-    )
-    assert response.status_code == 200 and response.json()["name"] == "test"
-
-    response = test_client.put(
-        "/api/v1/training-plans/134343",
-        headers={"Authorization": valid_jwt_token},
-        json={"name": "test", "description": "test"},
-    )
-    assert response.status_code == 404
-
-    jwt_two = "Bearer " + create_access_token(2)
-    response = test_client.put(
-        "/api/v1/training-plans/1",
-        headers={"Authorization": jwt_two},
-        json={"name": "test1", "description": "test"},
-    )
-    assert response.status_code == 403
-
-    response = test_client.put(
-        "/api/v1/training-plans/6",
-        headers={"Authorization": jwt_two},
-        json={"name": "test1", "description": "test"},
-    )
-    assert response.status_code == 200
-
-
-def test_can_get_plans_for_super_user(
-    test_client,
-    valid_jwt_token,
-):
-    response = test_client.get(
-        "/api/v1/training-plans/name/test_6/superuser",
-        headers={"Authorization": valid_jwt_token},
-    )
-    assert (
-        response.status_code == 200
-        and isinstance(response.json(), list)
-        and len(response.json()) == 1
-    )
-
-    response = test_client.get(
-        "/api/v1/training-plans/name/test_1/superuser",
-        headers={"Authorization": valid_jwt_token},
-    )
-    assert (
-        response.status_code == 200
-        and isinstance(response.json(), list)
-        and len(response.json()) == 1
-    )
-
-    response = test_client.get(
-        "/api/v1/training-plans/name/test_555/superuser",
-        headers={"Authorization": valid_jwt_token},
-    )
-    assert (
-        response.status_code == 200
-        and isinstance(response.json(), list)
-        and len(response.json()) == 0
-    )
-
-    jwt_two = "Bearer " + create_access_token(2)
-    response = test_client.get(
-        "/api/v1/training-plans/name/test_6/superuser", headers={"Authorization": jwt_two}
-    )
-    assert response.status_code == 403
-
-
-def test_can_add_training_unit_to_training_plan(test_client, valid_jwt_token):
-    # training unit doesn't exist
-    response = test_client.put(
-        "/api/v1/training-plans/1/training-units/1/add",
-        headers={"Authorization": valid_jwt_token},
-    )
-    assert response.status_code == 404
-
-    test_client.post(
-        "/api/v1/training-units/",
-        headers={"Authorization": valid_jwt_token},
-        json={"name": "test", "description": "test"},
-    )
-
-    response = test_client.put(
-        "/api/v1/training-plans/1/training-units/1/add",
-        headers={"Authorization": valid_jwt_token},
-    )
-    assert (
-        response.status_code == 200
-        and response.json()["id"] == 1
-        and len(response.json()["training_units"]) == 1
-    )
-    assert (
-        response.json()["training_units"][0]["id"] == 1
-        and response.json()["training_units"][0]["name"] == "test"
-    )
-
-    response = test_client.put(
-        "/api/v1/training-plans/1/training-units/1/add",
-        headers={"Authorization": valid_jwt_token},
+async def test_post_training_plan_duplicate_name_for_owner_returns_409(
+    client: AsyncClient, world: PlanWorld
+) -> None:
+    response = await client.post(
+        "/api/v1/training-plans",
+        json={"name": world.owner_plans[0].name, "description": "d"},
+        headers=world.owner_headers,
     )
     assert response.status_code == 409
 
-    response = test_client.put(
-        "/api/v1/training-plans/551/training-units/1/add",
-        headers={"Authorization": valid_jwt_token},
+
+async def test_post_training_plan_anonymous_returns_401(client: AsyncClient) -> None:
+    response = await client.post(
+        "/api/v1/training-plans", json={"name": "x", "description": "d"}
+    )
+    assert response.status_code == 401
+
+
+async def test_put_training_plan_owner_returns_200(
+    client: AsyncClient, world: PlanWorld
+) -> None:
+    plan = world.owner_plans[0]
+    response = await client.put(
+        f"/api/v1/training-plans/{plan.id}",
+        json={"name": "renamed", "description": "d"},
+        headers=world.owner_headers,
+    )
+    assert response.status_code == 200
+    assert response.json()["name"] == "renamed"
+
+
+async def test_put_training_plan_missing_returns_404(
+    client: AsyncClient, world: PlanWorld
+) -> None:
+    response = await client.put(
+        "/api/v1/training-plans/999999",
+        json={"name": "x", "description": "d"},
+        headers=world.owner_headers,
     )
     assert response.status_code == 404
 
-    response = test_client.put(
-        "/api/v1/training-plans/6/training-units/1/add",
-        headers={"Authorization": valid_jwt_token},
-    )
-    assert (
-        response.status_code == 200
-        and response.json()["id"] == 6
-        and len(response.json()["training_units"]) == 1
-    )
-    assert (
-        response.json()["training_units"][0]["id"] == 1
-        and response.json()["training_units"][0]["name"] == "test"
-    )
 
-    jwt_two = "Bearer " + create_access_token(2)
-    response = test_client.put(
-        "/api/v1/training-plans/7/training-units/1/add",
-        headers={"Authorization": jwt_two},
-    )
-    assert (
-        response.status_code == 200
-        and response.json()["id"] == 7
-        and len(response.json()["training_units"]) == 1
-    )
-    assert (
-        response.json()["training_units"][0]["id"] == 1
-        and response.json()["training_units"][0]["name"] == "test"
-    )
-
-    response = test_client.put(
-        "/api/v1/training-plans/3/training-units/1/add",
-        headers={"Authorization": jwt_two},
+async def test_put_training_plan_not_owner_returns_403(
+    client: AsyncClient, world: PlanWorld
+) -> None:
+    plan = world.owner_plans[0]
+    response = await client.put(
+        f"/api/v1/training-plans/{plan.id}",
+        json={"name": "x", "description": "d"},
+        headers=world.other_headers,
     )
     assert response.status_code == 403
 
 
-def test_can_get_training_units_from_training_plan(test_client, valid_jwt_token):
-    response = test_client.get(
-        "/api/v1/training-plans/1/training-units",
-        headers={"Authorization": valid_jwt_token},
+async def test_delete_training_plan_owner_returns_204(
+    client: AsyncClient, world: PlanWorld
+) -> None:
+    plan = world.owner_plans[0]
+    response = await client.delete(
+        f"/api/v1/training-plans/{plan.id}", headers=world.owner_headers
     )
-    assert response.status_code == 200 and len(response.json()) == 0
+    assert response.status_code == 204
 
-    jwt_two = "Bearer " + create_access_token(2)
-    response = test_client.get(
-        "/api/v1/training-plans/6/training-units",
-        headers={"Authorization": jwt_two},
+
+async def test_delete_training_plan_missing_returns_404(
+    client: AsyncClient, world: PlanWorld
+) -> None:
+    response = await client.delete(
+        "/api/v1/training-plans/999999", headers=world.owner_headers
     )
-    assert response.status_code == 200 and len(response.json()) == 0
+    assert response.status_code == 404
 
-    response = test_client.get(
-        "/api/v1/training-plans/2/training-units",
-        headers={"Authorization": jwt_two},
+
+async def test_delete_training_plan_not_owner_returns_403(
+    client: AsyncClient, world: PlanWorld
+) -> None:
+    plan = world.owner_plans[0]
+    response = await client.delete(
+        f"/api/v1/training-plans/{plan.id}", headers=world.other_headers
     )
     assert response.status_code == 403
 
-    response = test_client.get(
-        "/api/v1/training-plans/33/training-units",
-        headers={"Authorization": valid_jwt_token},
+
+async def test_add_training_unit_to_plan_returns_200(
+    client: AsyncClient, world: PlanWorld, db: AsyncSession
+) -> None:
+    plan = world.owner_plans[0]
+    unit = await create_training_unit(db, owner=world.owner)
+    response = await client.put(
+        f"/api/v1/training-plans/{plan.id}/training-units/{unit.id}/add",
+        headers=world.owner_headers,
+    )
+    assert response.status_code == 200
+    body = response.json()
+    assert body["id"] == plan.id
+    assert [tu["id"] for tu in body["training_units"]] == [unit.id]
+
+
+async def test_add_training_unit_twice_returns_409(
+    client: AsyncClient, world: PlanWorld, db: AsyncSession
+) -> None:
+    plan = world.owner_plans[0]
+    unit = await create_training_unit(db, owner=world.owner)
+    await client.put(
+        f"/api/v1/training-plans/{plan.id}/training-units/{unit.id}/add",
+        headers=world.owner_headers,
+    )
+    response = await client.put(
+        f"/api/v1/training-plans/{plan.id}/training-units/{unit.id}/add",
+        headers=world.owner_headers,
+    )
+    assert response.status_code == 409
+
+
+async def test_add_missing_training_unit_returns_404(
+    client: AsyncClient, world: PlanWorld
+) -> None:
+    plan = world.owner_plans[0]
+    response = await client.put(
+        f"/api/v1/training-plans/{plan.id}/training-units/999999/add",
+        headers=world.owner_headers,
     )
     assert response.status_code == 404
 
 
-def test_can_remove_training_unit_from_training_plan(test_client, valid_jwt_token):
-    response = test_client.put(
-        "/api/v1/training-plans/1/training-units/1/remove",
-        headers={"Authorization": valid_jwt_token},
+async def test_add_training_unit_to_missing_plan_returns_404(
+    client: AsyncClient, world: PlanWorld, db: AsyncSession
+) -> None:
+    unit = await create_training_unit(db, owner=world.owner)
+    response = await client.put(
+        f"/api/v1/training-plans/999999/training-units/{unit.id}/add",
+        headers=world.owner_headers,
     )
     assert response.status_code == 404
 
-    test_client.post(
-        "/api/v1/training-units/",
-        headers={"Authorization": valid_jwt_token},
-        json={"name": "test", "description": "test"},
-    )
 
-    response = test_client.put(
-        "/api/v1/training-plans/1/training-units/1/add",
-        headers={"Authorization": valid_jwt_token},
+async def test_add_training_unit_to_not_owned_plan_returns_403(
+    client: AsyncClient, world: PlanWorld, db: AsyncSession
+) -> None:
+    plan = world.owner_plans[0]
+    unit = await create_training_unit(db, owner=world.other)
+    response = await client.put(
+        f"/api/v1/training-plans/{plan.id}/training-units/{unit.id}/add",
+        headers=world.other_headers,
     )
+    assert response.status_code == 403
 
-    response = test_client.put(
-        "/api/v1/training-plans/1/training-units/1/remove",
-        headers={"Authorization": valid_jwt_token},
+
+async def test_remove_missing_training_unit_returns_404(
+    client: AsyncClient, world: PlanWorld
+) -> None:
+    plan = world.owner_plans[0]
+    response = await client.put(
+        f"/api/v1/training-plans/{plan.id}/training-units/999999/remove",
+        headers=world.owner_headers,
+    )
+    assert response.status_code == 404
+
+
+async def test_remove_training_unit_not_in_plan_returns_409(
+    client: AsyncClient, world: PlanWorld, db: AsyncSession
+) -> None:
+    # The unit exists but was never added to the plan -> conflict, not "missing".
+    plan = world.owner_plans[0]
+    unit = await create_training_unit(db, owner=world.owner)
+    response = await client.put(
+        f"/api/v1/training-plans/{plan.id}/training-units/{unit.id}/remove",
+        headers=world.owner_headers,
+    )
+    assert response.status_code == 409
+
+
+async def test_remove_training_unit_returns_200(
+    client: AsyncClient, world: PlanWorld, db: AsyncSession
+) -> None:
+    plan = world.owner_plans[0]
+    unit = await create_training_unit(db, owner=world.owner)
+    await client.put(
+        f"/api/v1/training-plans/{plan.id}/training-units/{unit.id}/add",
+        headers=world.owner_headers,
+    )
+    response = await client.put(
+        f"/api/v1/training-plans/{plan.id}/training-units/{unit.id}/remove",
+        headers=world.owner_headers,
     )
     assert response.status_code == 200
 
-    response = test_client.put(
-        "/api/v1/training-plans/1/training-units/2/remove",
-        headers={"Authorization": valid_jwt_token},
-    )
-    assert response.status_code == 404
 
-    jwt_two = "Bearer " + create_access_token(2)
-    response = test_client.put(
-        "/api/v1/training-plans/2/training-units/1/remove",
-        headers={"Authorization": jwt_two},
+async def test_remove_training_unit_not_owned_plan_returns_403(
+    client: AsyncClient, world: PlanWorld, db: AsyncSession
+) -> None:
+    plan = world.owner_plans[0]
+    unit = await create_training_unit(db, owner=world.owner)
+    response = await client.put(
+        f"/api/v1/training-plans/{plan.id}/training-units/{unit.id}/remove",
+        headers=world.other_headers,
     )
     assert response.status_code == 403
+
+
+async def test_get_training_units_in_plan_owner_returns_empty(
+    client: AsyncClient, world: PlanWorld
+) -> None:
+    plan = world.owner_plans[0]
+    response = await client.get(
+        f"/api/v1/training-plans/{plan.id}/training-units",
+        headers=world.owner_headers,
+    )
+    assert response.status_code == 200
+    assert response.json() == []
+
+
+async def test_get_training_units_in_plan_reflects_added_unit(
+    client: AsyncClient, world: PlanWorld, db: AsyncSession
+) -> None:
+    plan = world.owner_plans[0]
+    unit = await create_training_unit(db, owner=world.owner)
+    await client.put(
+        f"/api/v1/training-plans/{plan.id}/training-units/{unit.id}/add",
+        headers=world.owner_headers,
+    )
+    response = await client.get(
+        f"/api/v1/training-plans/{plan.id}/training-units",
+        headers=world.owner_headers,
+    )
+    assert response.status_code == 200
+    assert [tu["id"] for tu in response.json()] == [unit.id]
+
+
+async def test_get_training_units_in_plan_not_owner_returns_403(
+    client: AsyncClient, world: PlanWorld
+) -> None:
+    plan = world.owner_plans[0]
+    response = await client.get(
+        f"/api/v1/training-plans/{plan.id}/training-units",
+        headers=world.other_headers,
+    )
+    assert response.status_code == 403
+
+
+async def test_get_training_units_in_missing_plan_returns_404(
+    client: AsyncClient, world: PlanWorld
+) -> None:
+    response = await client.get(
+        "/api/v1/training-plans/999999/training-units", headers=world.owner_headers
+    )
+    assert response.status_code == 404

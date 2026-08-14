@@ -1,193 +1,171 @@
-import pytest
+from httpx import AsyncClient
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from scripts.core.users import get_or_create_user
+from gymhero.models.user import User
+from tests.helpers import create_user, page_items
 
-
-@pytest.fixture
-def seed_users(get_test_db):
-    get_or_create_user(get_test_db, "admin@admin.com", "admin", "Admin", True, True)
-    get_or_create_user(get_test_db, "user1@test.com", "user1", "User1", False, True)
-    get_or_create_user(get_test_db, "user2@test.com", "user2", "User2", False, True)
-
-
-def test_cant_get_all_user_if_not_superuser(test_client):
-    response = test_client.get("/api/v1/users/all")
-    assert response.status_code == 401
+_NEW_USER = {
+    "email": "new@example.com",
+    "password": "password123",
+    "full_name": "New",
+    "is_superuser": False,
+    "is_active": True,
+}
 
 
-def test_can_get_all_user(test_client, seed_users, valid_jwt_token):
-    response = test_client.get("/api/v1/users/all", headers={"Authorization": valid_jwt_token})
+async def test_get_users_as_superuser_returns_all(
+    client: AsyncClient, superuser_headers: dict[str, str], db: AsyncSession
+) -> None:
+    await create_user(db)
+    await create_user(db)
+    response = await client.get("/api/v1/users/all", headers=superuser_headers)
     assert response.status_code == 200
-    data = response.json()
-    assert len(data["items"]) == 3
+    assert len(page_items(response)) == 3  # two created + the superuser caller
 
 
-def test_cant_get_all_user_if_not_authenticated(test_client):
-    response = test_client.get("/api/v1/users/all")
+async def test_get_users_anonymous_returns_401(client: AsyncClient) -> None:
+    response = await client.get("/api/v1/users/all")
     assert response.status_code == 401
+    assert response.json()["detail"] == "Not authenticated"
 
 
-def test_can_get_user_by_id(test_client, seed_users, valid_jwt_token):
-    response = test_client.get("/api/v1/users/2", headers={"Authorization": valid_jwt_token})
+async def test_get_users_non_superuser_returns_403(
+    client: AsyncClient, user_headers: dict[str, str]
+) -> None:
+    response = await client.get("/api/v1/users/all", headers=user_headers)
+    assert response.status_code == 403
+    assert response.json()["detail"] == "The user does not have enough privileges"
+
+
+async def test_get_user_by_id_returns_it(
+    client: AsyncClient, superuser_headers: dict[str, str], db: AsyncSession
+) -> None:
+    target = await create_user(db)
+    response = await client.get(f"/api/v1/users/{target.id}", headers=superuser_headers)
     assert response.status_code == 200
-    data = response.json()
-    assert data["id"] == 2
-
-    response = test_client.get("/api/v1/users/100")
-    assert response.status_code == 401
+    assert response.json()["id"] == target.id
 
 
-def test_can_get_user_by_name(test_client, seed_users, valid_jwt_token):
-    response = test_client.get(
-        "/api/v1/users/email/user2@test.com", headers={"Authorization": valid_jwt_token}
+async def test_get_user_by_id_missing_returns_404(
+    client: AsyncClient, superuser_headers: dict[str, str]
+) -> None:
+    response = await client.get("/api/v1/users/9999", headers=superuser_headers)
+    assert response.status_code == 404
+
+
+async def test_get_user_by_email_returns_it(
+    client: AsyncClient, superuser_headers: dict[str, str], db: AsyncSession
+) -> None:
+    target = await create_user(db, email="findme@example.com")
+    response = await client.get(
+        "/api/v1/users/email/findme@example.com", headers=superuser_headers
     )
     assert response.status_code == 200
-    data = response.json()
-    assert data["id"] == 3
-
-    response = test_client.get("/api/v1/users/email/user2@test.com")
-    assert response.status_code == 401
+    assert response.json()["id"] == target.id
 
 
-def test_can_create_user(test_client, get_test_db, valid_jwt_token):
-    get_or_create_user(get_test_db, "admin@test.com", "admin", "admin", True, True)
+async def test_get_user_by_email_missing_returns_404(
+    client: AsyncClient, superuser_headers: dict[str, str]
+) -> None:
+    response = await client.get(
+        "/api/v1/users/email/missing@example.com", headers=superuser_headers
+    )
+    assert response.status_code == 404
 
-    response = test_client.post(
-        "/api/v1/users",
-        json={
-            "email": "test@test.com",
-            "password": "test",
-            "full_name": "test",
-            "is_superuser": False,
-            "is_active": True,
-        },
-        headers={"Authorization": valid_jwt_token},
+
+async def test_post_user_as_superuser_returns_201(
+    client: AsyncClient, superuser_headers: dict[str, str]
+) -> None:
+    response = await client.post(
+        "/api/v1/users", json=_NEW_USER, headers=superuser_headers
     )
     assert response.status_code == 201
+    assert response.json()["email"] == "new@example.com"
 
-    response = test_client.post(
+
+async def test_post_user_duplicate_email_returns_409(
+    client: AsyncClient, superuser_headers: dict[str, str], db: AsyncSession
+) -> None:
+    await create_user(db, email="dup@example.com")
+    response = await client.post(
         "/api/v1/users",
-        json={
-            "email": "test@test.com",
-            "password": "test",
-            "full_name": "test",
-            "is_superuser": False,
-            "is_active": True,
-        },
-        headers={"Authorization": valid_jwt_token},
+        json={**_NEW_USER, "email": "dup@example.com"},
+        headers=superuser_headers,
     )
     assert response.status_code == 409
 
-    response = test_client.post(
-        "/api/v1/users",
-        json={
-            "email": "tes1t@test.com",
-            "password": "test",
-            "full_name": "test",
-            "is_superuser": False,
-            "is_active": True,
-        },
-    )
 
+async def test_post_user_invalid_email_returns_422(
+    client: AsyncClient, superuser_headers: dict[str, str]
+) -> None:
+    response = await client.post(
+        "/api/v1/users",
+        json={**_NEW_USER, "email": "not-an-email"},
+        headers=superuser_headers,
+    )
+    assert response.status_code == 422
+
+
+async def test_post_user_anonymous_returns_401(client: AsyncClient) -> None:
+    response = await client.post("/api/v1/users", json=_NEW_USER)
     assert response.status_code == 401
 
 
-def test_can_update_user(test_client, get_test_db, valid_jwt_token):
-    get_or_create_user(get_test_db, "admin@test.com", "admin", "admin", True, True)
-
-    response = test_client.put(
-        "/api/v1/users/1",
-        json={
-            "email": "test@test.com",
-            "password": "test",
-            "full_name": "test",
-            "is_superuser": False,
-            "is_active": True,
-        },
-        headers={"Authorization": valid_jwt_token},
+async def test_put_user_as_superuser_returns_200(
+    client: AsyncClient, superuser_headers: dict[str, str], db: AsyncSession
+) -> None:
+    target = await create_user(db, email="old@example.com")
+    response = await client.put(
+        f"/api/v1/users/{target.id}",
+        json={**_NEW_USER, "email": "updated@example.com"},
+        headers=superuser_headers,
     )
-    assert response.status_code == 200 and response.json()["email"] == "test@test.com"
+    assert response.status_code == 200
+    assert response.json()["email"] == "updated@example.com"
 
 
-def test_can_delete_user(test_client, get_test_db, valid_jwt_token):
-    get_or_create_user(get_test_db, "admin@test.com", "admin", "admin", True, True)
-    get_or_create_user(get_test_db, "test@test.com", "test", "test", False, True)
-
-    response = test_client.delete(
-        "/api/v1/users/2",
-        headers={"Authorization": valid_jwt_token},
+async def test_put_user_missing_returns_404(
+    client: AsyncClient, superuser_headers: dict[str, str]
+) -> None:
+    response = await client.put(
+        "/api/v1/users/9999", json=_NEW_USER, headers=superuser_headers
     )
+    assert response.status_code == 404
 
+
+async def test_delete_user_as_superuser_returns_204(
+    client: AsyncClient, superuser_headers: dict[str, str], db: AsyncSession
+) -> None:
+    target = await create_user(db)
+    response = await client.delete(
+        f"/api/v1/users/{target.id}", headers=superuser_headers
+    )
     assert response.status_code == 204
 
 
-def test_cant_delete_user_if_not_superuser(test_client, get_test_db, valid_jwt_token):
-    get_or_create_user(get_test_db, "admin@test.com", "admin", "admin", False, True)
-    get_or_create_user(get_test_db, "test@test.com", "test", "test", False, True)
-
-    response = test_client.delete(
-        "/api/v1/users/1",
-        headers={"Authorization": valid_jwt_token},
+async def test_delete_user_self_returns_403(
+    client: AsyncClient, superuser: User, superuser_headers: dict[str, str]
+) -> None:
+    response = await client.delete(
+        f"/api/v1/users/{superuser.id}", headers=superuser_headers
     )
+    assert response.status_code == 403
+    assert response.json()["detail"] == "You cannot delete yourself"
 
-    assert (
-        response.status_code == 403
-        and response.json()["detail"] == "The user does not have enough privileges"
+
+async def test_delete_user_non_superuser_returns_403(
+    client: AsyncClient, user_headers: dict[str, str], db: AsyncSession
+) -> None:
+    target = await create_user(db)
+    response = await client.delete(
+        f"/api/v1/users/{target.id}", headers=user_headers
     )
+    assert response.status_code == 403
+    assert response.json()["detail"] == "The user does not have enough privileges"
 
 
-def test_cannot_delete_myself(test_client, get_test_db, valid_jwt_token):
-    get_or_create_user(get_test_db, "admin@test.com", "admin", "admin", True, True)
-
-    response = test_client.delete(
-        "/api/v1/users/1",
-        headers={"Authorization": valid_jwt_token},
-    )
-
-    assert (
-        response.status_code == 403
-        and response.json()["detail"] == "You cannot delete yourself"
-    )
-
-
-def test_cannot_delete_non_existing_user(test_client, valid_jwt_token, get_test_db):
-    get_or_create_user(get_test_db, "admin@test.com", "admin", "admin", True, True)
-    response = test_client.delete(
-        "/api/v1/users/100",
-        headers={"Authorization": valid_jwt_token},
-    )
-
-    assert response.status_code == 404
-
-
-def test_cannot_update_non_existing_user(test_client, valid_jwt_token, get_test_db):
-    get_or_create_user(get_test_db, "admin@test.com", "admin", "admin", True, True)
-    response = test_client.put(
-        "/api/v1/users/100",
-        json={
-            "email": "test@test.com",
-            "password": "test",
-            "full_name": "test",
-            "is_superuser": False,
-            "is_active": True,
-        },
-        headers={"Authorization": valid_jwt_token},
-    )
-
-    assert response.status_code == 404
-
-
-def test_cannot_fetch_non_existing_user(test_client, valid_jwt_token, get_test_db):
-    get_or_create_user(get_test_db, "admin@test.com", "admin", "admin", True, True)
-    response = test_client.get(
-        "/api/v1/users/100",
-        headers={"Authorization": valid_jwt_token},
-    )
-
-    assert response.status_code == 404
-
-    response = test_client.get(
-        "/api/v1/users/email/test",
-        headers={"Authorization": valid_jwt_token},
-    )
+async def test_delete_user_missing_returns_404(
+    client: AsyncClient, superuser_headers: dict[str, str]
+) -> None:
+    response = await client.delete("/api/v1/users/9999", headers=superuser_headers)
     assert response.status_code == 404

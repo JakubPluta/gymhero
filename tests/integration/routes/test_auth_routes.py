@@ -1,116 +1,143 @@
-def test_can_login_for_access_token(test_client, first_active_superuser):
-    response = test_client.post(
-        "/api/v1/auth/login", data={"username": "admin@admin.com", "password": "admin"}
+from httpx import AsyncClient
+
+from gymhero.models.user import User
+from tests.helpers import DEFAULT_PASSWORD
+
+
+async def _login(client: AsyncClient, user: User) -> dict[str, str]:
+    response = await client.post(
+        "/api/v1/auth/login",
+        data={"username": user.email, "password": DEFAULT_PASSWORD},
     )
+    return response.json()
+
+
+async def test_login_returns_token_pair(
+    client: AsyncClient, regular_user: User
+) -> None:
+    response = await client.post(
+        "/api/v1/auth/login",
+        data={"username": regular_user.email, "password": DEFAULT_PASSWORD},
+    )
+    assert response.status_code == 200
     data = response.json()
-    assert (
-        "access_token" in data
-        and "refresh_token" in data
-        and data["token_type"] == "bearer"
-        and response.status_code == 200
+    assert data["token_type"] == "bearer"
+    assert data["access_token"]
+    assert data["refresh_token"]
+
+
+async def test_login_wrong_password_returns_400(
+    client: AsyncClient, regular_user: User
+) -> None:
+    response = await client.post(
+        "/api/v1/auth/login",
+        data={"username": regular_user.email, "password": "wrongpassword"},
     )
+    assert response.status_code == 400
+    assert response.json()["detail"] == "Incorrect email or password"
 
 
-def test_cant_login_for_wrong_password(test_client, first_active_superuser):
-    response = test_client.post(
-        "/api/v1/auth/login", data={"username": "admin@admin.com", "password": "wrong"}
+async def test_login_unknown_user_returns_400(client: AsyncClient) -> None:
+    response = await client.post(
+        "/api/v1/auth/login",
+        data={"username": "ghost@example.com", "password": DEFAULT_PASSWORD},
     )
-    assert (
-        response.status_code == 400
-        and response.json()["detail"] == "Incorrect email or password"
+    assert response.status_code == 400
+    assert response.json()["detail"] == "Incorrect email or password"
+
+
+async def test_login_inactive_user_returns_400(
+    client: AsyncClient, inactive_user: User
+) -> None:
+    response = await client.post(
+        "/api/v1/auth/login",
+        data={"username": inactive_user.email, "password": DEFAULT_PASSWORD},
     )
+    assert response.status_code == 400
+    assert response.json()["detail"] == "Inactive user"
 
 
-def test_cant_login_for_wrong_username(test_client, first_active_superuser):
-    response = test_client.post(
-        "/api/v1/auth/login", data={"username": "wrong@admin.com", "password": "admin"}
-    )
-    assert (
-        response.status_code == 400
-        and response.json()["detail"] == "Incorrect email or password"
-    )
-
-
-def test_cant_login_if_not_active_user(test_client, first_inactive_user):
-    response = test_client.post(
-        "/api/v1/auth/login", data={"username": "admin@admin.com", "password": "admin"}
-    )
-    assert response.status_code == 400 and response.json()["detail"] == "Inactive user"
-
-
-def test_can_register(test_client):
-    response = test_client.post(
+async def test_register_creates_user_returns_201(client: AsyncClient) -> None:
+    response = await client.post(
         "/api/v1/auth/register",
-        json={
-            "email": "admin@admin.com",
-            "password": "adminpass1",
-            "full_name": "Admin",
-        },
+        json={"email": "new@example.com", "password": "password123", "full_name": "New"},
     )
-    assert response.status_code == 201 and response.json() == {
-        "message": "User created successfully"
-    }
+    assert response.status_code == 201
+    assert response.json() == {"message": "User created successfully"}
 
 
-def test_cannot_register_with_short_password(test_client):
-    response = test_client.post(
+async def test_register_then_login_succeeds(client: AsyncClient) -> None:
+    await client.post(
         "/api/v1/auth/register",
-        json={"email": "admin@admin.com", "password": "short", "full_name": "Admin"},
+        json={"email": "roundtrip@example.com", "password": "password123"},
+    )
+    response = await client.post(
+        "/api/v1/auth/login",
+        data={"username": "roundtrip@example.com", "password": "password123"},
+    )
+    assert response.status_code == 200
+    assert response.json()["access_token"]
+
+
+async def test_register_short_password_returns_422(client: AsyncClient) -> None:
+    response = await client.post(
+        "/api/v1/auth/register",
+        json={"email": "x@example.com", "password": "short", "full_name": "X"},
     )
     assert response.status_code == 422
 
 
-def test_cannot_register_with_invalid_email(test_client):
-    response = test_client.post(
+async def test_register_invalid_email_returns_422(client: AsyncClient) -> None:
+    response = await client.post(
         "/api/v1/auth/register",
-        json={"email": "not-an-email", "password": "adminpass1"},
+        json={"email": "not-an-email", "password": "password123"},
     )
     assert response.status_code == 422
 
 
-def test_cannot_register_if_user_exists(test_client, first_active_superuser):
-    response = test_client.post(
+async def test_register_existing_email_returns_409(
+    client: AsyncClient, regular_user: User
+) -> None:
+    response = await client.post(
         "/api/v1/auth/register",
-        json={
-            "email": "admin@admin.com",
-            "password": "adminpass1",
-            "full_name": "Admin",
-        },
+        json={"email": regular_user.email, "password": "password123", "full_name": "D"},
     )
+    assert response.status_code == 409
     assert (
-        response.status_code == 409
-        and response.json()["detail"]
-        == "The user with this admin@admin.com already exists in the system"
+        response.json()["detail"]
+        == f"The user with this {regular_user.email} already exists in the system"
     )
 
 
-def _login(test_client) -> dict:
-    return test_client.post(
-        "/api/v1/auth/login", data={"username": "admin@admin.com", "password": "admin"}
-    ).json()
-
-
-def test_refresh_returns_new_access_token(test_client, first_active_superuser):
-    tokens = _login(test_client)
-    response = test_client.post(
+async def test_refresh_returns_new_access_token(
+    client: AsyncClient, regular_user: User
+) -> None:
+    tokens = await _login(client, regular_user)
+    response = await client.post(
         "/api/v1/auth/refresh", json={"refresh_token": tokens["refresh_token"]}
     )
-    data = response.json()
-    assert (
-        response.status_code == 200
-        and "access_token" in data
-        and data["token_type"] == "bearer"
-    )
+    assert response.status_code == 200
+    assert response.json()["access_token"]
+    assert response.json()["token_type"] == "bearer"
 
 
-def test_refresh_rejects_access_token(test_client, first_active_superuser):
-    tokens = _login(test_client)
-    response = test_client.post(
+async def test_refresh_rejects_access_token(
+    client: AsyncClient, regular_user: User
+) -> None:
+    tokens = await _login(client, regular_user)
+    response = await client.post(
         "/api/v1/auth/refresh", json={"refresh_token": tokens["access_token"]}
     )
     assert response.status_code == 401
 
 
-def test_refresh_rejects_invalid_token(test_client):
-    response = test_client.post("/api/v1/auth/refresh", json={"refresh_token": "not-a-token"})
+async def test_refresh_rejects_garbage_token(client: AsyncClient) -> None:
+    response = await client.post(
+        "/api/v1/auth/refresh", json={"refresh_token": "not-a-token"}
+    )
     assert response.status_code == 401
+
+
+async def test_refresh_missing_body_returns_422(client: AsyncClient) -> None:
+    response = await client.post("/api/v1/auth/refresh", json={})
+    assert response.status_code == 422

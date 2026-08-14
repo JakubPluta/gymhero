@@ -22,7 +22,7 @@ run = ["ruff format", "ruff check --fix"]
 [tasks.test]
 description = "Run the test suite (spins a Postgres testcontainer)"
 env = { ENV = "test" }
-run = "pytest tests/"
+run = "pytest --cov=gymhero --cov-report=term-missing tests/"
 
 [tasks.test-cov]
 description = "Run the test suite with coverage"

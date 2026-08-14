@@ -27,16 +27,7 @@ def authorize_owner_or_superuser(
     *,
     message: str = _DEFAULT_MESSAGE,
 ) -> None:
-    """Permit the action only if ``actor`` owns ``resource`` or is a superuser.
-
-    Args:
-        resource: The owned entity being acted upon.
-        actor: The authenticated user performing the action.
-        message: Detail surfaced to the client on denial.
-
-    Raises:
-        PermissionDeniedError: If the actor is neither owner nor superuser.
-    """
+    """Allow only when ``actor`` owns ``resource`` or is a superuser; raise otherwise."""
     if actor.is_superuser or resource.owner_id == actor.id:
         return
     raise PermissionDeniedError(message)

@@ -23,7 +23,7 @@ def _resource(owner_id: int) -> SimpleNamespace:
         (_actor(1, is_superuser=True), 1, True),  # superuser and owner
     ],
 )
-def test_authorize_owner_or_superuser(actor, owner_id, allowed):
+def test_authorize_owner_or_superuser(actor, owner_id, allowed) -> None:
     resource = _resource(owner_id)
     if allowed:
         assert authorize_owner_or_superuser(resource, actor) is None
@@ -32,7 +32,7 @@ def test_authorize_owner_or_superuser(actor, owner_id, allowed):
             authorize_owner_or_superuser(resource, actor)
 
 
-def test_authorize_surfaces_custom_message():
+def test_authorize_surfaces_custom_message() -> None:
     with pytest.raises(PermissionDeniedError, match="custom message"):
         authorize_owner_or_superuser(
             _resource(1), _actor(2), message="custom message"

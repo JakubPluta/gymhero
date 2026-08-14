@@ -2,7 +2,6 @@ from argparse import ArgumentParser
 
 from gymhero.config import get_settings
 from gymhero.database.db import get_ctx_db
-from gymhero.database.session import build_sqlalchemy_database_url_from_settings
 from gymhero.log import get_logger
 from gymhero.models.user import User
 from scripts.core.catalog import (
@@ -24,7 +23,7 @@ def seed_database(env: str, limit: int | None = None) -> None:
     the full CSV; ``limit`` caps only how many exercises are inserted.
     """
     settings = get_settings(env)
-    database_url = build_sqlalchemy_database_url_from_settings(settings)
+    database_url = settings.database_url
     # Log host/db only — never the full URL, which carries the password.
     log.info("Seeding database %s", database_url.split("@")[-1])
 
@@ -61,7 +60,7 @@ def seed_database(env: str, limit: int | None = None) -> None:
 def seed_superuser(env: str) -> User:
     """Seed only the configured first superuser for ``env``."""
     settings = get_settings(env)
-    database_url = build_sqlalchemy_database_url_from_settings(settings)
+    database_url = settings.database_url
     with get_ctx_db(database_url) as session:
         user = create_first_superuser(session, settings)
     log.info("Superuser seeded")

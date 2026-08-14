@@ -40,7 +40,7 @@ def create_first_superuser(db: Session, settings: Settings) -> User:
     return get_or_create_user(
         db,
         email=settings.FIRST_SUPERUSER_EMAIL,
-        password=settings.FIRST_SUPERUSER_PASSWORD,
+        password=settings.FIRST_SUPERUSER_PASSWORD.get_secret_value(),
         full_name=settings.FIRST_SUPERUSER_USERNAME,
         is_superuser=True,
     )

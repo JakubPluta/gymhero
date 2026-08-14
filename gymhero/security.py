@@ -19,7 +19,9 @@ def _create_token(
         "type": token_type,
         "exp": datetime.now(UTC) + expires_delta,
     }
-    return jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
+    return jwt.encode(
+        to_encode, settings.SECRET_KEY.get_secret_value(), algorithm=settings.ALGORITHM
+    )
 
 
 def create_access_token(
@@ -38,7 +40,9 @@ def create_refresh_token(
 
 def decode_token(token: str, *, expected_type: str) -> dict[str, Any]:
     """Decode a JWT and assert its ``type`` claim, else raise ``InvalidTokenError``."""
-    payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+    payload = jwt.decode(
+        token, settings.SECRET_KEY.get_secret_value(), algorithms=[settings.ALGORITHM]
+    )
     if payload.get("type") != expected_type:
         raise jwt.InvalidTokenError(f"expected a {expected_type} token")
     return payload

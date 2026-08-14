@@ -8,7 +8,7 @@ readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
     "fastapi>=0.115.0",
-    "uvicorn>=0.32.0",
+    "uvicorn[standard]>=0.32.0",
     "sqlalchemy[asyncio]>=2.0.36",
     "asyncpg>=0.30.0",
     "greenlet>=3.1.0",
@@ -63,7 +63,19 @@ extend-immutable-calls = ["fastapi.Depends", "fastapi.Query", "fastapi.Body"]
 skip = "migrations/**/*,migrations,migrations/*.py"
 
 
+[tool.coverage.run]
+source = ["gymhero"]
+branch = true
+omit = [
+    "gymhero/server.py",
+    "gymhero/log.py",
+    "gymhero/exceptions.py",
+    "*/__init__.py",
+]
+
 [tool.coverage.report]
+fail_under = 80
+show_missing = true
 exclude_also = [
     "def __repr__",
     "if self.debug:",
@@ -81,9 +93,6 @@ exclude_also = [
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests"]
-markers = [
-    "docker: tests that require a Docker daemon (spawn a Postgres testcontainer)",
-]
 
 
 [tool.mypy]
