@@ -43,3 +43,17 @@ def register_exception_handlers(app: FastAPI) -> None:
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             content={"detail": "Internal server error"},
         )
+
+    @app.exception_handler(Exception)
+    async def _handle_unexpected_error(
+        request: Request, exc: Exception
+    ) -> JSONResponse:
+        # Catch-all: log the traceback, return a generic 500 (no leak). Runs in the
+        # outer ServerErrorMiddleware, so re-attach the request id the middleware set.
+        logger.error("unhandled error", exc_info=exc)
+        request_id = getattr(request.state, "request_id", None)
+        return JSONResponse(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            content={"detail": "Internal server error"},
+            headers={"X-Request-ID": request_id} if request_id else None,
+        )

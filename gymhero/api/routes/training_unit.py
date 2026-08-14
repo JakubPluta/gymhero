@@ -58,7 +58,7 @@ async def get_all_training_units_for_owner(
 
 @router.get(
     "/{training_unit_id}",
-    response_model=TrainingUnitInDB | None,
+    response_model=TrainingUnitInDB,
     status_code=status.HTTP_200_OK,
 )
 async def get_training_unit_by_id(
@@ -73,7 +73,7 @@ async def get_training_unit_by_id(
 
 @router.get(
     "/name/{training_unit_name}",
-    response_model=TrainingUnitInDB | None,
+    response_model=TrainingUnitInDB,
     status_code=status.HTTP_200_OK,
 )
 async def get_training_unit_by_name(
@@ -88,7 +88,7 @@ async def get_training_unit_by_name(
 
 @router.get(
     "/name/{training_unit_name}/superuser",
-    response_model=list[TrainingUnitInDB | None],
+    response_model=list[TrainingUnitInDB],
     status_code=status.HTTP_200_OK,
     include_in_schema=False,
 )
@@ -142,7 +142,7 @@ async def delete_training_unit(
 
 @router.put(
     "/{training_unit_id}/exercises/{exercise_id}/add",
-    response_model=TrainingUnitInDB | None,
+    response_model=TrainingUnitInDB,
     status_code=status.HTTP_200_OK,
 )
 async def add_exercise_to_training_unit(
@@ -156,7 +156,7 @@ async def add_exercise_to_training_unit(
     )
 
 
-@router.get("/{training_unit_id}/exercises", response_model=list[ExerciseInDB | None])
+@router.get("/{training_unit_id}/exercises", response_model=list[ExerciseInDB])
 async def get_exercises_in_training_unit(
     training_unit_id: int,
     db: AsyncSession = Depends(get_db),
@@ -169,7 +169,7 @@ async def get_exercises_in_training_unit(
 
 @router.put(
     "/{training_unit_id}/exercises/{exercise_id}/remove",
-    response_model=TrainingUnitInDB | None,
+    response_model=TrainingUnitInDB,
     status_code=status.HTTP_200_OK,
 )
 async def remove_exercise_from_training_unit(

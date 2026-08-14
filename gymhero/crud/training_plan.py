@@ -42,8 +42,10 @@ class TrainingPlanCRUD(CRUDRepository[TrainingPlan]):
         await db.refresh(training_plan)
         return training_plan
 
-    def get_training_units_in_training_plan(self, training_plan: TrainingPlan):
-        return training_plan.training_units
+    def get_training_units_in_training_plan(
+        self, training_plan: TrainingPlan
+    ) -> list[TrainingUnit]:
+        return list(training_plan.training_units)
 
 
 training_plan_crud = TrainingPlanCRUD(model=TrainingPlan)

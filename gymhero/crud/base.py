@@ -19,13 +19,20 @@ class CRUDRepository[ModelT: Base]:
         self._model = model
         self._name = model.__name__
 
-    async def get_one(self, db: AsyncSession, *args, **kwargs) -> ModelT | None:
+    async def get_one(
+        self, db: AsyncSession, *args: Any, **kwargs: Any
+    ) -> ModelT | None:
         stmt = select(self._model).filter(*args).filter_by(**kwargs)
         result = await db.execute(stmt)
         return result.scalars().first()
 
     async def get_many(
-        self, db: AsyncSession, *args, skip: int = 0, limit: int = 100, **kwargs
+        self,
+        db: AsyncSession,
+        *args: Any,
+        skip: int = 0,
+        limit: int = 100,
+        **kwargs: Any,
     ) -> list[ModelT]:
         stmt = (
             select(self._model)
@@ -37,7 +44,7 @@ class CRUDRepository[ModelT: Base]:
         result = await db.execute(stmt)
         return list(result.scalars().all())
 
-    async def count(self, db: AsyncSession, *args, **kwargs) -> int:
+    async def count(self, db: AsyncSession, *args: Any, **kwargs: Any) -> int:
         stmt = (
             select(func.count())
             .select_from(self._model)
@@ -90,11 +97,11 @@ class CRUDRepository[ModelT: Base]:
     async def get_many_for_owner(
         self,
         db: AsyncSession,
-        *args,
+        *args: Any,
         owner_id: OwnerIDType,
         skip: int = 0,
         limit: int = 100,
-        **kwargs,
+        **kwargs: Any,
     ) -> list[ModelT]:
         return await self.get_many(
             db, *args, skip=skip, limit=limit, owner_id=owner_id, **kwargs

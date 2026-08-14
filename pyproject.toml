@@ -54,6 +54,7 @@ line-ending = "auto"
 [tool.ruff]
 target-version = "py313"
 extend-exclude = ["tests", "migrations/*", "__init__.py"]
+lint.select = ["E", "F", "W", "I", "B", "UP", "SIM", "C4", "PTH", "RUF"]
 lint.ignore = ["E501"]
 
 # FastAPI dependency-injection defaults (Depends/Query/Body) are the framework
@@ -99,7 +100,15 @@ testpaths = ["tests"]
 
 [tool.mypy]
 python_version = "3.13"
+strict = true
 plugins = ["pydantic.mypy"]
 packages = ["gymhero"]
 ignore_missing_imports = true
 warn_unused_ignores = true
+
+# FastAPI route handlers define their contract via response_model, not the
+# function's own return annotation — don't force return types on that thin layer.
+[[tool.mypy.overrides]]
+module = "gymhero.api.routes.*"
+disallow_untyped_defs = false
+disallow_incomplete_defs = false

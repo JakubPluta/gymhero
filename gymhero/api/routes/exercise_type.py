@@ -26,7 +26,7 @@ _ENTITY = "Exercise type"
 )
 async def fetch_all_exercise_types(
     db: AsyncSession = Depends(get_db),
-    pagination_params: tuple = Depends(get_pagination_params),
+    pagination_params: tuple[int, int] = Depends(get_pagination_params),
 ):
     skip, limit = pagination_params
     items = await exercise_type_crud.get_many(db, skip=skip, limit=limit)
@@ -36,7 +36,7 @@ async def fetch_all_exercise_types(
 
 @router.get(
     "/{exercise_type_id}",
-    response_model=ExerciseTypeInDB | None,
+    response_model=ExerciseTypeInDB,
     status_code=status.HTTP_200_OK,
 )
 async def fetch_exercise_type_by_id(
@@ -53,7 +53,7 @@ async def fetch_exercise_type_by_id(
 
 @router.get(
     "/name/{exercise_type_name}",
-    response_model=ExerciseTypeInDB | None,
+    response_model=ExerciseTypeInDB,
     status_code=status.HTTP_200_OK,
 )
 async def fetch_exercise_type_by_name(

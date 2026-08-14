@@ -105,7 +105,7 @@ async def get_training_units(
 ) -> list[TrainingUnit]:
     plan = await _get_or_404(db, training_plan_id)
     authorize_owner_or_superuser(plan, actor)
-    return plan.training_units
+    return list(plan.training_units)
 
 
 async def _get_or_404(

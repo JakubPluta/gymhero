@@ -58,7 +58,7 @@ async def get_all_training_plans_for_owner(
 
 @router.get(
     "/{training_plan_id}",
-    response_model=TrainingPlanInDB | None,
+    response_model=TrainingPlanInDB,
     status_code=status.HTTP_200_OK,
 )
 async def get_training_plan_by_id(
@@ -73,7 +73,7 @@ async def get_training_plan_by_id(
 
 @router.get(
     "/name/{training_plan_name}",
-    response_model=TrainingPlanInDB | None,
+    response_model=TrainingPlanInDB,
     status_code=status.HTTP_200_OK,
 )
 async def get_training_plan_by_name(
@@ -88,7 +88,7 @@ async def get_training_plan_by_name(
 
 @router.get(
     "/name/{training_plan_name}/superuser",
-    response_model=list[TrainingPlanInDB | None],
+    response_model=list[TrainingPlanInDB],
     status_code=status.HTTP_200_OK,
     include_in_schema=False,
 )
@@ -102,9 +102,7 @@ async def get_training_plans_by_name_for_super_user(
     )
 
 
-@router.post(
-    "/", response_model=TrainingPlanInDB | None, status_code=status.HTTP_201_CREATED
-)
+@router.post("/", response_model=TrainingPlanInDB, status_code=status.HTTP_201_CREATED)
 async def create_training_plan(
     training_plan_create: TrainingPlanCreate,
     db: AsyncSession = Depends(get_db),
@@ -128,7 +126,7 @@ async def delete_training_plan(
 
 @router.put(
     "/{training_plan_id}",
-    response_model=TrainingPlanInDB | None,
+    response_model=TrainingPlanInDB,
     status_code=status.HTTP_200_OK,
 )
 async def update_training_plan(
@@ -144,7 +142,7 @@ async def update_training_plan(
 
 @router.put(
     "/{training_plan_id}/training-units/{training_unit_id}/add",
-    response_model=TrainingPlanInDB | None,
+    response_model=TrainingPlanInDB,
     status_code=status.HTTP_200_OK,
 )
 async def add_training_unit_to_training_plan(
@@ -163,7 +161,7 @@ async def add_training_unit_to_training_plan(
 
 @router.put(
     "/{training_plan_id}/training-units/{training_unit_id}/remove",
-    response_model=TrainingPlanInDB | None,
+    response_model=TrainingPlanInDB,
     status_code=status.HTTP_200_OK,
 )
 async def remove_training_unit_from_training_plan(

@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import (
     async_sessionmaker,
     create_async_engine,
 )
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import Session, sessionmaker
 
 from gymhero.config import settings
 
@@ -19,7 +19,7 @@ def get_engine(database_url: str, echo: bool = False) -> Engine:
     return create_engine(database_url, echo=echo)
 
 
-def get_local_session(database_url: str, echo: bool = False) -> sessionmaker:
+def get_local_session(database_url: str, echo: bool = False) -> sessionmaker[Session]:
     return sessionmaker(
         autocommit=False, autoflush=False, bind=get_engine(database_url, echo)
     )

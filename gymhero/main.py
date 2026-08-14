@@ -1,10 +1,14 @@
 import uuid
+from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
 import structlog
-from fastapi import APIRouter, Depends, FastAPI, Request
+from fastapi import APIRouter, Depends, FastAPI, Request, Response
+from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
+from starlette.middleware.base import RequestResponseEndpoint
+from starlette.middleware.trustedhost import TrustedHostMiddleware
 
 from gymhero.api import (
     auth_router,
@@ -23,7 +27,7 @@ from gymhero.database.session import async_engine
 
 
 @asynccontextmanager
-async def lifespan(_: FastAPI):
+async def lifespan(_: FastAPI) -> AsyncIterator[None]:
     yield
     await async_engine.dispose()
 
@@ -42,11 +46,23 @@ app = FastAPI(
 
 register_exception_handlers(app)
 
+app.add_middleware(TrustedHostMiddleware, allowed_hosts=settings.allowed_hosts)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=settings.cors_origins,
+    allow_credentials=False,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 
 @app.middleware("http")
-async def bind_request_id(request: Request, call_next):
+async def bind_request_id(
+    request: Request, call_next: RequestResponseEndpoint
+) -> Response:
     """Bind a per-request id into the log context and echo it back to the client."""
     request_id = request.headers.get("X-Request-ID") or uuid.uuid4().hex
+    request.state.request_id = request_id
     structlog.contextvars.clear_contextvars()
     structlog.contextvars.bind_contextvars(request_id=request_id)
     response = await call_next(request)

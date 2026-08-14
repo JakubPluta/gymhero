@@ -52,7 +52,9 @@ async def client(engine: AsyncEngine) -> AsyncGenerator[AsyncClient]:
 
     # Standard FastAPI test wiring: point the app's get_db at the testcontainer.
     app.dependency_overrides[get_db] = _override_get_db
-    transport = ASGITransport(app=app)
+    # raise_app_exceptions=False: behave like a real HTTP client — an unhandled
+    # server error comes back as a 500 response, not a re-raised Python exception.
+    transport = ASGITransport(app=app, raise_app_exceptions=False)
     async with AsyncClient(
         transport=transport, base_url="http://test", follow_redirects=True
     ) as http_client:

@@ -31,6 +31,10 @@ class Settings(BaseSettings):
     SERVER_HOST: str
     SERVER_PORT: int
 
+    # Comma-separated; "*" means "any". Parsed into lists by the properties below.
+    CORS_ORIGINS: str
+    ALLOWED_HOSTS: str
+
     POSTGRES_HOST: str
     POSTGRES_USER: str
     POSTGRES_PASSWORD: SecretStr
@@ -61,6 +65,14 @@ class Settings(BaseSettings):
             f"{self.POSTGRES_PASSWORD.get_secret_value()}"
             f"@{self.POSTGRES_HOST}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
         )
+
+    @property
+    def cors_origins(self) -> list[str]:
+        return [o.strip() for o in self.CORS_ORIGINS.split(",") if o.strip()]
+
+    @property
+    def allowed_hosts(self) -> list[str]:
+        return [h.strip() for h in self.ALLOWED_HOSTS.split(",") if h.strip()]
 
 
 class ContainerDevSettings(Settings):

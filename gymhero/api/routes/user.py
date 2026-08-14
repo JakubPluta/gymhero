@@ -15,7 +15,7 @@ router = APIRouter(dependencies=[Depends(get_current_superuser)])
 @router.get("/all", response_model=Page[UserOut], status_code=status.HTTP_200_OK)
 async def fetch_all_users(
     db: AsyncSession = Depends(get_db),
-    pagination_params: tuple = Depends(get_pagination_params),
+    pagination_params: tuple[int, int] = Depends(get_pagination_params),
 ):
     skip, limit = pagination_params
     items = await user_crud.get_many(db, skip=skip, limit=limit)

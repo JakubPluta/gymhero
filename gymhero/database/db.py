@@ -2,6 +2,7 @@ from collections.abc import AsyncGenerator, Generator
 from contextlib import contextmanager
 
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import Session
 
 from gymhero.database.session import async_session_factory, get_local_session
 from gymhero.exceptions import SQLAlchemyException
@@ -20,7 +21,7 @@ async def get_db() -> AsyncGenerator[AsyncSession]:
 
 
 @contextmanager
-def get_ctx_db(database_url: str) -> Generator:
+def get_ctx_db(database_url: str) -> Generator[Session]:
     # Synchronous session for the offline seed scripts.
     db = get_local_session(database_url)()
     try:

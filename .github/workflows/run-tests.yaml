@@ -69,3 +69,23 @@ jobs:
       - run: uv run alembic upgrade head
       - run: uv run alembic downgrade base
       - run: uv run alembic upgrade head
+
+  secrets:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: gitleaks/gitleaks-action@v2
+
+  audit:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          version: "0.12.3"
+          python-version: "3.13"
+      - run: uv sync --frozen --all-groups
+      # Audit the resolved dependency set for known vulnerabilities.
+      - run: uv run --with pip-audit pip-audit

@@ -42,7 +42,7 @@ async def fetch_all_exercises_for_owner(
 
 @router.get(
     "/{exercise_id}",
-    response_model=ExerciseInDB | None,
+    response_model=ExerciseInDB,
     status_code=status.HTTP_200_OK,
 )
 async def fetch_exercise_by_id(

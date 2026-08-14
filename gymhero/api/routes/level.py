@@ -18,7 +18,7 @@ _ENTITY = "Level"
 @router.get("/all", response_model=Page[LevelInDB], status_code=status.HTTP_200_OK)
 async def fetch_all_levels(
     db: AsyncSession = Depends(get_db),
-    pagination_params: tuple = Depends(get_pagination_params),
+    pagination_params: tuple[int, int] = Depends(get_pagination_params),
 ):
     skip, limit = pagination_params
     items = await level_crud.get_many(db, skip=skip, limit=limit)
@@ -26,9 +26,7 @@ async def fetch_all_levels(
     return {"items": items, "total": total, "skip": skip, "limit": limit}
 
 
-@router.get(
-    "/{level_id}", response_model=LevelInDB | None, status_code=status.HTTP_200_OK
-)
+@router.get("/{level_id}", response_model=LevelInDB, status_code=status.HTTP_200_OK)
 async def fetch_level_by_id(level_id: int, db: AsyncSession = Depends(get_db)):
     return await reference.get_by_id_or_404(
         db, crud=level_crud, model=Level, entity_id=level_id, entity=_ENTITY
@@ -37,7 +35,7 @@ async def fetch_level_by_id(level_id: int, db: AsyncSession = Depends(get_db)):
 
 @router.get(
     "/name/{level_name}",
-    response_model=LevelInDB | None,
+    response_model=LevelInDB,
     status_code=status.HTTP_200_OK,
 )
 async def fetch_level_by_name(level_name: str, db: AsyncSession = Depends(get_db)):
@@ -46,7 +44,7 @@ async def fetch_level_by_name(level_name: str, db: AsyncSession = Depends(get_db
     )
 
 
-@router.post("/", response_model=LevelInDB | None, status_code=status.HTTP_201_CREATED)
+@router.post("/", response_model=LevelInDB, status_code=status.HTTP_201_CREATED)
 async def create_level(
     level_create: LevelCreate,
     db: AsyncSession = Depends(get_db),
@@ -73,9 +71,7 @@ async def delete_level(
     )
 
 
-@router.put(
-    "/{level_id}", response_model=LevelInDB | None, status_code=status.HTTP_200_OK
-)
+@router.put("/{level_id}", response_model=LevelInDB, status_code=status.HTTP_200_OK)
 async def update_level(
     level_id: int,
     level_update: LevelUpdate,

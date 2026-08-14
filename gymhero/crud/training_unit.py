@@ -38,7 +38,7 @@ class TrainingUnitCRUD(CRUDRepository[TrainingUnit]):
     def get_exercises_in_training_unit(
         self, training_unit: TrainingUnit
     ) -> list[Exercise]:
-        return training_unit.exercises
+        return list(training_unit.exercises)
 
     def check_if_exercise_in_training_unit(
         self, training_unit: TrainingUnit, exercise: Exercise

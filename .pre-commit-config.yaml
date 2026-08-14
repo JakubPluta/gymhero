@@ -20,3 +20,21 @@ repos:
     hooks:
       - id: codespell
         types: [python]
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.21.2
+    hooks:
+      - id: gitleaks
+  - repo: local
+    hooks:
+      - id: mypy
+        name: mypy (project env)
+        entry: uv run mypy
+        language: system
+        pass_filenames: false
+        types: [python]
+      - id: uv-lock-check
+        name: uv lock is up to date
+        entry: uv lock --check
+        language: system
+        pass_filenames: false
+        files: ^(pyproject\.toml|uv\.lock)$
