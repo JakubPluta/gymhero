@@ -52,7 +52,7 @@ To build an CRUD API with FastAPI, SQLAlchemy, Postgres, Docker
 - Pagination
 - Dependencies - superuser, active user, database
 - Initialization scripts
-- Seperate database and env for testing
+- Separate database and env for testing
 
 
 
@@ -125,7 +125,8 @@ To build an CRUD API with FastAPI, SQLAlchemy, Postgres, Docker
 |----------------|---------|--------------------|------------|
 | /auth          | POST    | /login             | All        |
 | /auth          | POST    | /register          | All        |
-| /auth          | POST    | /refresh           | All        |
+| /auth          | POST    | /refresh           | All          |
+| /auth          | POST    | /logout            | Active User  |
 
 
 ### Training Plans
@@ -152,9 +153,9 @@ To build an CRUD API with FastAPI, SQLAlchemy, Postgres, Docker
 | /training-units  | GET     | /all/my                                             | Owner, Superuser  |
 | /training-units  | GET     | /{training_unit_id}                                 | Owner, Superuser  |
 | /training-units  | GET     | /name/{training_unit_name}                          | Owner, Superuser  |
-| /training-units  | GET     | /{training_plan_id}/exercises                       | Owner, Superuser  |
-| /training-units  | DELETE  | /{training_plan_id}                                 | Owner, Superuser  |
-| /training-units  | PUT     | /{training_plan_id}                                 | Owner, Superuser  |
+| /training-units  | GET     | /{training_unit_id}/exercises                       | Owner, Superuser  |
+| /training-units  | DELETE  | /{training_unit_id}                                 | Owner, Superuser  |
+| /training-units  | PUT     | /{training_unit_id}                                 | Owner, Superuser  |
 | /training-units  | POST    |                                                     | Owner, Superuser  |
 | /training-units  | PUT     | /{training_unit_id}/exercises/{exercise_id}/add     | Owner, Superuser  |
 | /training-units  | PUT     | /{training_unit_id}/exercises/{exercise_id}/remove  | Owner, Superuser  |
@@ -296,13 +297,10 @@ curl -X 'POST' \
 }'
 ```
 
-You can also do everything by using fast api docs which are more user friendly and more convinient way to play with api. To do that check http://localhost:8000/docs (you app needs to run)
+You can also do everything by using fast api docs which are more user friendly and more convenient way to play with api. To do that check http://localhost:8000/docs (your app needs to run)
 
 
 
-#### TODO:
-- Add a few default training plans (FBW, PPL, Splits) available to every registered user
-- Add Redis cache
-- Rate limiting + CORS / security headers on the API
-- Disable `/docs` in production; drop owner email from nested exercise output
-- Automated migrate-on-deploy (init container) and multi-worker serving (gunicorn)
+## Possible future work
+- Default training plans (FBW / PPL / Split) seeded for every user
+- Redis cache for the exercise catalog
