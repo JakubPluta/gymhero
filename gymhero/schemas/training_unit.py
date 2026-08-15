@@ -1,14 +1,13 @@
 import datetime
-from typing import List, Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
-from gymhero.schemas.exercise import ExerciseOut
+from gymhero.schemas.exercise import ExerciseSummary
 
 
 class TrainingUnitBase(BaseModel):
-    name: str
-    description: Optional[str] = None
+    name: str = Field(max_length=255)
+    description: str | None = Field(default=None, max_length=2000)
 
 
 class TrainingUnitCreate(TrainingUnitBase):
@@ -23,11 +22,11 @@ class TrainingUnitInDB(TrainingUnitBase):
     id: int
     created_at: datetime.datetime
     updated_at: datetime.datetime
-    exercises: Optional[List[ExerciseOut]] = []
+    exercises: list[ExerciseSummary] | None = []
     owner_id: int
 
 
 class TrainingUnitOut(TrainingUnitBase):
     id: int
-    exercises: Optional[List[ExerciseOut]] = []
+    exercises: list[ExerciseSummary] | None = []
     owner_id: int

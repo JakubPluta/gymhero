@@ -1,57 +1,58 @@
+import asyncio
+from collections.abc import Generator
 from datetime import timedelta
 
 import pytest
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
+from sqlalchemy.pool import NullPool
+from testcontainers.postgres import PostgresContainer
 
-from gymhero.config import get_settings
-from gymhero.database import get_db
-from gymhero.log import get_logger
-from gymhero.main import app
-from gymhero.config import settings as _test_settings
+from gymhero.config import Settings, get_settings
+from gymhero.models import Base
 
-log = get_logger()
-
-# _test_settings = get_settings("test")
+# One async engine (asyncpg) on a Postgres testcontainer drives every DB test.
 
 
-TEST_SQLALCHEMY_DATABASE_URL = (
-    f"postgresql://{_test_settings.POSTGRES_USER}:{_test_settings.POSTGRES_PASSWORD}@"
-    f"{_test_settings.POSTGRES_HOST}:{_test_settings.POSTGRES_PORT}/{_test_settings.POSTGRES_DB}"
-)
+@pytest.fixture(scope="session")
+def _postgres_container() -> Generator[PostgresContainer]:
+    with PostgresContainer("postgres:16-alpine") as container:
+        yield container
+
+
+@pytest.fixture(scope="session")
+def _async_url(_postgres_container: PostgresContainer) -> str:
+    host = _postgres_container.get_container_host_ip()
+    port = _postgres_container.get_exposed_port(5432)
+    return (
+        f"postgresql+asyncpg://{_postgres_container.username}:"
+        f"{_postgres_container.password}@{host}:{port}/{_postgres_container.dbname}"
+    )
+
+
+async def _create_schema(engine: AsyncEngine) -> None:
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+
+
+@pytest.fixture(scope="session")
+def engine(_async_url: str) -> AsyncEngine:
+    # NullPool: connections open per-operation, so a session-scoped engine is
+    # safe to reuse across the per-test event loops.
+    async_engine = create_async_engine(_async_url, poolclass=NullPool)
+    asyncio.run(_create_schema(async_engine))
+    return async_engine
 
 
 @pytest.fixture
-def test_sqlalchemy_database_url():
-    return TEST_SQLALCHEMY_DATABASE_URL
-
-
-@pytest.fixture
-def test_settings():
+def test_settings() -> Settings:
     return get_settings("test")
 
 
-engine = create_engine(TEST_SQLALCHEMY_DATABASE_URL, echo=False)
+@pytest.fixture
+def subject() -> str:
+    return "user123"
 
 
 @pytest.fixture
-def _engine():
-    return engine
-
-
-@pytest.fixture
-def _test_session(_engine):
-    return sessionmaker(bind=_engine, autocommit=False, autoflush=False)
-
-
-def override_get_db():
-    log.debug("getting test database session")
-    db = sessionmaker(bind=engine, autocommit=False, autoflush=False)()
-    try:
-        yield db
-    finally:
-        log.debug("closing test database session")
-        db.close()
-
-
-app.dependency_overrides[get_db] = override_get_db
+def expires_delta() -> timedelta:
+    return timedelta(minutes=30)

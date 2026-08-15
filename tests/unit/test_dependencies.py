@@ -1,8 +1,7 @@
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pytest
-from fastapi import HTTPException, status
-from sqlalchemy.orm import Session
+from fastapi import HTTPException
 
 from gymhero.api.dependencies import (
     get_current_active_user,
@@ -16,122 +15,83 @@ from gymhero.models.user import User
 from gymhero.schemas.auth import TokenPayload
 
 
-@pytest.fixture
-def default_pagination_params():
-    return (0, 10)
-
-
-@pytest.fixture
-def custom_pagination_params():
-    return (5, 20)
-
-
-def test_default_values(default_pagination_params):
-    # Testing the default values of skip and limit
+def test_get_pagination_params_defaults() -> None:
+    # Called without DI, the params carry their Query() defaults.
     skip, limit = get_pagination_params()
-    assert (skip.default, limit.default) == default_pagination_params
+    assert (skip.default, limit.default) == (0, 10)
 
 
-def test_custom_values(custom_pagination_params):
-    # Testing custom values for skip and limit
-    skip, limit = get_pagination_params(
-        skip=custom_pagination_params[0], limit=custom_pagination_params[1]
-    )
-    assert skip, limit == custom_pagination_params
+def test_get_pagination_params_returns_passed_values() -> None:
+    skip, limit = get_pagination_params(skip=5, limit=20)
+    assert (skip, limit) == (5, 20)
 
 
-def test_negative_skip():
-    # Testing a negative value for skip
+def test_get_pagination_params_does_not_enforce_bounds_at_call_level() -> None:
+    # The ge=0 bound is enforced by FastAPI at request time, not on a direct call.
     skip, limit = get_pagination_params(skip=-5)
-
-    assert skip, limit.default == (-5, 10)
-
-
-def test_get_token_valid_token():
-    # Arrange
-    token = "valid_token"
-    expected_payload = TokenPayload(sub="1234567890", username="john_doe")
-
-    # Act
-    with patch(
-        "jose.jwt.decode", return_value={"sub": "1234567890", "username": "john_doe"}
-    ):
-        result = get_token(token)
-
-    # Assert
-    assert result == expected_payload
+    assert (skip, limit.default) == (-5, 10)
 
 
-def test_get_token_invalid_token():
-    # Arrange
-    token = "invalid_token"
-
-    # Act and Assert
-    with pytest.raises(HTTPException):
-        get_token(token)
+def test_get_token_valid_token_returns_payload() -> None:
+    expected = TokenPayload(sub=1234567890, type="access")
+    with patch("jwt.decode", return_value={"sub": "1234567890", "type": "access"}):
+        assert get_token("valid_token") == expected
 
 
-def test_get_current_user_user_exists(mocker):
-    # Mock the dependencies
-    db_mock = mocker.Mock(spec=Session)
+def test_get_token_invalid_token_raises_401() -> None:
+    with pytest.raises(HTTPException) as exc_info:
+        get_token("invalid_token")
+    assert exc_info.value.status_code == 401
+
+
+async def test_get_current_user_returns_user_when_found(mocker) -> None:
+    db_mock = mocker.AsyncMock()
     token_mock = mocker.Mock()
     token_mock.sub = 1
-
-    # Mock the user_crud.get_one function to return a user
     user_mock = mocker.Mock(spec=User)
-    user_crud.get_one = mocker.Mock(return_value=user_mock)
+    mocker.patch.object(user_crud, "get_one", mocker.AsyncMock(return_value=user_mock))
 
-    # Call the function being tested
-    result = get_current_user(db=db_mock, token=token_mock)
+    result = await get_current_user(db=db_mock, token=token_mock)
 
-    # Assert that the function returns the user object
     assert result == user_mock
 
 
-def test_get_current_user_user_not_found(mocker):
-    # Mock the dependencies
-    db_mock = mocker.Mock(spec=Session)
+async def test_get_current_user_raises_404_when_missing(mocker) -> None:
+    db_mock = mocker.AsyncMock()
     token_mock = mocker.Mock()
     token_mock.sub = 1
+    mocker.patch.object(user_crud, "get_one", mocker.AsyncMock(return_value=None))
 
-    # Mock the user_crud.get_one function to return None
-    user_crud.get_one = mocker.Mock(return_value=None)
-
-    # Call the function being tested and assert that it raises an HTTPException
     with pytest.raises(HTTPException) as exc_info:
-        get_current_user(db=db_mock, token=token_mock)
+        await get_current_user(db=db_mock, token=token_mock)
 
-    # Assert that the raised exception has the correct status code and details
     assert exc_info.value.status_code == 404
     assert exc_info.value.detail == "User not found"
 
 
-class MockUser:
-    def __init__(self, is_active):
+class _MockUser:
+    def __init__(self, *, is_active: bool) -> None:
         self.is_active = is_active
 
 
-def test_get_current_active_user_active_user():
-    user = MockUser(is_active=True)
-    result = get_current_active_user(current_user=user)
-    assert result == user
+def test_get_current_active_user_returns_active_user() -> None:
+    user = _MockUser(is_active=True)
+    assert get_current_active_user(current_user=user) == user
 
 
-def test_get_current_active_user_inactive_user():
-    user = MockUser(is_active=False)
+def test_get_current_active_user_rejects_inactive_user() -> None:
+    user = _MockUser(is_active=False)
     with pytest.raises(HTTPException) as exc_info:
         get_current_active_user(current_user=user)
     assert exc_info.value.status_code == 400
     assert exc_info.value.detail == "Inactive user"
 
 
-def test_get_current_superuser():
-    # Test case: current user is a super user
+def test_get_current_superuser_returns_superuser() -> None:
     current_user = User(is_superuser=True)
-    result = get_current_superuser(current_user)
-    assert result == current_user
+    assert get_current_superuser(current_user) == current_user
 
-    # Test case: current user is not a super user
-    current_user = User(is_superuser=False)
+
+def test_get_current_superuser_rejects_non_superuser() -> None:
     with pytest.raises(HTTPException):
-        get_current_superuser(current_user)
+        get_current_superuser(User(is_superuser=False))

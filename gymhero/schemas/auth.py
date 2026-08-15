@@ -1,22 +1,28 @@
-from typing import Optional
-
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr, Field, SecretStr
 
 
 class Token(BaseModel):
-    """Bearer Access Token"""
+    """Bearer access + refresh tokens."""
 
     access_token: str
+    refresh_token: str
     token_type: str
 
 
 class TokenPayload(BaseModel):
-    """Payload for Bearer Access Token"""
+    """Decoded JWT payload."""
 
-    sub: Optional[int] = None
+    sub: int | None = None
+    type: str | None = None
+    ver: int | None = None
+
+
+class RefreshRequest(BaseModel):
+    refresh_token: str
 
 
 class UserRegister(BaseModel):
-    email: str
-    password: str
-    full_name: Optional[str] = None
+    email: EmailStr
+    # max_length guards bcrypt's 72-byte truncation (char count; ASCII == bytes).
+    password: SecretStr = Field(min_length=8, max_length=72)
+    full_name: str | None = Field(default=None, max_length=255)

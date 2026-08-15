@@ -1,60 +1,46 @@
 from sqlalchemy import create_engine
 from sqlalchemy.engine import Engine
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.ext.asyncio import (
+    AsyncEngine,
+    AsyncSession,
+    async_sessionmaker,
+    create_async_engine,
+)
+from sqlalchemy.orm import Session, sessionmaker
 
-from gymhero.config import Settings, settings
+# Engine/session factories are built by the caller (the app lifespan for async,
+# the offline tooling for sync) — nothing is instantiated at import time. The
+# sync helpers exist only for Alembic migrations and the seed scripts.
 
 
-def build_sqlalchemy_database_url_from_settings(_settings: Settings) -> str:
-    """
-    Builds a SQLAlchemy URL based on the provided settings.
+def get_engine(database_url: str, echo: bool = False) -> Engine:
+    return create_engine(database_url, echo=echo)
 
-    Parameters:
-        _settings (Settings): An instance of the Settings class
-        containing the PostgreSQL connection details.
 
-    Returns:
-        str: The generated SQLAlchemy URL.
-    """
-    return (
-        f"postgresql://{_settings.POSTGRES_USER}:{_settings.POSTGRES_PASSWORD}"
-        f"@{_settings.POSTGRES_HOST}:{_settings.POSTGRES_PORT}/{_settings.POSTGRES_DB}"
+def get_local_session(database_url: str, echo: bool = False) -> sessionmaker[Session]:
+    return sessionmaker(
+        autocommit=False, autoflush=False, bind=get_engine(database_url, echo)
     )
 
 
-def get_engine(database_url: str, echo=False) -> Engine:
-    """
-    Creates and returns a SQLAlchemy Engine object for connecting to a database.
-
-    Parameters:
-        database_url (str): The URL of the database to connect to.
-        Defaults to SQLALCHEMY_DATABASE_URL.
-        echo (bool): Whether or not to enable echoing of SQL statements.
-        Defaults to False.
-
-    Returns:
-        Engine: A SQLAlchemy Engine object representing the database connection.
-    """
-    engine = create_engine(database_url, echo=echo)
-    return engine
-
-
-def get_local_session(database_url: str, echo=False, **kwargs) -> sessionmaker:
-    """
-    Create and return a sessionmaker object for a local database session.
-
-    Parameters:
-        database_url (str): The URL of the local database.
-        Defaults to `SQLALCHEMY_DATABASE_URL`.
-        echo (bool): Whether to echo SQL statements to the console.
-        Defaults to `False`.
-
-    Returns:
-        sessionmaker: A sessionmaker object configured for the local database session.
-    """
-    engine = get_engine(database_url, echo)
-    session = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-    return session
+def get_async_engine(
+    database_url: str,
+    echo: bool = False,
+    *,
+    pool_size: int = 5,
+    max_overflow: int = 10,
+    pool_recycle: int = -1,
+) -> AsyncEngine:
+    return create_async_engine(
+        database_url,
+        echo=echo,
+        pool_pre_ping=True,
+        pool_size=pool_size,
+        max_overflow=max_overflow,
+        pool_recycle=pool_recycle,
+    )
 
 
-SQLALCHEMY_DATABASE_URL = build_sqlalchemy_database_url_from_settings(settings)
+def get_async_session_factory(engine: AsyncEngine) -> async_sessionmaker[AsyncSession]:
+    # expire_on_commit=False: response serialization runs after the service commits.
+    return async_sessionmaker(bind=engine, autoflush=False, expire_on_commit=False)

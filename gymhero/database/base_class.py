@@ -1,7 +1,8 @@
-from typing import Any, Dict
+from datetime import datetime
 
-from sqlalchemy import MetaData
-from sqlalchemy.orm import as_declarative
+from sqlalchemy import DateTime, MetaData, func
+from sqlalchemy.ext.asyncio import AsyncAttrs
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 POSTGRES_INDEXES_NAMING_CONVENTION = {
     "ix": "%(column_0_label)s_idx",
@@ -11,16 +12,20 @@ POSTGRES_INDEXES_NAMING_CONVENTION = {
     "pk": "%(table_name)s_pkey",
 }
 
-
 metadata = MetaData(naming_convention=POSTGRES_INDEXES_NAMING_CONVENTION)
 
 
-class_registry: Dict[str, Any] = {}
-
-
-@as_declarative(class_registry=class_registry)
-class Base:
-    id: Any
-    __name__: str
-    __abstract__: bool = True
+class Base(AsyncAttrs, DeclarativeBase):
     metadata = metadata
+
+
+class TimestampMixin:
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        onupdate=func.now(),
+        nullable=False,
+    )

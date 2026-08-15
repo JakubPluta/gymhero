@@ -1,147 +1,105 @@
-from datetime import timedelta
+from collections.abc import AsyncGenerator
 
 import pytest
-from fastapi.testclient import TestClient
-from sqlalchemy.orm import sessionmaker
+from httpx import ASGITransport, AsyncClient
+from sqlalchemy import text
+from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker
 
-from gymhero.config import get_settings
-from gymhero.log import get_logger
 from gymhero.main import app
 from gymhero.models import Base
-from gymhero.security import create_access_token
-from scripts.core._initdb import seed_database
-from scripts.core.utils import (
-    _create_first_user,
-    _get_unique_values,
-    create_initial_body_parts,
-    create_initial_exercise_types,
-    create_initial_levels,
-    load_exercise_resource,
+from gymhero.models.body_part import BodyPart
+from gymhero.models.exercise import ExerciseType
+from gymhero.models.level import Level
+from gymhero.models.user import User
+from tests.helpers import (
+    auth_headers,
+    create_body_part,
+    create_exercise_type,
+    create_level,
+    create_user,
 )
-from tests.conftest import engine
 
-log = get_logger("conftest")
+# Fixed reference-catalog names so tests can assert on them without caring about
+# insertion order.
+LEVEL_NAMES = ("Beginner", "Intermediate", "Advanced")
+BODY_PART_NAMES = ("Chest", "Back", "Legs")
+EXERCISE_TYPE_NAMES = ("Strength", "Cardio", "Mobility")
 
 
-@pytest.fixture(scope="function", autouse=True)
-def setup_and_teardown():
-    try:
-        Base.metadata.drop_all(bind=engine)
-        log.debug("database dropped")
-    except Exception:
-        pass
-    log.debug("engine url %s", str(engine.url))
-    log.debug(" gymhero test started ".center(70, "*"))
-    Base.metadata.create_all(bind=engine)
+@pytest.fixture(autouse=True)
+async def _truncate(engine: AsyncEngine) -> AsyncGenerator[None]:
     yield
-    Base.metadata.drop_all(bind=engine)
-    log.debug(" gymhero test ended ".center(70, "*"))
+    tables = ", ".join(f'"{table.name}"' for table in Base.metadata.sorted_tables)
+    async with engine.begin() as conn:
+        await conn.execute(text(f"TRUNCATE {tables} RESTART IDENTITY CASCADE"))
 
 
 @pytest.fixture
-def seed_test_database():
-    seed_database("test", limit=10)
+async def db(engine: AsyncEngine) -> AsyncGenerator[AsyncSession]:
+    factory = async_sessionmaker(engine, expire_on_commit=False)
+    async with factory() as session:
+        yield session
 
 
 @pytest.fixture
-def test_settings():
-    return get_settings("test")
+async def client(engine: AsyncEngine) -> AsyncGenerator[AsyncClient]:
+    # The lifespan isn't run under ASGITransport, so populate the state that the
+    # real get_db reads from — this exercises get_db itself, no override needed.
+    app.state.db_session_factory = async_sessionmaker(engine, expire_on_commit=False)
+    # raise_app_exceptions=False: behave like a real HTTP client — an unhandled
+    # server error comes back as a 500 response, not a re-raised Python exception.
+    transport = ASGITransport(app=app, raise_app_exceptions=False)
+    async with AsyncClient(
+        transport=transport, base_url="http://test", follow_redirects=True
+    ) as http_client:
+        yield http_client
 
 
 @pytest.fixture
-def subject():
-    return "user123"
+async def superuser(db: AsyncSession) -> User:
+    return await create_user(db, is_superuser=True)
 
 
 @pytest.fixture
-def expires_delta():
-    return timedelta(minutes=30)
+async def regular_user(db: AsyncSession) -> User:
+    return await create_user(db)
 
 
 @pytest.fixture
-def get_test_db(_test_session):
-    db = _test_session()
-    try:
-        yield db
-    finally:
-        db.close()
+async def other_user(db: AsyncSession) -> User:
+    return await create_user(db)
 
 
 @pytest.fixture
-def test_client():
-    return TestClient(app)
+async def inactive_user(db: AsyncSession) -> User:
+    return await create_user(db, is_active=False)
 
 
 @pytest.fixture
-def exercises_df():
-    return load_exercise_resource()
+async def superuser_headers(superuser: User) -> dict[str, str]:
+    return auth_headers(superuser)
 
 
 @pytest.fixture
-def initial_levels(exercises_df):
-    return _get_unique_values(exercises_df, "Level")
+async def user_headers(regular_user: User) -> dict[str, str]:
+    return auth_headers(regular_user)
 
 
 @pytest.fixture
-def seed_levels(get_test_db, initial_levels):
-    create_initial_levels(get_test_db, initial_levels)
+async def other_user_headers(other_user: User) -> dict[str, str]:
+    return auth_headers(other_user)
 
 
 @pytest.fixture
-def initial_body_parts(exercises_df):
-    return _get_unique_values(exercises_df, "BodyPart")
+async def seeded_levels(db: AsyncSession) -> list[Level]:
+    return [await create_level(db, name=name) for name in LEVEL_NAMES]
 
 
 @pytest.fixture
-def seed_body_parts(get_test_db, initial_body_parts):
-    create_initial_body_parts(get_test_db, initial_body_parts)
+async def seeded_body_parts(db: AsyncSession) -> list[BodyPart]:
+    return [await create_body_part(db, name=name) for name in BODY_PART_NAMES]
 
 
 @pytest.fixture
-def initial_exercise_types(exercises_df):
-    return _get_unique_values(exercises_df, "Type")
-
-
-@pytest.fixture
-def seed_exercise_types(get_test_db, initial_exercise_types):
-    create_initial_exercise_types(get_test_db, initial_exercise_types)
-
-
-@pytest.fixture
-def valid_jwt_token():
-    token = create_access_token("1")
-    return f"Bearer {token}"
-
-
-@pytest.fixture
-def invalid_jwt_token():
-    token = create_access_token("1")
-    return f"Bearer23 {token}"
-
-
-@pytest.fixture
-def first_active_superuser(get_test_db):
-    return _create_first_user(
-        get_test_db, "admin@admin.com", "admin", "Admin", True, True
-    )
-
-
-@pytest.fixture
-def first_incative_superuser(get_test_db):
-    return _create_first_user(
-        get_test_db, "admin@admin.com", "admin", "Admin", True, False
-    )
-
-
-@pytest.fixture
-def first_incative_user(get_test_db):
-    return _create_first_user(
-        get_test_db, "admin@admin.com", "admin", "Admin", False, False
-    )
-
-
-@pytest.fixture
-def first_incative_superuser(get_test_db):
-    return _create_first_user(
-        get_test_db, "admin@admin.com", "admin", "Admin", True, False
-    )
+async def seeded_exercise_types(db: AsyncSession) -> list[ExerciseType]:
+    return [await create_exercise_type(db, name=name) for name in EXERCISE_TYPE_NAMES]

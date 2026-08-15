@@ -1,20 +1,21 @@
 import datetime
-from typing import Optional
 
 from pydantic import BaseModel, ConfigDict, Field
 
 from gymhero.schemas.body_part import BodyPartOut
 from gymhero.schemas.exercise_type import ExerciseTypeOut
 from gymhero.schemas.level import LevelOut
-from gymhero.schemas.user import UserOut
 
 
 class ExerciseBase(BaseModel):
-    name: str
-    description: Optional[str] = Field(
-        default=None, title="The description of the exercise"
+    name: str = Field(max_length=255)
+    description: str | None = Field(
+        default=None, max_length=2000, title="The description of the exercise"
     )
 
+
+class ExerciseCreate(ExerciseBase):
+    # Write side references lookups by id; the read schema embeds them as objects.
     target_body_part_id: int = Field(
         ..., gt=0, description="The id of the target body part"
     )
@@ -22,16 +23,12 @@ class ExerciseBase(BaseModel):
     level_id: int = Field(..., gt=0, description="The id of the level")
 
 
-class ExerciseCreate(ExerciseBase):
-    ...
-
-
-class ExerciseUpdate(ExerciseBase):
-    name: Optional[str] = None
-    description: Optional[str] = None
-    target_body_part_id: Optional[int] = None
-    exercise_type_id: Optional[int] = None
-    level_id: Optional[int] = None
+class ExerciseUpdate(BaseModel):
+    name: str | None = Field(default=None, max_length=255)
+    description: str | None = Field(default=None, max_length=2000)
+    target_body_part_id: int | None = None
+    exercise_type_id: int | None = None
+    level_id: int | None = None
 
 
 class ExerciseInDB(ExerciseBase):
@@ -39,19 +36,19 @@ class ExerciseInDB(ExerciseBase):
     created_at: datetime.datetime
     updated_at: datetime.datetime
     owner_id: int
+    # Lookups embedded as nested {id, name} objects (read side); the raw FK ids live
+    # on the write schema (ExerciseCreate). owner stays a bare id — never embed User.
+    target_body_part: BodyPartOut
+    exercise_type: ExerciseTypeOut
+    level: LevelOut
     model_config = ConfigDict(from_attributes=True)
 
 
-# TODO: https://stackoverflow.com/questions/68799438/how-to-return-only-one-column-from-database-in-pydantic-model-as-a-list
-
-
-class ExerciseOut(BaseModel):
+class ExerciseSummary(BaseModel):
+    # Slim view for nested lists (a training unit's exercises): id + name + owner
+    # only. No PII (email), no deep reference graph — fetch /exercises/{id} for detail.
     id: int
     name: str
-    description: Optional[str] = None
-    owner: Optional[UserOut]
-    target_body_part: Optional[BodyPartOut]
-    exercise_type: Optional[ExerciseTypeOut]
-    level: Optional[LevelOut]
+    owner_id: int
 
     model_config = ConfigDict(from_attributes=True)

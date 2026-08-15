@@ -2,7 +2,7 @@
 
 Simple application to manage your gym training workouts.
 You have the flexibility to create your own exercises, you can develop custom training units and these units can be easily integrated into personalized training plans. You can manage your training units by adding or removing exercises as needed.
-By default application contains database od more than 1000 exercises.
+By default application contains database of more than 1000 exercises.
 
 
 ### Motivation
@@ -20,7 +20,87 @@ To build an CRUD API with FastAPI, SQLAlchemy, Postgres, Docker
 
 **Entity Relationship Diagram**
 
-![ER Diagram](media/ermodel.png?raw=true "ER Diagram")
+```mermaid
+erDiagram
+    users          ||--o{ exercises                   : creates
+    users          ||--o{ training_units              : creates
+    users          ||--o{ training_plans              : creates
+
+    body_parts     ||--o{ exercises                   : targets
+    exercise_types ||--o{ exercises                   : types
+    levels         ||--o{ exercises                   : rates
+
+    training_units ||--o{ training_unit_exercise      : has
+    exercises      ||--o{ training_unit_exercise      : in
+
+    training_plans ||--o{ training_plan_training_unit : has
+    training_units ||--o{ training_plan_training_unit : in
+
+    users {
+        int      id              PK
+        string   email           UK
+        string   full_name
+        string   hashed_password
+        bool     is_active
+        bool     is_superuser
+        int      token_version
+        datetime created_at
+        datetime updated_at
+    }
+    exercises {
+        int      id                  PK
+        string   name                UK
+        string   description
+        int      target_body_part_id FK
+        int      exercise_type_id    FK
+        int      level_id            FK
+        int      owner_id            FK
+        datetime created_at
+        datetime updated_at
+    }
+    exercise_types {
+        int      id         PK
+        string   name       UK
+        datetime created_at
+        datetime updated_at
+    }
+    levels {
+        int      id         PK
+        string   name       UK
+        datetime created_at
+        datetime updated_at
+    }
+    body_parts {
+        int      id         PK
+        string   name       UK
+        datetime created_at
+        datetime updated_at
+    }
+    training_units {
+        int      id          PK
+        string   name        "unique per owner"
+        string   description
+        int      owner_id    FK
+        datetime created_at
+        datetime updated_at
+    }
+    training_plans {
+        int      id          PK
+        string   name        "unique per owner"
+        string   description
+        int      owner_id    FK
+        datetime created_at
+        datetime updated_at
+    }
+    training_unit_exercise {
+        int training_unit_id PK, FK
+        int exercise_id      PK, FK
+    }
+    training_plan_training_unit {
+        int training_plan_id PK, FK
+        int training_unit_id PK, FK
+    }
+```
 
 #### Core technologies
 - FastAPI - web framework for building APIs with Python 3.8+ based on standard Python type hints.
@@ -36,12 +116,11 @@ To build an CRUD API with FastAPI, SQLAlchemy, Postgres, Docker
     - pytest-cov
     - pytest-mock
 - For development
-    - precommit-hook
-    - pylint
-    - black
-    - ruff
-    - poetry
-    - venv
+    - mise - toolchain manager (pins Python + uv)
+    - uv - dependency management and virtualenvs
+    - ruff - linting and formatting
+    - mypy - static type checking
+    - pre-commit
 
 ### Implemented functionalities
 - JWT Authentication
@@ -53,23 +132,26 @@ To build an CRUD API with FastAPI, SQLAlchemy, Postgres, Docker
 - Pagination
 - Dependencies - superuser, active user, database
 - Initialization scripts
-- Seperate database and env for testing
+- Separate database and env for testing
 
 
 
 ## Define use cases:
 
+> All API routes are served under the **`/api/v1`** prefix — e.g. `GET /api/v1/exercises/all`.
+> (`/health`, `/ready` and the Swagger docs at `/docs` are not prefixed.)
+
 ### Exercises
 
 | Routes     | Method | Endpoint                 | Access                 |
 |------------|--------|--------------------------|------------------------|
-| /exercises | GET    | /all                     | All                    |
+| /exercises | GET    | /all                     | Active User            |
 | /exercises | GET    | /my                      | Owner                  |
-| /exercises | GET    | /{exercise_id}           | All                    |
+| /exercises | GET    | /{exercise_id}           | Active User            |
 | /exercises | DELETE | /{exercise_id}           | Superuser, Owner       |
-| /exercises | PUT    | /{exercise_id}           | Superuser, Owner       |
-| /exercises | GET    | /name/{exercise_name}    | All                    |
-| /exercises | POST   |                          | Superuser, Active User |
+| /exercises | PATCH  | /{exercise_id}           | Superuser, Owner       |
+| /exercises | GET    | /name/{exercise_name}    | Active User            |
+| /exercises | POST   |                          | Active User            |
 
 ### ExerciseType
 
@@ -123,6 +205,8 @@ To build an CRUD API with FastAPI, SQLAlchemy, Postgres, Docker
 |----------------|---------|--------------------|------------|
 | /auth          | POST    | /login             | All        |
 | /auth          | POST    | /register          | All        |
+| /auth          | POST    | /refresh           | All          |
+| /auth          | POST    | /logout            | Active User  |
 
 
 ### Training Plans
@@ -137,8 +221,8 @@ To build an CRUD API with FastAPI, SQLAlchemy, Postgres, Docker
 | /training-plans  | DELETE  | /{training_plan_id}                                           | Owner, Superuser  |
 | /training-plans  | PUT     | /{training_plan_id}                                           | Owner, Superuser  |
 | /training-plans  | POST    |                                                               | Owner, Superuser  |
-| /training-plans  | PUT     | /{training_plan_id}/training-units/{training_unit_id}/add     | Owner, Superuser  |
-| /training-plans  | PUT     | /{training_plan_id}/training-units/{training_unit_id}/remove  | Owner, Superuser  |
+| /training-plans  | PUT     | /{training_plan_id}/training-units/{training_unit_id}         | Owner, Superuser  |
+| /training-plans  | DELETE  | /{training_plan_id}/training-units/{training_unit_id}         | Owner, Superuser  |
 
 
 ### Training Units
@@ -149,12 +233,12 @@ To build an CRUD API with FastAPI, SQLAlchemy, Postgres, Docker
 | /training-units  | GET     | /all/my                                             | Owner, Superuser  |
 | /training-units  | GET     | /{training_unit_id}                                 | Owner, Superuser  |
 | /training-units  | GET     | /name/{training_unit_name}                          | Owner, Superuser  |
-| /training-units  | GET     | /{training_plan_id}/exercises                       | Owner, Superuser  |
-| /training-units  | DELETE  | /{training_plan_id}                                 | Owner, Superuser  |
-| /training-units  | PUT     | /{training_plan_id}                                 | Owner, Superuser  |
+| /training-units  | GET     | /{training_unit_id}/exercises                       | Owner, Superuser  |
+| /training-units  | DELETE  | /{training_unit_id}                                 | Owner, Superuser  |
+| /training-units  | PUT     | /{training_unit_id}                                 | Owner, Superuser  |
 | /training-units  | POST    |                                                     | Owner, Superuser  |
-| /training-units  | PUT     | /{training_unit_id}/exercises/{exercise_id}/add     | Owner, Superuser  |
-| /training-units  | PUT     | /{training_unit_id}/exercises/{exercise_id}/remove  | Owner, Superuser  |
+| /training-units  | PUT     | /{training_unit_id}/exercises/{exercise_id}         | Owner, Superuser  |
+| /training-units  | DELETE  | /{training_unit_id}/exercises/{exercise_id}         | Owner, Superuser  |
 
 
 
@@ -171,7 +255,7 @@ To build an CRUD API with FastAPI, SQLAlchemy, Postgres, Docker
 
 ### You should have
 - Running Docker
-- Installed Make (not mandatory) - use makefile to run all commands
+- [mise](https://mise.jdx.dev) — manages Python + uv and runs the project tasks (`mise run <task>`)
 
 
 clone repository:
@@ -184,135 +268,98 @@ and navigate to cloned project
 build and run project:
 
 ```bash
-# this command will build docker image, up container in detached mode and run db initialization scripts
-make dev
+# build image, start containers (detached) and run migrations + db seed
+mise run dev
 ```
 
-you can also re-build container 
-```bash
-make install
-```
-
-alternatively if you don't have make installed you can use directly docker commands:
+alternatively you can use docker commands directly:
 ```bash
 
 docker compose build
 docker compose up -d 
-docker exec -it app alembic downgrade base && alembic upgrade head
-docker exec -it app python -m scripts.initdb --env=dev
+docker compose exec app alembic upgrade head
+docker compose exec app python -m scripts.seed --env=dev
 ```
 or 
 ```bash
 docker compose build --no-cache
 docker compose up -d --force-recreate
-docker exec -it app alembic downgrade base && alembic upgrade head
-docker exec -it app python -m scripts.initdb --env=dev
+docker compose exec app alembic upgrade head
+docker compose exec app python -m scripts.seed --env=dev
 ```
 
-next time if you already have build container you can just type:
+next time you can just start the stack:
 ```bash
-make up
-# or if you did some changes in code
-make run
-```
-
-alternatively:
-```bash
-docker compose up -d
-# or
-docker compose build
+mise run up
+# or directly
 docker compose up -d
 ```
 
-to initialize db once more run:
+to (re)initialize the db:
 ```bash
-make initdb
-
-# or 
-docker exec -it app alembic downgrade base && alembic upgrade head
-docker exec -it app python -m scripts.initdb --env=dev
+mise run migrate && mise run seed
 ```
 
-to down or kill containers:
+to stop the stack:
 ```bash
-make down
-# or
-make kill
+mise run down
 ```
 
-to run tests:
+to run tests (spins a Postgres testcontainer — needs Docker):
 ```bash
-# to run all test
-make test-all
-# to run all test in vervose mode
-make test-all-verboose
-# unit tests
-make test-unit
-# integration test
-make test-integration
-# run coverage report
-make cov
+mise run test          # full suite
+mise run test-cov      # with coverage
 ```
 
-alternatively:
+to lint / type-check:
+```bash
+mise run lint          # ruff format --check + ruff check + mypy
+mise run lint-fix      # auto-format and fix
+```
+
+alembic commands (run inside the app container):
 
 ```bash
-docker exec -it --env-file .env.test app pytest tests/
-docker exec -it --env-file .env.test app pytest tests/ -s -vv
-docker exec -it --env-file .env.test app pytest --cov=gymhero tests/ 
+mise run migrate         # upgrade to head
+mise run makemigration   # autogenerate a revision
+# or directly:
+docker compose exec app alembic upgrade head
+docker compose exec app alembic downgrade -1
 ```
 
-alembic commands:
+### Configuration
+All settings come from `.env.defaults` (committed dummy values). Override any of
+them with a git-ignored `.env` or real environment variables. Tests set `ENV=test`
+and get their database from a Postgres testcontainer.
 
-```bash
-# downgrade to base revisions
-make alembic-base
-# upgrade to head revisions
-make alembic-head
-# up + 1
-make alembic-up
-# down -1
-make alembic-down
-# generate migration
-make alembic-migrate
-# downgrade base & upgrade head
-make alembic-recreate
-# downgrade base & upgrade head & and run init db scripts
-make alembic-init
+`mise run dev` seeds the database and creates the first superuser from those defaults:
 ```
-
-### Main configuration is located in files:
-- env.dev - dev environemnt in container
-- env.test - testing environment
-- env.local - alternative to run app locally (you need to create venv and install all dependencies)
-
-If you run `make install` or `make dev` or `make run` command then by default database will be initialized with data and first superuser will be created:
+FIRST_SUPERUSER_USERNAME=admin
+FIRST_SUPERUSER_EMAIL=admin@example.com
+FIRST_SUPERUSER_PASSWORD=changeme
 ```
-FIRST_SUPERUSER_USERNAME=gymhero
-FIRST_SUPERUSER_EMAIL=gymhero@mail.com
-FIRST_SUPERUSER_PASSWORD=gymhero
-```
-Feel free to change it after cloning repository.
+Change them via a local `.env` before running against anything real.
 
 So as you first user is created and app is running you need to generate JWT Token to access different endpoints. To do that use:
 ```bash
 curl -X 'POST' \
-  'http://localhost:8000/auth/login' \
+  'http://localhost:8000/api/v1/auth/login' \
   -H 'accept: application/json' \
   -H 'Content-Type: application/x-www-form-urlencoded' \
-  -d 'grant_type=&username=gymhero%40mail.com&password=gymhero&scope=&client_id=&client_secret='
+  -d 'grant_type=&username=admin%40example.com&password=changeme&scope=&client_id=&client_secret='
 ```
 In response you will receive something like this:
 ```json
 {
-  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3MDMzMzY3ODgsInN1YiI6IjEifQ.KXtcf8KziA50-xdwe0Fx6fjOFVeaSePp9B6h4EPUwno",
+  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ...",
+  "refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ...",
   "token_type": "bearer"
 }
 ```
 And you need to use it in headers when calling other endpoints eg:
 ```bash
 curl -X 'GET' \
-  'http://localhost:8000/exercises/my?skip=0&limit=10' \
+  'http://localhost:8000/api/v1/exercises/my?skip=0&limit=10' \
   -H 'accept: application/json' \
   -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3MDMzMzY5MDYsInN1YiI6IjEifQ.mnbKswazYV8pBv5JWlHv-qJ8fHZ4msW6yWwvRWzKUz4'
 ```
@@ -320,7 +367,7 @@ curl -X 'GET' \
 To register new user (it will be normal user not superuser, so some routes won't be available)
 ```bash
 curl -X 'POST' \
-  'http://localhost:8000/auth/register' \
+  'http://localhost:8000/api/v1/auth/register' \
   -H 'accept: application/json' \
   -H 'Content-Type: application/json' \
   -d '{
@@ -330,13 +377,10 @@ curl -X 'POST' \
 }'
 ```
 
-You can also do everything by using fast api docs which are more user friendly and more convinient way to play with api. To do that check http://localhost:8000/docs (you app needs to run)
+You can also do everything by using fast api docs which are more user friendly and more convenient way to play with api. To do that check http://localhost:8000/docs (your app needs to run)
 
 
 
-#### TODO:
-- Add couple of default training plans e.g FBW, PPL, Splits etc - that every registered use can access
-- Add environment for local testsing etc.
-- Add redis cache
-- Improve test fixtures
-- Migrate to async 
+## Possible future work
+- Default training plans (FBW / PPL / Split) seeded for every user
+- Redis cache for the exercise catalog
