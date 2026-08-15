@@ -141,7 +141,7 @@ async def update_training_plan(
 
 
 @router.put(
-    "/{training_plan_id}/training-units/{training_unit_id}/add",
+    "/{training_plan_id}/training-units/{training_unit_id}",
     response_model=TrainingPlanInDB,
     status_code=status.HTTP_200_OK,
 )
@@ -159,8 +159,8 @@ async def add_training_unit_to_training_plan(
     )
 
 
-@router.put(
-    "/{training_plan_id}/training-units/{training_unit_id}/remove",
+@router.delete(
+    "/{training_plan_id}/training-units/{training_unit_id}",
     response_model=TrainingPlanInDB,
     status_code=status.HTTP_200_OK,
 )

@@ -2,28 +2,19 @@
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from gymhero.api.authorization import authorize_owner_or_superuser
 from gymhero.crud import exercise_crud, training_unit_crud
 from gymhero.exceptions import EntityConflictError, EntityNotFoundError
 from gymhero.models.exercise import Exercise
 from gymhero.models.training_unit import TrainingUnit
 from gymhero.models.user import User
 from gymhero.schemas.training_unit import TrainingUnitCreate, TrainingUnitUpdate
+from gymhero.services.ownership import get_owned_or_404
 
 
 async def get_training_unit(
     db: AsyncSession, *, training_unit_id: int, actor: User
 ) -> TrainingUnit:
-    # Non-superusers only ever see their own units.
-    if actor.is_superuser:
-        unit = await training_unit_crud.get_one(db, TrainingUnit.id == training_unit_id)
-    else:
-        unit = await training_unit_crud.get_one(
-            db, TrainingUnit.id == training_unit_id, owner_id=actor.id
-        )
-    if unit is None:
-        raise EntityNotFoundError(f"Training unit with id {training_unit_id} not found")
-    return unit
+    return await _get_owned_or_404(db, training_unit_id, actor)
 
 
 async def get_training_unit_by_name(
@@ -51,25 +42,22 @@ async def create_training_unit(
 async def update_training_unit(
     db: AsyncSession, *, training_unit_id: int, data: TrainingUnitUpdate, actor: User
 ) -> TrainingUnit:
-    unit = await _get_or_404(db, training_unit_id)
-    authorize_owner_or_superuser(unit, actor)
+    unit = await _get_owned_or_404(db, training_unit_id, actor)
     return await training_unit_crud.update(db, unit, data)
 
 
 async def delete_training_unit(
     db: AsyncSession, *, training_unit_id: int, actor: User
 ) -> None:
-    unit = await _get_or_404(db, training_unit_id)
-    authorize_owner_or_superuser(unit, actor)
+    unit = await _get_owned_or_404(db, training_unit_id, actor)
     await training_unit_crud.delete(db, unit)
 
 
 async def add_exercise(
     db: AsyncSession, *, training_unit_id: int, exercise_id: int, actor: User
 ) -> TrainingUnit:
-    unit = await _get_or_404(db, training_unit_id)
+    unit = await _get_owned_or_404(db, training_unit_id, actor)
     exercise = await _get_exercise_or_404(db, exercise_id)
-    authorize_owner_or_superuser(unit, actor)
     updated = await training_unit_crud.add_exercise_to_training_unit(db, unit, exercise)
     if updated is None:
         raise EntityConflictError(
@@ -82,9 +70,8 @@ async def add_exercise(
 async def remove_exercise(
     db: AsyncSession, *, training_unit_id: int, exercise_id: int, actor: User
 ) -> TrainingUnit:
-    unit = await _get_or_404(db, training_unit_id)
+    unit = await _get_owned_or_404(db, training_unit_id, actor)
     exercise = await _get_exercise_or_404(db, exercise_id)
-    authorize_owner_or_superuser(unit, actor)
     try:
         return await training_unit_crud.remove_exercise_from_training_unit(
             db, unit, exercise
@@ -99,16 +86,21 @@ async def remove_exercise(
 async def get_exercises(
     db: AsyncSession, *, training_unit_id: int, actor: User
 ) -> list[Exercise]:
-    unit = await _get_or_404(db, training_unit_id)
-    authorize_owner_or_superuser(unit, actor)
+    unit = await _get_owned_or_404(db, training_unit_id, actor)
     return training_unit_crud.get_exercises_in_training_unit(unit)
 
 
-async def _get_or_404(db: AsyncSession, training_unit_id: int) -> TrainingUnit:
-    unit = await training_unit_crud.get_one(db, TrainingUnit.id == training_unit_id)
-    if unit is None:
-        raise EntityNotFoundError(f"Training unit with id {training_unit_id} not found")
-    return unit
+async def _get_owned_or_404(
+    db: AsyncSession, training_unit_id: int, actor: User
+) -> TrainingUnit:
+    return await get_owned_or_404(
+        db,
+        crud=training_unit_crud,
+        model=TrainingUnit,
+        entity_id=training_unit_id,
+        actor=actor,
+        entity="Training unit",
+    )
 
 
 async def _get_exercise_or_404(db: AsyncSession, exercise_id: int) -> Exercise:

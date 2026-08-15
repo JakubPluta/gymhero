@@ -149,7 +149,7 @@ erDiagram
 | /exercises | GET    | /my                      | Owner                  |
 | /exercises | GET    | /{exercise_id}           | Active User            |
 | /exercises | DELETE | /{exercise_id}           | Superuser, Owner       |
-| /exercises | PUT    | /{exercise_id}           | Superuser, Owner       |
+| /exercises | PATCH  | /{exercise_id}           | Superuser, Owner       |
 | /exercises | GET    | /name/{exercise_name}    | Active User            |
 | /exercises | POST   |                          | Active User            |
 
@@ -221,8 +221,8 @@ erDiagram
 | /training-plans  | DELETE  | /{training_plan_id}                                           | Owner, Superuser  |
 | /training-plans  | PUT     | /{training_plan_id}                                           | Owner, Superuser  |
 | /training-plans  | POST    |                                                               | Owner, Superuser  |
-| /training-plans  | PUT     | /{training_plan_id}/training-units/{training_unit_id}/add     | Owner, Superuser  |
-| /training-plans  | PUT     | /{training_plan_id}/training-units/{training_unit_id}/remove  | Owner, Superuser  |
+| /training-plans  | PUT     | /{training_plan_id}/training-units/{training_unit_id}         | Owner, Superuser  |
+| /training-plans  | DELETE  | /{training_plan_id}/training-units/{training_unit_id}         | Owner, Superuser  |
 
 
 ### Training Units
@@ -237,8 +237,8 @@ erDiagram
 | /training-units  | DELETE  | /{training_unit_id}                                 | Owner, Superuser  |
 | /training-units  | PUT     | /{training_unit_id}                                 | Owner, Superuser  |
 | /training-units  | POST    |                                                     | Owner, Superuser  |
-| /training-units  | PUT     | /{training_unit_id}/exercises/{exercise_id}/add     | Owner, Superuser  |
-| /training-units  | PUT     | /{training_unit_id}/exercises/{exercise_id}/remove  | Owner, Superuser  |
+| /training-units  | PUT     | /{training_unit_id}/exercises/{exercise_id}         | Owner, Superuser  |
+| /training-units  | DELETE  | /{training_unit_id}/exercises/{exercise_id}         | Owner, Superuser  |
 
 
 

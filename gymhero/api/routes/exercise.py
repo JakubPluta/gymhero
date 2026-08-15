@@ -70,8 +70,6 @@ async def fetch_exercise_by_name(
     "/",
     response_model=ExerciseInDB,
     status_code=status.HTTP_201_CREATED,
-    response_model_exclude_none=True,
-    response_model_exclude_unset=True,
 )
 async def create_exercise(
     exercise_create: Annotated[
@@ -94,7 +92,7 @@ async def create_exercise(
     return await exercise_service.create_exercise(db, data=exercise_create, owner=user)
 
 
-@router.put(
+@router.patch(
     "/{exercise_id}",
     response_model=ExerciseInDB,
     status_code=status.HTTP_200_OK,

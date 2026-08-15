@@ -232,7 +232,7 @@ async def test_put_training_unit_missing_returns_404(
     assert response.status_code == 404
 
 
-async def test_put_training_unit_not_owner_returns_403(
+async def test_put_training_unit_not_owner_returns_404(
     client: AsyncClient, world: UnitWorld
 ) -> None:
     unit = world.owner_units[0]
@@ -241,7 +241,7 @@ async def test_put_training_unit_not_owner_returns_403(
         json={"name": "x", "description": "d"},
         headers=world.other_headers,
     )
-    assert response.status_code == 403
+    assert response.status_code == 404
 
 
 async def test_delete_training_unit_owner_returns_204(
@@ -263,14 +263,14 @@ async def test_delete_training_unit_missing_returns_404(
     assert response.status_code == 404
 
 
-async def test_delete_training_unit_not_owner_returns_403(
+async def test_delete_training_unit_not_owner_returns_404(
     client: AsyncClient, world: UnitWorld
 ) -> None:
     unit = world.owner_units[0]
     response = await client.delete(
         f"/api/v1/training-units/{unit.id}", headers=world.other_headers
     )
-    assert response.status_code == 403
+    assert response.status_code == 404
 
 
 async def test_add_exercise_to_training_unit_returns_200(
@@ -279,7 +279,7 @@ async def test_add_exercise_to_training_unit_returns_200(
     unit = world.owner_units[0]
     exercise = await create_exercise(db, owner=world.owner)
     response = await client.put(
-        f"/api/v1/training-units/{unit.id}/exercises/{exercise.id}/add",
+        f"/api/v1/training-units/{unit.id}/exercises/{exercise.id}",
         headers=world.owner_headers,
     )
     assert response.status_code == 200
@@ -294,7 +294,7 @@ async def test_added_exercise_output_hides_owner_email(
     unit = world.owner_units[0]
     exercise = await create_exercise(db, owner=world.owner)
     response = await client.put(
-        f"/api/v1/training-units/{unit.id}/exercises/{exercise.id}/add",
+        f"/api/v1/training-units/{unit.id}/exercises/{exercise.id}",
         headers=world.owner_headers,
     )
     item = response.json()["exercises"][0]
@@ -309,11 +309,11 @@ async def test_add_exercise_twice_returns_409(
     unit = world.owner_units[0]
     exercise = await create_exercise(db, owner=world.owner)
     await client.put(
-        f"/api/v1/training-units/{unit.id}/exercises/{exercise.id}/add",
+        f"/api/v1/training-units/{unit.id}/exercises/{exercise.id}",
         headers=world.owner_headers,
     )
     response = await client.put(
-        f"/api/v1/training-units/{unit.id}/exercises/{exercise.id}/add",
+        f"/api/v1/training-units/{unit.id}/exercises/{exercise.id}",
         headers=world.owner_headers,
     )
     assert response.status_code == 409
@@ -324,7 +324,7 @@ async def test_add_exercise_to_missing_unit_returns_404(
 ) -> None:
     exercise = await create_exercise(db, owner=world.owner)
     response = await client.put(
-        f"/api/v1/training-units/999999/exercises/{exercise.id}/add",
+        f"/api/v1/training-units/999999/exercises/{exercise.id}",
         headers=world.owner_headers,
     )
     assert response.status_code == 404
@@ -335,22 +335,22 @@ async def test_add_missing_exercise_returns_404(
 ) -> None:
     unit = world.owner_units[0]
     response = await client.put(
-        f"/api/v1/training-units/{unit.id}/exercises/999999/add",
+        f"/api/v1/training-units/{unit.id}/exercises/999999",
         headers=world.owner_headers,
     )
     assert response.status_code == 404
 
 
-async def test_add_exercise_to_not_owned_unit_returns_403(
+async def test_add_exercise_to_not_owned_unit_returns_404(
     client: AsyncClient, world: UnitWorld, db: AsyncSession
 ) -> None:
     unit = world.owner_units[0]
     exercise = await create_exercise(db, owner=world.owner)
     response = await client.put(
-        f"/api/v1/training-units/{unit.id}/exercises/{exercise.id}/add",
+        f"/api/v1/training-units/{unit.id}/exercises/{exercise.id}",
         headers=world.other_headers,
     )
-    assert response.status_code == 403
+    assert response.status_code == 404
 
 
 async def test_remove_exercise_from_training_unit_returns_200(
@@ -359,11 +359,11 @@ async def test_remove_exercise_from_training_unit_returns_200(
     unit = world.owner_units[0]
     exercise = await create_exercise(db, owner=world.owner)
     await client.put(
-        f"/api/v1/training-units/{unit.id}/exercises/{exercise.id}/add",
+        f"/api/v1/training-units/{unit.id}/exercises/{exercise.id}",
         headers=world.owner_headers,
     )
-    response = await client.put(
-        f"/api/v1/training-units/{unit.id}/exercises/{exercise.id}/remove",
+    response = await client.delete(
+        f"/api/v1/training-units/{unit.id}/exercises/{exercise.id}",
         headers=world.owner_headers,
     )
     assert response.status_code == 200
@@ -374,8 +374,8 @@ async def test_remove_missing_exercise_returns_404(
     client: AsyncClient, world: UnitWorld
 ) -> None:
     unit = world.owner_units[0]
-    response = await client.put(
-        f"/api/v1/training-units/{unit.id}/exercises/999999/remove",
+    response = await client.delete(
+        f"/api/v1/training-units/{unit.id}/exercises/999999",
         headers=world.owner_headers,
     )
     assert response.status_code == 404
@@ -387,23 +387,23 @@ async def test_remove_exercise_not_in_unit_returns_409(
     # The exercise exists but was never added to the unit -> conflict.
     unit = world.owner_units[0]
     exercise = await create_exercise(db, owner=world.owner)
-    response = await client.put(
-        f"/api/v1/training-units/{unit.id}/exercises/{exercise.id}/remove",
+    response = await client.delete(
+        f"/api/v1/training-units/{unit.id}/exercises/{exercise.id}",
         headers=world.owner_headers,
     )
     assert response.status_code == 409
 
 
-async def test_remove_exercise_from_not_owned_unit_returns_403(
+async def test_remove_exercise_from_not_owned_unit_returns_404(
     client: AsyncClient, world: UnitWorld, db: AsyncSession
 ) -> None:
     unit = world.owner_units[0]
     exercise = await create_exercise(db, owner=world.owner)
-    response = await client.put(
-        f"/api/v1/training-units/{unit.id}/exercises/{exercise.id}/remove",
+    response = await client.delete(
+        f"/api/v1/training-units/{unit.id}/exercises/{exercise.id}",
         headers=world.other_headers,
     )
-    assert response.status_code == 403
+    assert response.status_code == 404
 
 
 async def test_get_exercises_in_unit_owner_returns_empty(
@@ -423,7 +423,7 @@ async def test_get_exercises_in_unit_reflects_added_exercise(
     unit = world.owner_units[0]
     exercise = await create_exercise(db, owner=world.owner)
     await client.put(
-        f"/api/v1/training-units/{unit.id}/exercises/{exercise.id}/add",
+        f"/api/v1/training-units/{unit.id}/exercises/{exercise.id}",
         headers=world.owner_headers,
     )
     response = await client.get(
@@ -442,11 +442,11 @@ async def test_get_exercises_in_missing_unit_returns_404(
     assert response.status_code == 404
 
 
-async def test_get_exercises_in_unit_not_owner_returns_403(
+async def test_get_exercises_in_unit_not_owner_returns_404(
     client: AsyncClient, world: UnitWorld
 ) -> None:
     unit = world.owner_units[0]
     response = await client.get(
         f"/api/v1/training-units/{unit.id}/exercises", headers=world.other_headers
     )
-    assert response.status_code == 403
+    assert response.status_code == 404

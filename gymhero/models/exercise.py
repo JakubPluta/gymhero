@@ -23,12 +23,14 @@ class Exercise(TimestampMixin, Base):
         ForeignKey("users.id"), index=True, nullable=False
     )
 
-    # Not eager-loaded: list/detail endpoints use the *_id columns, and nested
-    # views (ExerciseSummary) don't touch these. Add selectinload() explicitly if
-    # a future endpoint needs the related rows.
-    target_body_part = relationship("BodyPart")
-    exercise_type = relationship("ExerciseType")
-    level = relationship("Level")
+    # Eager-loaded (selectin): the read schema ExerciseInDB embeds these as nested
+    # {id, name} objects, so they must be loaded wherever an Exercise is returned
+    # (list/detail/create/update, and via training_unit.exercises). selectin batches
+    # them into one query per relationship — no N+1. owner stays lazy: responses
+    # expose only owner_id, never the User row (PII).
+    target_body_part = relationship("BodyPart", lazy="selectin")
+    exercise_type = relationship("ExerciseType", lazy="selectin")
+    level = relationship("Level", lazy="selectin")
     owner = relationship("User")
 
     def __repr__(self) -> str:

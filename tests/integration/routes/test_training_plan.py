@@ -267,7 +267,7 @@ async def test_put_training_plan_missing_returns_404(
     assert response.status_code == 404
 
 
-async def test_put_training_plan_not_owner_returns_403(
+async def test_put_training_plan_not_owner_returns_404(
     client: AsyncClient, world: PlanWorld
 ) -> None:
     plan = world.owner_plans[0]
@@ -276,7 +276,7 @@ async def test_put_training_plan_not_owner_returns_403(
         json={"name": "x", "description": "d"},
         headers=world.other_headers,
     )
-    assert response.status_code == 403
+    assert response.status_code == 404
 
 
 async def test_delete_training_plan_owner_returns_204(
@@ -298,14 +298,14 @@ async def test_delete_training_plan_missing_returns_404(
     assert response.status_code == 404
 
 
-async def test_delete_training_plan_not_owner_returns_403(
+async def test_delete_training_plan_not_owner_returns_404(
     client: AsyncClient, world: PlanWorld
 ) -> None:
     plan = world.owner_plans[0]
     response = await client.delete(
         f"/api/v1/training-plans/{plan.id}", headers=world.other_headers
     )
-    assert response.status_code == 403
+    assert response.status_code == 404
 
 
 async def test_add_training_unit_to_plan_returns_200(
@@ -314,7 +314,7 @@ async def test_add_training_unit_to_plan_returns_200(
     plan = world.owner_plans[0]
     unit = await create_training_unit(db, owner=world.owner)
     response = await client.put(
-        f"/api/v1/training-plans/{plan.id}/training-units/{unit.id}/add",
+        f"/api/v1/training-plans/{plan.id}/training-units/{unit.id}",
         headers=world.owner_headers,
     )
     assert response.status_code == 200
@@ -329,11 +329,11 @@ async def test_add_training_unit_twice_returns_409(
     plan = world.owner_plans[0]
     unit = await create_training_unit(db, owner=world.owner)
     await client.put(
-        f"/api/v1/training-plans/{plan.id}/training-units/{unit.id}/add",
+        f"/api/v1/training-plans/{plan.id}/training-units/{unit.id}",
         headers=world.owner_headers,
     )
     response = await client.put(
-        f"/api/v1/training-plans/{plan.id}/training-units/{unit.id}/add",
+        f"/api/v1/training-plans/{plan.id}/training-units/{unit.id}",
         headers=world.owner_headers,
     )
     assert response.status_code == 409
@@ -344,7 +344,7 @@ async def test_add_missing_training_unit_returns_404(
 ) -> None:
     plan = world.owner_plans[0]
     response = await client.put(
-        f"/api/v1/training-plans/{plan.id}/training-units/999999/add",
+        f"/api/v1/training-plans/{plan.id}/training-units/999999",
         headers=world.owner_headers,
     )
     assert response.status_code == 404
@@ -355,30 +355,30 @@ async def test_add_training_unit_to_missing_plan_returns_404(
 ) -> None:
     unit = await create_training_unit(db, owner=world.owner)
     response = await client.put(
-        f"/api/v1/training-plans/999999/training-units/{unit.id}/add",
+        f"/api/v1/training-plans/999999/training-units/{unit.id}",
         headers=world.owner_headers,
     )
     assert response.status_code == 404
 
 
-async def test_add_training_unit_to_not_owned_plan_returns_403(
+async def test_add_training_unit_to_not_owned_plan_returns_404(
     client: AsyncClient, world: PlanWorld, db: AsyncSession
 ) -> None:
     plan = world.owner_plans[0]
     unit = await create_training_unit(db, owner=world.other)
     response = await client.put(
-        f"/api/v1/training-plans/{plan.id}/training-units/{unit.id}/add",
+        f"/api/v1/training-plans/{plan.id}/training-units/{unit.id}",
         headers=world.other_headers,
     )
-    assert response.status_code == 403
+    assert response.status_code == 404
 
 
 async def test_remove_missing_training_unit_returns_404(
     client: AsyncClient, world: PlanWorld
 ) -> None:
     plan = world.owner_plans[0]
-    response = await client.put(
-        f"/api/v1/training-plans/{plan.id}/training-units/999999/remove",
+    response = await client.delete(
+        f"/api/v1/training-plans/{plan.id}/training-units/999999",
         headers=world.owner_headers,
     )
     assert response.status_code == 404
@@ -390,8 +390,8 @@ async def test_remove_training_unit_not_in_plan_returns_409(
     # The unit exists but was never added to the plan -> conflict, not "missing".
     plan = world.owner_plans[0]
     unit = await create_training_unit(db, owner=world.owner)
-    response = await client.put(
-        f"/api/v1/training-plans/{plan.id}/training-units/{unit.id}/remove",
+    response = await client.delete(
+        f"/api/v1/training-plans/{plan.id}/training-units/{unit.id}",
         headers=world.owner_headers,
     )
     assert response.status_code == 409
@@ -403,26 +403,26 @@ async def test_remove_training_unit_returns_200(
     plan = world.owner_plans[0]
     unit = await create_training_unit(db, owner=world.owner)
     await client.put(
-        f"/api/v1/training-plans/{plan.id}/training-units/{unit.id}/add",
+        f"/api/v1/training-plans/{plan.id}/training-units/{unit.id}",
         headers=world.owner_headers,
     )
-    response = await client.put(
-        f"/api/v1/training-plans/{plan.id}/training-units/{unit.id}/remove",
+    response = await client.delete(
+        f"/api/v1/training-plans/{plan.id}/training-units/{unit.id}",
         headers=world.owner_headers,
     )
     assert response.status_code == 200
 
 
-async def test_remove_training_unit_not_owned_plan_returns_403(
+async def test_remove_training_unit_not_owned_plan_returns_404(
     client: AsyncClient, world: PlanWorld, db: AsyncSession
 ) -> None:
     plan = world.owner_plans[0]
     unit = await create_training_unit(db, owner=world.owner)
-    response = await client.put(
-        f"/api/v1/training-plans/{plan.id}/training-units/{unit.id}/remove",
+    response = await client.delete(
+        f"/api/v1/training-plans/{plan.id}/training-units/{unit.id}",
         headers=world.other_headers,
     )
-    assert response.status_code == 403
+    assert response.status_code == 404
 
 
 async def test_get_training_units_in_plan_owner_returns_empty(
@@ -443,7 +443,7 @@ async def test_get_training_units_in_plan_reflects_added_unit(
     plan = world.owner_plans[0]
     unit = await create_training_unit(db, owner=world.owner)
     await client.put(
-        f"/api/v1/training-plans/{plan.id}/training-units/{unit.id}/add",
+        f"/api/v1/training-plans/{plan.id}/training-units/{unit.id}",
         headers=world.owner_headers,
     )
     response = await client.get(
@@ -454,7 +454,7 @@ async def test_get_training_units_in_plan_reflects_added_unit(
     assert [tu["id"] for tu in response.json()] == [unit.id]
 
 
-async def test_get_training_units_in_plan_not_owner_returns_403(
+async def test_get_training_units_in_plan_not_owner_returns_404(
     client: AsyncClient, world: PlanWorld
 ) -> None:
     plan = world.owner_plans[0]
@@ -462,7 +462,7 @@ async def test_get_training_units_in_plan_not_owner_returns_403(
         f"/api/v1/training-plans/{plan.id}/training-units",
         headers=world.other_headers,
     )
-    assert response.status_code == 403
+    assert response.status_code == 404
 
 
 async def test_get_training_units_in_missing_plan_returns_404(

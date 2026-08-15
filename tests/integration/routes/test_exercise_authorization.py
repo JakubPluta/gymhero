@@ -23,7 +23,7 @@ async def test_non_superuser_owner_can_update_and_delete_own_exercise(
     exercise = await create_exercise(db, owner=regular_user)
     headers = auth_headers(regular_user)
 
-    update = await client.put(
+    update = await client.patch(
         f"/api/v1/exercises/{exercise.id}",
         json=_update_payload(exercise),
         headers=headers,
@@ -43,7 +43,7 @@ async def test_superuser_can_update_exercise_owned_by_another_user(
     db: AsyncSession,
 ) -> None:
     exercise = await create_exercise(db, owner=regular_user)
-    update = await client.put(
+    update = await client.patch(
         f"/api/v1/exercises/{exercise.id}",
         json=_update_payload(exercise, description="edited-by-admin"),
         headers=superuser_headers,
@@ -58,7 +58,7 @@ async def test_non_owner_non_superuser_is_forbidden(
     db: AsyncSession,
 ) -> None:
     exercise = await create_exercise(db, owner=regular_user)
-    response = await client.put(
+    response = await client.patch(
         f"/api/v1/exercises/{exercise.id}",
         json=_update_payload(exercise),
         headers=other_user_headers,

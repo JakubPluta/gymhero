@@ -24,4 +24,4 @@ class BodyPartInDB(BodyPartBase):
 
 class BodyPartOut(BodyPartBase):
     id: int
-    name: str
+    model_config = ConfigDict(from_attributes=True)

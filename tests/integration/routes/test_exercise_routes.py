@@ -88,6 +88,41 @@ async def test_get_exercise_by_id_returns_it(
     assert response.json()["id"] == exercise.id
 
 
+async def test_get_exercise_embeds_lookup_objects_not_ids(
+    client: AsyncClient,
+    user_headers: dict[str, str],
+    regular_user: User,
+    db: AsyncSession,
+) -> None:
+    # Read contract: lookups embedded as nested {id, name}; raw FK ids live only on
+    # the write schema; owner stays a bare id (never the User row / PII).
+    body_part = await create_body_part(db)
+    level = await create_level(db)
+    exercise_type = await create_exercise_type(db)
+    exercise = await create_exercise(
+        db,
+        owner=regular_user,
+        body_part=body_part,
+        level=level,
+        exercise_type=exercise_type,
+    )
+
+    response = await client.get(
+        f"/api/v1/exercises/{exercise.id}", headers=user_headers
+    )
+    assert response.status_code == 200
+    data = response.json()
+
+    assert data["exercise_type"] == {"id": exercise_type.id, "name": exercise_type.name}
+    assert data["level"] == {"id": level.id, "name": level.name}
+    assert data["target_body_part"] == {"id": body_part.id, "name": body_part.name}
+
+    assert data["owner_id"] == regular_user.id
+    assert "exercise_type_id" not in data
+    assert "level_id" not in data
+    assert "target_body_part_id" not in data
+
+
 async def test_get_exercise_by_id_missing_returns_404(
     client: AsyncClient, user_headers: dict[str, str]
 ) -> None:
@@ -166,14 +201,14 @@ async def test_post_exercise_anonymous_returns_401(client: AsyncClient) -> None:
     assert response.json()["detail"] == "Not authenticated"
 
 
-async def test_put_exercise_owner_returns_200(
+async def test_patch_exercise_owner_returns_200(
     client: AsyncClient,
     user_headers: dict[str, str],
     regular_user: User,
     db: AsyncSession,
 ) -> None:
     exercise = await create_exercise(db, owner=regular_user)
-    response = await client.put(
+    response = await client.patch(
         f"/api/v1/exercises/{exercise.id}",
         json=_payload(
             name="Updated",
@@ -186,10 +221,10 @@ async def test_put_exercise_owner_returns_200(
     assert response.status_code == 200
 
 
-async def test_put_exercise_missing_returns_404(
+async def test_patch_exercise_missing_returns_404(
     client: AsyncClient, user_headers: dict[str, str]
 ) -> None:
-    response = await client.put(
+    response = await client.patch(
         "/api/v1/exercises/999999",
         json=_payload(name="Updated", body_part_id=1, level_id=1, type_id=1),
         headers=user_headers,
@@ -198,14 +233,14 @@ async def test_put_exercise_missing_returns_404(
     assert response.json()["detail"] == "Exercise with id 999999 not found"
 
 
-async def test_put_exercise_not_owner_returns_403(
+async def test_patch_exercise_not_owner_returns_403(
     client: AsyncClient,
     other_user_headers: dict[str, str],
     regular_user: User,
     db: AsyncSession,
 ) -> None:
     exercise = await create_exercise(db, owner=regular_user)
-    response = await client.put(
+    response = await client.patch(
         f"/api/v1/exercises/{exercise.id}",
         json=_payload(
             name="Updated",

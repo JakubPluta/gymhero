@@ -111,17 +111,21 @@ class ProductionSettings(Settings):
         return self
 
 
+_SETTINGS_BY_ENV: dict[str, type[Settings]] = {
+    "dev": ContainerDevSettings,
+    "test": ContainerTestSettings,
+    "production": ProductionSettings,
+}
+
+
 def get_settings(env: str = "dev") -> Settings:
     log.debug("getting settings for env: %s", env)
-    if env.lower() in ("dev", "d", "development"):
-        return ContainerDevSettings()
-    if env.lower() in ("test", "t", "testing"):
-        return ContainerTestSettings()
-    if env.lower() in ("prod", "production", "p"):
-        return ProductionSettings()
-    raise ValueError(
-        f"Invalid environment {env!r}. Must be 'dev', 'test' or 'production'."
-    )
+    try:
+        return _SETTINGS_BY_ENV[env.lower()]()
+    except KeyError:
+        raise ValueError(
+            f"Invalid environment {env!r}. Must be 'dev', 'test' or 'production'."
+        ) from None
 
 
 # The app runs in Docker (ENV=dev via docker-compose); tests set ENV=test.

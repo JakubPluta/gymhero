@@ -141,7 +141,7 @@ async def delete_training_unit(
 
 
 @router.put(
-    "/{training_unit_id}/exercises/{exercise_id}/add",
+    "/{training_unit_id}/exercises/{exercise_id}",
     response_model=TrainingUnitInDB,
     status_code=status.HTTP_200_OK,
 )
@@ -167,8 +167,8 @@ async def get_exercises_in_training_unit(
     )
 
 
-@router.put(
-    "/{training_unit_id}/exercises/{exercise_id}/remove",
+@router.delete(
+    "/{training_unit_id}/exercises/{exercise_id}",
     response_model=TrainingUnitInDB,
     status_code=status.HTTP_200_OK,
 )
