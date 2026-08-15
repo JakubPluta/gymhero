@@ -3,7 +3,7 @@
 from typing import Any
 
 from pydantic import BaseModel
-from sqlalchemy import func, select
+from sqlalchemy import ColumnExpressionArgument, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from gymhero.database.base_class import Base
@@ -20,37 +20,27 @@ class CRUDRepository[ModelT: Base]:
         self._name = model.__name__
 
     async def get_one(
-        self, db: AsyncSession, *args: Any, **kwargs: Any
+        self, db: AsyncSession, *filters: ColumnExpressionArgument[bool]
     ) -> ModelT | None:
-        stmt = select(self._model).filter(*args).filter_by(**kwargs)
+        stmt = select(self._model).filter(*filters)
         result = await db.execute(stmt)
         return result.scalars().first()
 
     async def get_many(
         self,
         db: AsyncSession,
-        *args: Any,
+        *filters: ColumnExpressionArgument[bool],
         skip: int = 0,
         limit: int = 100,
-        **kwargs: Any,
     ) -> list[ModelT]:
-        stmt = (
-            select(self._model)
-            .filter(*args)
-            .filter_by(**kwargs)
-            .offset(skip)
-            .limit(limit)
-        )
+        stmt = select(self._model).filter(*filters).offset(skip).limit(limit)
         result = await db.execute(stmt)
         return list(result.scalars().all())
 
-    async def count(self, db: AsyncSession, *args: Any, **kwargs: Any) -> int:
-        stmt = (
-            select(func.count())
-            .select_from(self._model)
-            .filter(*args)
-            .filter_by(**kwargs)
-        )
+    async def count(
+        self, db: AsyncSession, *filters: ColumnExpressionArgument[bool]
+    ) -> int:
+        stmt = select(func.count()).select_from(self._model).filter(*filters)
         result = await db.execute(stmt)
         return result.scalar_one()
 
@@ -93,16 +83,3 @@ class CRUDRepository[ModelT: Base]:
         await db.commit()
         await db.refresh(db_obj)
         return db_obj
-
-    async def get_many_for_owner(
-        self,
-        db: AsyncSession,
-        *args: Any,
-        owner_id: OwnerIDType,
-        skip: int = 0,
-        limit: int = 100,
-        **kwargs: Any,
-    ) -> list[ModelT]:
-        return await self.get_many(
-            db, *args, skip=skip, limit=limit, owner_id=owner_id, **kwargs
-        )

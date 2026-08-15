@@ -21,7 +21,7 @@ async def get_training_unit_by_name(
     db: AsyncSession, *, name: str, actor: User
 ) -> TrainingUnit:
     unit = await training_unit_crud.get_one(
-        db, TrainingUnit.name == name, owner_id=actor.id
+        db, TrainingUnit.name == name, TrainingUnit.owner_id == actor.id
     )
     if unit is None:
         raise EntityNotFoundError(f"Training unit with name {name} not found")
@@ -32,7 +32,7 @@ async def create_training_unit(
     db: AsyncSession, *, data: TrainingUnitCreate, owner: User
 ) -> TrainingUnit:
     existing = await training_unit_crud.get_one(
-        db, TrainingUnit.name == data.name, owner_id=owner.id
+        db, TrainingUnit.name == data.name, TrainingUnit.owner_id == owner.id
     )
     if existing is not None:
         raise EntityConflictError(f"Training unit with name {data.name} already exists")

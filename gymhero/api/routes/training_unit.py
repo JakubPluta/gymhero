@@ -49,10 +49,10 @@ async def get_all_training_units_for_owner(
     user: User = Depends(get_current_active_user),
 ):
     skip, limit = pagination_params
-    items = await training_unit_crud.get_many_for_owner(
-        db, owner_id=user.id, skip=skip, limit=limit
+    items = await training_unit_crud.get_many(
+        db, TrainingUnit.owner_id == user.id, skip=skip, limit=limit
     )
-    total = await training_unit_crud.count(db, owner_id=user.id)
+    total = await training_unit_crud.count(db, TrainingUnit.owner_id == user.id)
     return {"items": items, "total": total, "skip": skip, "limit": limit}
 
 

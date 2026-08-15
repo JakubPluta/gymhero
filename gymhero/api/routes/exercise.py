@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from gymhero.api.dependencies import get_current_active_user, get_pagination_params
 from gymhero.crud import exercise_crud
 from gymhero.database.db import get_db
-from gymhero.models import User
+from gymhero.models import Exercise, User
 from gymhero.schemas.common import Page
 from gymhero.schemas.exercise import ExerciseCreate, ExerciseInDB, ExerciseUpdate
 from gymhero.services import exercise as exercise_service
@@ -33,10 +33,10 @@ async def fetch_all_exercises_for_owner(
     user: User = Depends(get_current_active_user),
 ):
     skip, limit = pagination_params
-    items = await exercise_crud.get_many_for_owner(
-        db, skip=skip, limit=limit, owner_id=user.id
+    items = await exercise_crud.get_many(
+        db, Exercise.owner_id == user.id, skip=skip, limit=limit
     )
-    total = await exercise_crud.count(db, owner_id=user.id)
+    total = await exercise_crud.count(db, Exercise.owner_id == user.id)
     return {"items": items, "total": total, "skip": skip, "limit": limit}
 
 
