@@ -20,7 +20,87 @@ To build an CRUD API with FastAPI, SQLAlchemy, Postgres, Docker
 
 **Entity Relationship Diagram**
 
-![ER Diagram](media/ermodel.png?raw=true "ER Diagram")
+```mermaid
+erDiagram
+    users          ||--o{ exercises                   : creates
+    users          ||--o{ training_units              : creates
+    users          ||--o{ training_plans              : creates
+
+    body_parts     ||--o{ exercises                   : targets
+    exercise_types ||--o{ exercises                   : types
+    levels         ||--o{ exercises                   : rates
+
+    training_units ||--o{ training_unit_exercise      : has
+    exercises      ||--o{ training_unit_exercise      : in
+
+    training_plans ||--o{ training_plan_training_unit : has
+    training_units ||--o{ training_plan_training_unit : in
+
+    users {
+        int      id              PK
+        string   email           UK
+        string   full_name
+        string   hashed_password
+        bool     is_active
+        bool     is_superuser
+        int      token_version
+        datetime created_at
+        datetime updated_at
+    }
+    exercises {
+        int      id                  PK
+        string   name                UK
+        string   description
+        int      target_body_part_id FK
+        int      exercise_type_id    FK
+        int      level_id            FK
+        int      owner_id            FK
+        datetime created_at
+        datetime updated_at
+    }
+    exercise_types {
+        int      id         PK
+        string   name       UK
+        datetime created_at
+        datetime updated_at
+    }
+    levels {
+        int      id         PK
+        string   name       UK
+        datetime created_at
+        datetime updated_at
+    }
+    body_parts {
+        int      id         PK
+        string   name       UK
+        datetime created_at
+        datetime updated_at
+    }
+    training_units {
+        int      id          PK
+        string   name        "unique per owner"
+        string   description
+        int      owner_id    FK
+        datetime created_at
+        datetime updated_at
+    }
+    training_plans {
+        int      id          PK
+        string   name        "unique per owner"
+        string   description
+        int      owner_id    FK
+        datetime created_at
+        datetime updated_at
+    }
+    training_unit_exercise {
+        int training_unit_id PK, FK
+        int exercise_id      PK, FK
+    }
+    training_plan_training_unit {
+        int training_plan_id PK, FK
+        int training_unit_id PK, FK
+    }
+```
 
 #### Core technologies
 - FastAPI - web framework for building APIs with Python 3.8+ based on standard Python type hints.
