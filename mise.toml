@@ -21,12 +21,14 @@ run = ["ruff format", "ruff check --fix"]
 
 [tasks.test]
 description = "Run the test suite (spins a Postgres testcontainer)"
-env = { ENV = "test" }
+# COVERAGE_CORE=ctrace + concurrency=greenlet (pyproject) so coverage traces
+# lines after async SQLAlchemy awaits (default sysmon core under-reports them).
+env = { ENV = "test", COVERAGE_CORE = "ctrace" }
 run = "pytest --cov=gymhero --cov-report=term-missing tests/"
 
 [tasks.test-cov]
 description = "Run the test suite with coverage"
-env = { ENV = "test" }
+env = { ENV = "test", COVERAGE_CORE = "ctrace" }
 run = "pytest --cov=gymhero tests/"
 
 # --- docker stack ---------------------------------------------------------

@@ -1,7 +1,7 @@
 import os
 from typing import Self
 
-from pydantic import EmailStr, SecretStr, model_validator
+from pydantic import EmailStr, Field, SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from gymhero.log import get_logger
@@ -17,7 +17,10 @@ _DEV_SUPERUSER_PASSWORD = "changeme"
 class Settings(BaseSettings):
     # Committed dummy defaults; a git-ignored `.env` or real env vars override them.
     model_config = SettingsConfigDict(
-        env_file=".env.defaults", env_file_encoding="utf-8", case_sensitive=True
+        env_file=".env.defaults",
+        env_file_encoding="utf-8",
+        case_sensitive=True,
+        extra="ignore",
     )
 
     API_VERSION: str
@@ -25,11 +28,11 @@ class Settings(BaseSettings):
     ENV: str
     SECRET_KEY: SecretStr
     ALGORITHM: str
-    ACCESS_TOKEN_EXPIRE_MINUTES: int
-    REFRESH_TOKEN_EXPIRE_DAYS: int
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = Field(gt=0)
+    REFRESH_TOKEN_EXPIRE_DAYS: int = Field(gt=0)
 
     SERVER_HOST: str
-    SERVER_PORT: int
+    SERVER_PORT: int = Field(ge=1, le=65535)
 
     # Comma-separated; "*" means "any". Parsed into lists by the properties below.
     CORS_ORIGINS: str
@@ -39,11 +42,11 @@ class Settings(BaseSettings):
     POSTGRES_USER: str
     POSTGRES_PASSWORD: SecretStr
     POSTGRES_DB: str
-    POSTGRES_PORT: int
+    POSTGRES_PORT: int = Field(ge=1, le=65535)
 
-    DB_POOL_SIZE: int = 10
-    DB_MAX_OVERFLOW: int = 20
-    DB_POOL_RECYCLE_SECONDS: int = 1800
+    DB_POOL_SIZE: int = Field(default=10, ge=1)
+    DB_MAX_OVERFLOW: int = Field(default=20, ge=0)
+    DB_POOL_RECYCLE_SECONDS: int = Field(default=1800, ge=1)
 
     FIRST_SUPERUSER_USERNAME: str
     FIRST_SUPERUSER_EMAIL: EmailStr

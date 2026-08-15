@@ -1,18 +1,21 @@
 from collections.abc import AsyncGenerator, Generator
 from contextlib import contextmanager
 
-from sqlalchemy.ext.asyncio import AsyncSession
+from fastapi import Request
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from sqlalchemy.orm import Session
 
-from gymhero.database.session import async_session_factory, get_local_session
+from gymhero.database.session import get_local_session
 from gymhero.exceptions import SQLAlchemyException
 from gymhero.log import get_logger
 
 log = get_logger(__name__)
 
 
-async def get_db() -> AsyncGenerator[AsyncSession]:
-    async with async_session_factory() as db:
+async def get_db(request: Request) -> AsyncGenerator[AsyncSession]:
+    # The session factory lives on app.state (built in the lifespan handler).
+    factory: async_sessionmaker[AsyncSession] = request.app.state.db_session_factory
+    async with factory() as db:
         try:
             yield db
         except Exception:

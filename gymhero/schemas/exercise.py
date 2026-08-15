@@ -2,10 +2,6 @@ import datetime
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from gymhero.schemas.body_part import BodyPartOut
-from gymhero.schemas.exercise_type import ExerciseTypeOut
-from gymhero.schemas.level import LevelOut
-
 
 class ExerciseBase(BaseModel):
     name: str = Field(max_length=255)
@@ -39,16 +35,11 @@ class ExerciseInDB(ExerciseBase):
     model_config = ConfigDict(from_attributes=True)
 
 
-# TODO: https://stackoverflow.com/questions/68799438/how-to-return-only-one-column-from-database-in-pydantic-model-as-a-list
-
-
-class ExerciseOut(BaseModel):
+class ExerciseSummary(BaseModel):
+    # Slim view for nested lists (a training unit's exercises): id + name + owner
+    # only. No PII (email), no deep reference graph — fetch /exercises/{id} for detail.
     id: int
     name: str
-    description: str | None = None
-    owner_id: int  # expose the owner id only — never the owner's email (PII)
-    target_body_part: BodyPartOut | None
-    exercise_type: ExerciseTypeOut | None
-    level: LevelOut | None
+    owner_id: int
 
     model_config = ConfigDict(from_attributes=True)

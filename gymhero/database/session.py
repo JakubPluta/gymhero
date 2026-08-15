@@ -8,11 +8,9 @@ from sqlalchemy.ext.asyncio import (
 )
 from sqlalchemy.orm import Session, sessionmaker
 
-from gymhero.config import settings
-
-# The request path is async (asyncpg); the sync engine helpers exist only for
-# the offline tooling — Alembic migrations and the seed scripts. Connection URLs
-# come from Settings.database_url / .async_database_url.
+# Engine/session factories are built by the caller (the app lifespan for async,
+# the offline tooling for sync) — nothing is instantiated at import time. The
+# sync helpers exist only for Alembic migrations and the seed scripts.
 
 
 def get_engine(database_url: str, echo: bool = False) -> Engine:
@@ -46,12 +44,3 @@ def get_async_engine(
 def get_async_session_factory(engine: AsyncEngine) -> async_sessionmaker[AsyncSession]:
     # expire_on_commit=False: response serialization runs after the service commits.
     return async_sessionmaker(bind=engine, autoflush=False, expire_on_commit=False)
-
-
-async_engine = get_async_engine(
-    settings.async_database_url,
-    pool_size=settings.DB_POOL_SIZE,
-    max_overflow=settings.DB_MAX_OVERFLOW,
-    pool_recycle=settings.DB_POOL_RECYCLE_SECONDS,
-)
-async_session_factory = get_async_session_factory(async_engine)

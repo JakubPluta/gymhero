@@ -11,7 +11,7 @@ from gymhero.exceptions import _get_credential_exception
 from gymhero.models import User
 from gymhero.schemas.auth import TokenPayload
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/v1/auth/login")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
 
 
 def get_pagination_params(

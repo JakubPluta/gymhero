@@ -23,10 +23,13 @@ class Exercise(TimestampMixin, Base):
         ForeignKey("users.id"), index=True, nullable=False
     )
 
-    target_body_part = relationship("BodyPart", lazy="selectin")
-    exercise_type = relationship("ExerciseType", lazy="selectin")
-    level = relationship("Level", lazy="selectin")
-    owner = relationship("User", lazy="selectin")
+    # Not eager-loaded: list/detail endpoints use the *_id columns, and nested
+    # views (ExerciseSummary) don't touch these. Add selectinload() explicitly if
+    # a future endpoint needs the related rows.
+    target_body_part = relationship("BodyPart")
+    exercise_type = relationship("ExerciseType")
+    level = relationship("Level")
+    owner = relationship("User")
 
     def __repr__(self) -> str:
         return f"<Exercise(id={self.id}, name={self.name})>"

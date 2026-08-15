@@ -2,7 +2,7 @@ import datetime
 
 from pydantic import BaseModel, Field
 
-from gymhero.schemas.exercise import ExerciseOut
+from gymhero.schemas.exercise import ExerciseSummary
 
 
 class TrainingUnitBase(BaseModel):
@@ -22,11 +22,11 @@ class TrainingUnitInDB(TrainingUnitBase):
     id: int
     created_at: datetime.datetime
     updated_at: datetime.datetime
-    exercises: list[ExerciseOut] | None = []
+    exercises: list[ExerciseSummary] | None = []
     owner_id: int
 
 
 class TrainingUnitOut(TrainingUnitBase):
     id: int
-    exercises: list[ExerciseOut] | None = []
+    exercises: list[ExerciseSummary] | None = []
     owner_id: int

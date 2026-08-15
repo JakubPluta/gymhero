@@ -5,7 +5,6 @@ from httpx import ASGITransport, AsyncClient
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker
 
-from gymhero.database import get_db
 from gymhero.main import app
 from gymhero.models import Base
 from gymhero.models.body_part import BodyPart
@@ -44,14 +43,9 @@ async def db(engine: AsyncEngine) -> AsyncGenerator[AsyncSession]:
 
 @pytest.fixture
 async def client(engine: AsyncEngine) -> AsyncGenerator[AsyncClient]:
-    factory = async_sessionmaker(engine, expire_on_commit=False)
-
-    async def _override_get_db() -> AsyncGenerator[AsyncSession]:
-        async with factory() as session:
-            yield session
-
-    # Standard FastAPI test wiring: point the app's get_db at the testcontainer.
-    app.dependency_overrides[get_db] = _override_get_db
+    # The lifespan isn't run under ASGITransport, so populate the state that the
+    # real get_db reads from — this exercises get_db itself, no override needed.
+    app.state.db_session_factory = async_sessionmaker(engine, expire_on_commit=False)
     # raise_app_exceptions=False: behave like a real HTTP client — an unhandled
     # server error comes back as a 500 response, not a re-raised Python exception.
     transport = ASGITransport(app=app, raise_app_exceptions=False)
@@ -59,7 +53,6 @@ async def client(engine: AsyncEngine) -> AsyncGenerator[AsyncClient]:
         transport=transport, base_url="http://test", follow_redirects=True
     ) as http_client:
         yield http_client
-    app.dependency_overrides.pop(get_db, None)
 
 
 @pytest.fixture

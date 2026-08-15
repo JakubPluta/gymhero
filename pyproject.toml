@@ -69,6 +69,7 @@ skip = "migrations/**/*,migrations,migrations/*.py"
 [tool.coverage.run]
 source = ["gymhero"]
 branch = true
+concurrency = ["thread", "greenlet"]
 omit = [
     "gymhero/server.py",
     "gymhero/log.py",
@@ -77,7 +78,7 @@ omit = [
 ]
 
 [tool.coverage.report]
-fail_under = 80
+fail_under = 90
 show_missing = true
 exclude_also = [
     "def __repr__",
