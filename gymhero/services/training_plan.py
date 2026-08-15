@@ -59,7 +59,7 @@ async def add_training_unit(
     db: AsyncSession, *, training_plan_id: int, training_unit_id: int, actor: User
 ) -> TrainingPlan:
     plan = await _get_owned_or_404(db, training_plan_id, actor)
-    unit = await _get_unit_or_404(db, training_unit_id)
+    unit = await _get_unit_or_404(db, training_unit_id, actor)
     updated = await training_plan_crud.add_training_unit_to_training_plan(
         db, training_plan=plan, training_unit=unit
     )
@@ -75,7 +75,7 @@ async def remove_training_unit(
     db: AsyncSession, *, training_plan_id: int, training_unit_id: int, actor: User
 ) -> TrainingPlan:
     plan = await _get_owned_or_404(db, training_plan_id, actor)
-    unit = await _get_unit_or_404(db, training_unit_id)
+    unit = await _get_unit_or_404(db, training_unit_id, actor)
     updated = await training_plan_crud.remove_training_unit_from_training_plan(
         db, training_plan=plan, training_unit=unit
     )
@@ -107,8 +107,16 @@ async def _get_owned_or_404(
     )
 
 
-async def _get_unit_or_404(db: AsyncSession, training_unit_id: int) -> TrainingUnit:
-    unit = await training_unit_crud.get_one(db, TrainingUnit.id == training_unit_id)
-    if unit is None:
-        raise EntityNotFoundError(f"Training unit with id {training_unit_id} not found")
-    return unit
+async def _get_unit_or_404(
+    db: AsyncSession, training_unit_id: int, actor: User
+) -> TrainingUnit:
+    # Owner-scoped: attaching/detaching must not let a plan owner reference — and
+    # thereby read via the plan — another user's private unit. Superusers unscoped.
+    return await get_owned_or_404(
+        db,
+        crud=training_unit_crud,
+        model=TrainingUnit,
+        entity_id=training_unit_id,
+        actor=actor,
+        entity="Training unit",
+    )

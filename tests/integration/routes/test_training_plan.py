@@ -6,7 +6,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from gymhero.models.training_plan import TrainingPlan
 from gymhero.models.user import User
-from tests.helpers import create_training_plan, create_training_unit, page_items
+from tests.helpers import (
+    create_training_plan,
+    create_training_unit,
+    create_user,
+    page_items,
+)
 
 
 @dataclass(frozen=True)
@@ -368,6 +373,22 @@ async def test_add_training_unit_to_not_owned_plan_returns_404(
     unit = await create_training_unit(db, owner=world.other)
     response = await client.put(
         f"/api/v1/training-plans/{plan.id}/training-units/{unit.id}",
+        headers=world.other_headers,
+    )
+    assert response.status_code == 404
+
+
+async def test_regular_user_cannot_attach_another_users_unit_to_own_plan(
+    client: AsyncClient, world: PlanWorld, db: AsyncSession
+) -> None:
+    # F1 (object-level authz): a plan owner must not attach — and thereby read via
+    # the plan — a unit owned by someone else. Non-owner => 404, like a direct GET.
+    attacker_plan = await create_training_plan(db, owner=world.other)
+    victim = await create_user(db)
+    victim_unit = await create_training_unit(db, owner=victim)
+
+    response = await client.put(
+        f"/api/v1/training-plans/{attacker_plan.id}/training-units/{victim_unit.id}",
         headers=world.other_headers,
     )
     assert response.status_code == 404
