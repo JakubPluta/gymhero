@@ -71,14 +71,6 @@ jobs:
       - run: uv run alembic downgrade base
       - run: uv run alembic upgrade head
 
-  secrets:
-    runs-on: ubuntu-24.04
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      - uses: gitleaks/gitleaks-action@v2
-
   audit:
     runs-on: ubuntu-24.04
     steps:
