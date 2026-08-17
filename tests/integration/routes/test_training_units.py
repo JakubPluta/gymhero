@@ -95,6 +95,44 @@ async def test_get_my_training_units_returns_only_owned(
     assert len(page_items(response)) == len(world.other_units)
 
 
+async def test_search_training_units_on_my_filters_by_name(
+    client: AsyncClient, world: UnitWorld
+) -> None:
+    response = await client.get(
+        "/api/v1/training-units/all/my",
+        params={"q": "other-unit-1"},
+        headers=world.other_headers,
+    )
+    assert response.status_code == 200
+    assert [item["name"] for item in page_items(response)] == ["other-unit-1"]
+    assert response.json()["total"] == 1
+
+
+async def test_search_training_units_on_my_scopes_to_owner(
+    client: AsyncClient, world: UnitWorld
+) -> None:
+    # 'owner-unit-*' belong to the superuser; the other user's /my search sees none.
+    response = await client.get(
+        "/api/v1/training-units/all/my",
+        params={"q": "owner-unit"},
+        headers=world.other_headers,
+    )
+    assert page_items(response) == []
+    assert response.json()["total"] == 0
+
+
+async def test_search_training_units_all_superuser_spans_owners(
+    client: AsyncClient, world: UnitWorld
+) -> None:
+    response = await client.get(
+        "/api/v1/training-units/all",
+        params={"q": "other-unit"},
+        headers=world.owner_headers,
+    )
+    assert response.status_code == 200
+    assert response.json()["total"] == len(world.other_units)
+
+
 async def test_get_training_unit_by_id_owner_returns_it(
     client: AsyncClient, world: UnitWorld
 ) -> None:

@@ -18,6 +18,11 @@ class UserOut(UserBase):
     model_config = ConfigDict(from_attributes=True)
 
 
+class CurrentUser(UserOut):
+    # `/auth/me` also exposes is_superuser so the frontend can gate admin views.
+    is_superuser: bool = False
+
+
 class UserInDB(UserBase):
     hashed_password: str
     is_superuser: bool = False

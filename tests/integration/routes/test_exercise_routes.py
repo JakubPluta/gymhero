@@ -74,6 +74,101 @@ async def test_get_my_exercises_returns_only_owned(
     assert [item["id"] for item in page_items(response)] == [mine.id]
 
 
+async def test_search_exercises_by_name_is_partial_and_case_insensitive(
+    client: AsyncClient,
+    user_headers: dict[str, str],
+    regular_user: User,
+    db: AsyncSession,
+) -> None:
+    await create_exercise(db, owner=regular_user, name="Barbell Bench Press")
+    await create_exercise(db, owner=regular_user, name="Back Squat")
+    response = await client.get(
+        "/api/v1/exercises/all", params={"q": "bench"}, headers=user_headers
+    )
+    assert response.status_code == 200
+    assert [item["name"] for item in page_items(response)] == ["Barbell Bench Press"]
+    assert response.json()["total"] == 1
+
+
+async def test_filter_exercises_by_type(
+    client: AsyncClient,
+    user_headers: dict[str, str],
+    regular_user: User,
+    db: AsyncSession,
+) -> None:
+    strength = await create_exercise_type(db)
+    cardio = await create_exercise_type(db)
+    await create_exercise(db, owner=regular_user, exercise_type=strength)
+    await create_exercise(db, owner=regular_user, exercise_type=cardio)
+    response = await client.get(
+        "/api/v1/exercises/all",
+        params={"exercise_type_id": strength.id},
+        headers=user_headers,
+    )
+    assert response.status_code == 200
+    items = page_items(response)
+    assert len(items) == 1
+    assert items[0]["exercise_type"]["id"] == strength.id
+    assert response.json()["total"] == 1
+
+
+async def test_search_query_and_filter_combine(
+    client: AsyncClient,
+    user_headers: dict[str, str],
+    regular_user: User,
+    db: AsyncSession,
+) -> None:
+    strength = await create_exercise_type(db)
+    cardio = await create_exercise_type(db)
+    await create_exercise(
+        db, owner=regular_user, name="Bench Press", exercise_type=strength
+    )
+    await create_exercise(
+        db, owner=regular_user, name="Bench Cardio", exercise_type=cardio
+    )
+    await create_exercise(db, owner=regular_user, name="Squat", exercise_type=strength)
+    response = await client.get(
+        "/api/v1/exercises/all",
+        params={"q": "bench", "exercise_type_id": strength.id},
+        headers=user_headers,
+    )
+    assert [item["name"] for item in page_items(response)] == ["Bench Press"]
+    assert response.json()["total"] == 1
+
+
+async def test_search_total_reflects_filter_not_page(
+    client: AsyncClient,
+    user_headers: dict[str, str],
+    regular_user: User,
+    db: AsyncSession,
+) -> None:
+    for index in range(3):
+        await create_exercise(db, owner=regular_user, name=f"Bench {index}")
+    await create_exercise(db, owner=regular_user, name="Squat")
+    response = await client.get(
+        "/api/v1/exercises/all",
+        params={"q": "bench", "limit": 2},
+        headers=user_headers,
+    )
+    assert len(page_items(response)) == 2  # page capped by limit
+    assert response.json()["total"] == 3  # total reflects all matches
+
+
+async def test_search_on_my_scopes_to_owner(
+    client: AsyncClient,
+    user_headers: dict[str, str],
+    regular_user: User,
+    other_user: User,
+    db: AsyncSession,
+) -> None:
+    await create_exercise(db, owner=regular_user, name="Bench Mine")
+    await create_exercise(db, owner=other_user, name="Bench Theirs")
+    response = await client.get(
+        "/api/v1/exercises/my", params={"q": "bench"}, headers=user_headers
+    )
+    assert [item["name"] for item in page_items(response)] == ["Bench Mine"]
+
+
 async def test_get_exercise_by_id_returns_it(
     client: AsyncClient,
     user_headers: dict[str, str],

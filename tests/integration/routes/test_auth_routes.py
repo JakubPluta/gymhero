@@ -57,6 +57,31 @@ async def test_login_inactive_user_returns_400(
     assert response.json()["detail"] == "Inactive user"
 
 
+async def test_me_returns_current_user(
+    client: AsyncClient, regular_user: User, user_headers: dict[str, str]
+) -> None:
+    response = await client.get("/api/v1/auth/me", headers=user_headers)
+    assert response.status_code == 200
+    data = response.json()
+    assert data["id"] == regular_user.id
+    assert data["email"] == regular_user.email
+    assert data["is_active"] is True
+    assert data["is_superuser"] is False
+
+
+async def test_me_exposes_superuser_flag(
+    client: AsyncClient, superuser_headers: dict[str, str]
+) -> None:
+    response = await client.get("/api/v1/auth/me", headers=superuser_headers)
+    assert response.status_code == 200
+    assert response.json()["is_superuser"] is True
+
+
+async def test_me_requires_auth(client: AsyncClient) -> None:
+    response = await client.get("/api/v1/auth/me")
+    assert response.status_code == 401
+
+
 async def test_register_creates_user_returns_201(client: AsyncClient) -> None:
     response = await client.post(
         "/api/v1/auth/register",
