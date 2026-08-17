@@ -1,12 +1,11 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Body, Depends, status
+from fastapi import APIRouter, Body, Depends, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from gymhero.api.dependencies import get_current_active_user, get_pagination_params
-from gymhero.crud import exercise_crud
 from gymhero.database.db import get_db
-from gymhero.models import Exercise, User
+from gymhero.models import User
 from gymhero.schemas.common import Page
 from gymhero.schemas.exercise import ExerciseCreate, ExerciseInDB, ExerciseUpdate
 from gymhero.services import exercise as exercise_service
@@ -18,11 +17,22 @@ router = APIRouter()
 async def fetch_all_exercises(
     db: AsyncSession = Depends(get_db),
     pagination_params: tuple[int, int] = Depends(get_pagination_params),
+    q: str | None = Query(None),
+    exercise_type_id: int | None = Query(None),
+    level_id: int | None = Query(None),
+    target_body_part_id: int | None = Query(None),
     user: User = Depends(get_current_active_user),
 ):
     skip, limit = pagination_params
-    items = await exercise_crud.get_many(db, skip=skip, limit=limit)
-    total = await exercise_crud.count(db)
+    items, total = await exercise_service.list_exercises(
+        db,
+        q=q,
+        exercise_type_id=exercise_type_id,
+        level_id=level_id,
+        target_body_part_id=target_body_part_id,
+        skip=skip,
+        limit=limit,
+    )
     return {"items": items, "total": total, "skip": skip, "limit": limit}
 
 
@@ -30,13 +40,23 @@ async def fetch_all_exercises(
 async def fetch_all_exercises_for_owner(
     db: AsyncSession = Depends(get_db),
     pagination_params: tuple[int, int] = Depends(get_pagination_params),
+    q: str | None = Query(None),
+    exercise_type_id: int | None = Query(None),
+    level_id: int | None = Query(None),
+    target_body_part_id: int | None = Query(None),
     user: User = Depends(get_current_active_user),
 ):
     skip, limit = pagination_params
-    items = await exercise_crud.get_many(
-        db, Exercise.owner_id == user.id, skip=skip, limit=limit
+    items, total = await exercise_service.list_exercises(
+        db,
+        owner_id=user.id,
+        q=q,
+        exercise_type_id=exercise_type_id,
+        level_id=level_id,
+        target_body_part_id=target_body_part_id,
+        skip=skip,
+        limit=limit,
     )
-    total = await exercise_crud.count(db, Exercise.owner_id == user.id)
     return {"items": items, "total": total, "skip": skip, "limit": limit}
 
 
