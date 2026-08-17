@@ -1,3 +1,5 @@
+from sqlalchemy import select
+from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.orm import Session
 
 from gymhero.log import get_logger
@@ -10,26 +12,47 @@ log = get_logger(__name__)
 
 
 def create_levels(session: Session, names: list[str]) -> list[Level]:
-    levels = [Level(name=name) for name in names]
-    session.add_all(levels)
-    session.commit()
-    log.debug("Created %d levels", len(levels))
+    if names:
+        session.execute(
+            pg_insert(Level)
+            .values([{"name": name} for name in names])
+            .on_conflict_do_nothing(index_elements=["name"])
+        )
+        session.commit()
+    levels = list(session.execute(select(Level).where(Level.name.in_(names))).scalars())
+    log.debug("Ensured %d levels", len(levels))
     return levels
 
 
 def create_body_parts(session: Session, names: list[str]) -> list[BodyPart]:
-    body_parts = [BodyPart(name=name) for name in names]
-    session.add_all(body_parts)
-    session.commit()
-    log.debug("Created %d body parts", len(body_parts))
+    if names:
+        session.execute(
+            pg_insert(BodyPart)
+            .values([{"name": name} for name in names])
+            .on_conflict_do_nothing(index_elements=["name"])
+        )
+        session.commit()
+    body_parts = list(
+        session.execute(select(BodyPart).where(BodyPart.name.in_(names))).scalars()
+    )
+    log.debug("Ensured %d body parts", len(body_parts))
     return body_parts
 
 
 def create_exercise_types(session: Session, names: list[str]) -> list[ExerciseType]:
-    exercise_types = [ExerciseType(name=name) for name in names]
-    session.add_all(exercise_types)
-    session.commit()
-    log.debug("Created %d exercise types", len(exercise_types))
+    if names:
+        session.execute(
+            pg_insert(ExerciseType)
+            .values([{"name": name} for name in names])
+            .on_conflict_do_nothing(index_elements=["name"])
+        )
+        session.commit()
+    exercise_types = list(
+        session.execute(
+            select(ExerciseType).where(ExerciseType.name.in_(names))
+        ).scalars()
+    )
+    log.debug("Ensured %d exercise types", len(exercise_types))
     return exercise_types
 
 
@@ -40,19 +63,25 @@ def create_exercises(
     level_ids: dict[str, int],
     exercise_type_ids: dict[str, int],
     owner_id: int,
-) -> list[Exercise]:
-    exercises = [
-        Exercise(
-            name=row["Title"],
-            description=row["Desc"],
-            target_body_part_id=body_part_ids[row["BodyPart"]],
-            exercise_type_id=exercise_type_ids[row["Type"]],
-            level_id=level_ids[row["Level"]],
-            owner_id=owner_id,
+) -> None:
+    if not rows:
+        return
+    session.execute(
+        pg_insert(Exercise)
+        .values(
+            [
+                {
+                    "name": row["Title"],
+                    "description": row["Desc"],
+                    "target_body_part_id": body_part_ids[row["BodyPart"]],
+                    "exercise_type_id": exercise_type_ids[row["Type"]],
+                    "level_id": level_ids[row["Level"]],
+                    "owner_id": owner_id,
+                }
+                for row in rows
+            ]
         )
-        for row in rows
-    ]
-    session.add_all(exercises)
+        .on_conflict_do_nothing(index_elements=["name"])
+    )
     session.commit()
-    log.debug("Created %d exercises", len(exercises))
-    return exercises
+    log.debug("Ensured %d exercises", len(rows))
