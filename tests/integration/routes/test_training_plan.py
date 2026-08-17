@@ -60,6 +60,43 @@ async def test_get_all_training_plans_superuser_paginates(
     assert len(page_items(response)) == 3
 
 
+async def test_search_training_plans_on_my_filters_by_name(
+    client: AsyncClient, world: PlanWorld
+) -> None:
+    response = await client.get(
+        "/api/v1/training-plans/all/my",
+        params={"q": "other-plan-2"},
+        headers=world.other_headers,
+    )
+    assert response.status_code == 200
+    assert [item["name"] for item in page_items(response)] == ["other-plan-2"]
+    assert response.json()["total"] == 1
+
+
+async def test_search_training_plans_on_my_scopes_to_owner(
+    client: AsyncClient, world: PlanWorld
+) -> None:
+    response = await client.get(
+        "/api/v1/training-plans/all/my",
+        params={"q": "owner-plan"},
+        headers=world.other_headers,
+    )
+    assert page_items(response) == []
+    assert response.json()["total"] == 0
+
+
+async def test_search_training_plans_all_superuser_spans_owners(
+    client: AsyncClient, world: PlanWorld
+) -> None:
+    response = await client.get(
+        "/api/v1/training-plans/all",
+        params={"q": "other-plan"},
+        headers=world.owner_headers,
+    )
+    assert response.status_code == 200
+    assert response.json()["total"] == len(world.other_plans)
+
+
 async def test_get_all_training_plans_negative_params_returns_422(
     client: AsyncClient, world: PlanWorld
 ) -> None:

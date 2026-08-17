@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from gymhero.api.dependencies import (
@@ -30,11 +30,13 @@ router = APIRouter()
 async def get_all_training_units(
     db: AsyncSession = Depends(get_db),
     pagination_params: tuple[int, int] = Depends(get_pagination_params),
+    q: str | None = Query(None),
     user: User = Depends(get_current_superuser),
 ):
     skip, limit = pagination_params
-    items = await training_unit_crud.get_many(db, skip=skip, limit=limit)
-    total = await training_unit_crud.count(db)
+    items, total = await training_unit_service.list_training_units(
+        db, q=q, skip=skip, limit=limit
+    )
     return {"items": items, "total": total, "skip": skip, "limit": limit}
 
 
@@ -46,13 +48,13 @@ async def get_all_training_units(
 async def get_all_training_units_for_owner(
     db: AsyncSession = Depends(get_db),
     pagination_params: tuple[int, int] = Depends(get_pagination_params),
+    q: str | None = Query(None),
     user: User = Depends(get_current_active_user),
 ):
     skip, limit = pagination_params
-    items = await training_unit_crud.get_many(
-        db, TrainingUnit.owner_id == user.id, skip=skip, limit=limit
+    items, total = await training_unit_service.list_training_units(
+        db, owner_id=user.id, q=q, skip=skip, limit=limit
     )
-    total = await training_unit_crud.count(db, TrainingUnit.owner_id == user.id)
     return {"items": items, "total": total, "skip": skip, "limit": limit}
 
 

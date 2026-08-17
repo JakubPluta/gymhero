@@ -1,5 +1,6 @@
 """Training-unit use-cases."""
 
+from sqlalchemy import ColumnExpressionArgument
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from gymhero.crud import exercise_crud, training_unit_crud
@@ -9,6 +10,25 @@ from gymhero.models.training_unit import TrainingUnit
 from gymhero.models.user import User
 from gymhero.schemas.training_unit import TrainingUnitCreate, TrainingUnitUpdate
 from gymhero.services.ownership import get_owned_or_404
+
+
+async def list_training_units(
+    db: AsyncSession,
+    *,
+    owner_id: int | None = None,
+    q: str | None = None,
+    skip: int = 0,
+    limit: int = 10,
+) -> tuple[list[TrainingUnit], int]:
+    """Return a filtered page of training units and the total matching."""
+    filters: list[ColumnExpressionArgument[bool]] = []
+    if owner_id is not None:
+        filters.append(TrainingUnit.owner_id == owner_id)
+    if q:
+        filters.append(TrainingUnit.name.ilike(f"%{q}%"))
+    items = await training_unit_crud.get_many(db, *filters, skip=skip, limit=limit)
+    total = await training_unit_crud.count(db, *filters)
+    return items, total
 
 
 async def get_training_unit(
