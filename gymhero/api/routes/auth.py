@@ -12,7 +12,7 @@ from gymhero.database import get_db
 from gymhero.models import User
 from gymhero.schemas.auth import RefreshRequest, Token, UserRegister
 from gymhero.schemas.common import Message
-from gymhero.schemas.user import UserInDB
+from gymhero.schemas.user import CurrentUser, UserInDB
 
 router = APIRouter()
 
@@ -45,6 +45,13 @@ async def login_for_access_token(
             status_code=status.HTTP_400_BAD_REQUEST, detail="Inactive user"
         )
     return _token_pair(user)
+
+
+@router.get("/me", response_model=CurrentUser)
+async def read_current_user(
+    current_user: User = Depends(get_current_active_user),
+) -> User:
+    return current_user
 
 
 @router.post("/refresh", response_model=Token)
