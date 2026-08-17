@@ -1,6 +1,7 @@
 [tools]
 python = "3.13"
 uv = "0.12.3"
+node = "22"
 
 [env]
 _.python.venv = { path = ".venv", create = true }
@@ -58,4 +59,43 @@ description = "Build, start (migrations run via the migrate service) and seed th
 run = [
     "docker compose up -d --build",
     "docker compose exec app python -m scripts.seed --env=dev",
+]
+
+# --- frontend -------------------------------------------------------------
+
+[tasks.fe-install]
+description = "Install frontend dependencies"
+dir = "frontend"
+run = "npm install"
+
+[tasks.fe-gen]
+description = "Regenerate the typed API client from the running backend's OpenAPI"
+dir = "frontend"
+run = "npm run gen:api"
+
+[tasks.fe-dev]
+description = "Start the frontend dev server (proxies /api to :8000)"
+dir = "frontend"
+run = "npm run dev"
+
+[tasks.fe-build]
+description = "Type-check and build the frontend for production"
+dir = "frontend"
+run = "npm run build"
+
+[tasks.fe-lint]
+description = "Lint and format-check the frontend"
+dir = "frontend"
+run = ["npm run lint", "npm run format:check"]
+
+[tasks.fe-test]
+description = "Run the frontend unit/component tests (Vitest)"
+dir = "frontend"
+run = "npm run test"
+
+[tasks.dev-full]
+description = "Bring up the backend stack (docker + seed), then run the frontend dev server"
+run = [
+    "mise run dev",
+    "mise run fe-dev",
 ]
