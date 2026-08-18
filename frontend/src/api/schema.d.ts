@@ -680,7 +680,8 @@ export interface paths {
         delete: operations["remove_exercise_from_training_unit_api_v1_training_units__training_unit_id__exercises__exercise_id__delete"];
         options?: never;
         head?: never;
-        patch?: never;
+        /** Set Exercise Prescription */
+        patch: operations["set_exercise_prescription_api_v1_training_units__training_unit_id__exercises__exercise_id__patch"];
         trace?: never;
     };
     "/api/v1/training-units/{training_unit_id}/exercises": {
@@ -1044,10 +1045,34 @@ export interface components {
             /** Limit */
             limit: number;
         };
+        /** PrescribedSetOut */
+        PrescribedSetOut: {
+            /** Set Number */
+            set_number: number;
+            /** Reps */
+            reps?: number | null;
+            /** Weight */
+            weight?: number | null;
+        };
+        /** PrescriptionUpdate */
+        PrescriptionUpdate: {
+            /**
+             * Sets
+             * @default []
+             */
+            sets: components["schemas"]["SetInput"][];
+        };
         /** RefreshRequest */
         RefreshRequest: {
             /** Refresh Token */
             refresh_token: string;
+        };
+        /** SetInput */
+        SetInput: {
+            /** Reps */
+            reps?: number | null;
+            /** Weight */
+            weight?: number | null;
         };
         /**
          * Token
@@ -1108,6 +1133,15 @@ export interface components {
             /** Description */
             description?: string | null;
         };
+        /** TrainingUnitExerciseOut */
+        TrainingUnitExerciseOut: {
+            exercise: components["schemas"]["ExerciseSummary"];
+            /**
+             * Sets
+             * @default []
+             */
+            sets: components["schemas"]["PrescribedSetOut"][];
+        };
         /** TrainingUnitInDB */
         TrainingUnitInDB: {
             /** Name */
@@ -1130,7 +1164,7 @@ export interface components {
              * Exercises
              * @default []
              */
-            exercises: components["schemas"]["ExerciseSummary"][] | null;
+            exercises: components["schemas"]["TrainingUnitExerciseOut"][] | null;
             /** Owner Id */
             owner_id: number;
         };
@@ -1146,7 +1180,7 @@ export interface components {
              * Exercises
              * @default []
              */
-            exercises: components["schemas"]["ExerciseSummary"][] | null;
+            exercises: components["schemas"]["TrainingUnitExerciseOut"][] | null;
             /** Owner Id */
             owner_id: number;
         };
@@ -2990,6 +3024,42 @@ export interface operations {
             };
         };
     };
+    set_exercise_prescription_api_v1_training_units__training_unit_id__exercises__exercise_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                training_unit_id: number;
+                exercise_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PrescriptionUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TrainingUnitInDB"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     get_exercises_in_training_unit_api_v1_training_units__training_unit_id__exercises_get: {
         parameters: {
             query?: never;
@@ -3007,7 +3077,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ExerciseInDB"][];
+                    "application/json": components["schemas"]["TrainingUnitExerciseOut"][];
                 };
             };
             /** @description Validation Error */
