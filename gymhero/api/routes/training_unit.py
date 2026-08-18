@@ -11,9 +11,10 @@ from gymhero.database.db import get_db
 from gymhero.models import TrainingUnit
 from gymhero.models.user import User
 from gymhero.schemas.common import Page
-from gymhero.schemas.exercise import ExerciseInDB
 from gymhero.schemas.training_unit import (
+    PrescriptionUpdate,
     TrainingUnitCreate,
+    TrainingUnitExerciseOut,
     TrainingUnitInDB,
     TrainingUnitUpdate,
 )
@@ -158,7 +159,30 @@ async def add_exercise_to_training_unit(
     )
 
 
-@router.get("/{training_unit_id}/exercises", response_model=list[ExerciseInDB])
+@router.patch(
+    "/{training_unit_id}/exercises/{exercise_id}",
+    response_model=TrainingUnitInDB,
+    status_code=status.HTTP_200_OK,
+)
+async def set_exercise_prescription(
+    training_unit_id: int,
+    exercise_id: int,
+    prescription: PrescriptionUpdate,
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_active_user),
+):
+    return await training_unit_service.set_prescription(
+        db,
+        training_unit_id=training_unit_id,
+        exercise_id=exercise_id,
+        data=prescription,
+        actor=user,
+    )
+
+
+@router.get(
+    "/{training_unit_id}/exercises", response_model=list[TrainingUnitExerciseOut]
+)
 async def get_exercises_in_training_unit(
     training_unit_id: int,
     db: AsyncSession = Depends(get_db),

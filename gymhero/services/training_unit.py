@@ -6,9 +6,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from gymhero.crud import exercise_crud, training_unit_crud
 from gymhero.exceptions import EntityConflictError, EntityNotFoundError
 from gymhero.models.exercise import Exercise
-from gymhero.models.training_unit import TrainingUnit
+from gymhero.models.training_unit import TrainingUnit, TrainingUnitExercise
 from gymhero.models.user import User
-from gymhero.schemas.training_unit import TrainingUnitCreate, TrainingUnitUpdate
+from gymhero.schemas.training_unit import (
+    PrescriptionUpdate,
+    TrainingUnitCreate,
+    TrainingUnitUpdate,
+)
 from gymhero.services.ownership import get_owned_or_404
 
 
@@ -103,9 +107,29 @@ async def remove_exercise(
         ) from exc
 
 
+async def set_prescription(
+    db: AsyncSession,
+    *,
+    training_unit_id: int,
+    exercise_id: int,
+    data: PrescriptionUpdate,
+    actor: User,
+) -> TrainingUnit:
+    unit = await _get_owned_or_404(db, training_unit_id, actor)
+    link = training_unit_crud.get_link(unit, exercise_id)
+    if link is None:
+        raise EntityNotFoundError(
+            f"Exercise with id {exercise_id} not found in training unit "
+            f"with id {training_unit_id}"
+        )
+    await training_unit_crud.set_prescription(db, link, data)
+    # Re-fetch so the response carries the unit with its refreshed prescriptions.
+    return await _get_owned_or_404(db, training_unit_id, actor)
+
+
 async def get_exercises(
     db: AsyncSession, *, training_unit_id: int, actor: User
-) -> list[Exercise]:
+) -> list[TrainingUnitExercise]:
     unit = await _get_owned_or_404(db, training_unit_id, actor)
     return training_unit_crud.get_exercises_in_training_unit(unit)
 

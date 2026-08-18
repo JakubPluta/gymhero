@@ -1,5 +1,5 @@
 import { Link, useNavigate } from '@tanstack/react-router'
-import { ArrowLeft, ListChecks, Pencil, Plus, Trash2, X } from 'lucide-react'
+import { ChevronRight, ListChecks, Pencil, Plus, Trash2, X } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
 import { getErrorMessage } from '@/api/errors'
@@ -8,10 +8,13 @@ import { ConfirmDialog } from '@/components/confirm-dialog'
 import { DataError } from '@/components/data-error'
 import { EmptyState } from '@/components/empty-state'
 import { FadeIn } from '@/components/fade-in'
+import { PageBreadcrumb } from '@/components/page-breadcrumb'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
+import { formatPrescription } from '@/features/training-units/prescription'
+import { cn } from '@/lib/utils'
 import { AddUnitDialog } from './add-unit-dialog'
 import { useDeleteTrainingPlan, useRemoveUnitFromPlan, useTrainingPlan } from './hooks'
 import { PlanFormDialog } from './plan-form-dialog'
@@ -25,11 +28,20 @@ export function TrainingPlanDetailPage({ id }: { id: number }) {
   const [formOpen, setFormOpen] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [addOpen, setAddOpen] = useState(false)
+  const [expanded, setExpanded] = useState<Set<number>>(() => new Set())
 
   const canManage =
     me !== undefined &&
     plan !== undefined &&
     (plan.owner_id === me.id || me.is_superuser)
+
+  const toggle = (unitId: number) =>
+    setExpanded((current) => {
+      const next = new Set(current)
+      if (next.has(unitId)) next.delete(unitId)
+      else next.add(unitId)
+      return next
+    })
 
   const confirmDelete = () => {
     deletePlan.mutate(id, {
@@ -48,14 +60,17 @@ export function TrainingPlanDetailPage({ id }: { id: number }) {
     })
   }
 
+  const units = plan?.training_units ?? []
+
   return (
     <FadeIn className="space-y-6">
-      <Button asChild variant="ghost" size="sm" className="-ml-2 w-fit">
-        <Link to="/training-plans">
-          <ArrowLeft className="mr-2 size-4" />
-          Back to training plans
-        </Link>
-      </Button>
+      <PageBreadcrumb
+        items={[
+          { label: 'Home', to: '/' },
+          { label: 'Training plans', to: '/training-plans' },
+          ...(plan ? [{ label: plan.name }] : []),
+        ]}
+      />
 
       {isLoading ? (
         <Skeleton className="h-64 w-full" />
@@ -87,7 +102,7 @@ export function TrainingPlanDetailPage({ id }: { id: number }) {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0">
               <CardTitle className="text-base">
-                Training units ({(plan.training_units ?? []).length})
+                Training units ({units.length})
               </CardTitle>
               {canManage ? (
                 <Button size="sm" variant="outline" onClick={() => setAddOpen(true)}>
@@ -97,7 +112,7 @@ export function TrainingPlanDetailPage({ id }: { id: number }) {
               ) : null}
             </CardHeader>
             <CardContent>
-              {(plan.training_units ?? []).length === 0 ? (
+              {units.length === 0 ? (
                 <EmptyState
                   icon={ListChecks}
                   title="No training units"
@@ -105,36 +120,77 @@ export function TrainingPlanDetailPage({ id }: { id: number }) {
                 />
               ) : (
                 <ul className="divide-y">
-                  {(plan.training_units ?? []).map((unit) => (
-                    <li
-                      key={unit.id}
-                      className="flex items-center justify-between py-2.5"
-                    >
-                      <div className="flex items-center gap-3">
-                        <Link
-                          to="/training-units/$unitId"
-                          params={{ unitId: String(unit.id) }}
-                          className="text-sm font-medium hover:underline"
-                        >
-                          {unit.name}
-                        </Link>
-                        <Badge variant="secondary">
-                          {(unit.exercises ?? []).length} exercises
-                        </Badge>
-                      </div>
-                      {canManage ? (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          aria-label={`Remove ${unit.name}`}
-                          disabled={removeUnit.isPending}
-                          onClick={() => handleRemoveUnit(unit.id)}
-                        >
-                          <X className="size-4" />
-                        </Button>
-                      ) : null}
-                    </li>
-                  ))}
+                  {units.map((unit) => {
+                    const isOpen = expanded.has(unit.id)
+                    const exercises = unit.exercises ?? []
+                    return (
+                      <li key={unit.id} className="py-1">
+                        <div className="flex items-center justify-between gap-2">
+                          <button
+                            type="button"
+                            onClick={() => toggle(unit.id)}
+                            aria-expanded={isOpen}
+                            className="flex flex-1 items-center gap-2 py-1.5 text-left"
+                          >
+                            <ChevronRight
+                              className={cn(
+                                'size-4 shrink-0 text-muted-foreground transition-transform',
+                                isOpen && 'rotate-90',
+                              )}
+                            />
+                            <span className="text-sm font-medium">{unit.name}</span>
+                            <Badge variant="secondary">
+                              {exercises.length} exercises
+                            </Badge>
+                          </button>
+                          <div className="flex shrink-0 items-center gap-1">
+                            <Button asChild variant="ghost" size="sm">
+                              <Link
+                                to="/training-units/$unitId"
+                                params={{ unitId: String(unit.id) }}
+                              >
+                                Manage
+                              </Link>
+                            </Button>
+                            {canManage ? (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                aria-label={`Remove ${unit.name}`}
+                                disabled={removeUnit.isPending}
+                                onClick={() => handleRemoveUnit(unit.id)}
+                              >
+                                <X className="size-4" />
+                              </Button>
+                            ) : null}
+                          </div>
+                        </div>
+                        {isOpen ? (
+                          exercises.length === 0 ? (
+                            <p className="pb-2 pl-6 text-sm text-muted-foreground">
+                              No exercises in this unit yet.
+                            </p>
+                          ) : (
+                            <ul className="space-y-1 pb-2 pl-6">
+                              {exercises.map((link) => (
+                                <li
+                                  key={link.exercise.id}
+                                  className="flex items-baseline justify-between gap-3 text-sm"
+                                >
+                                  <span className="font-medium">
+                                    {link.exercise.name}
+                                  </span>
+                                  <span className="text-muted-foreground">
+                                    {formatPrescription(link)}
+                                  </span>
+                                </li>
+                              ))}
+                            </ul>
+                          )
+                        ) : null}
+                      </li>
+                    )
+                  })}
                 </ul>
               )}
             </CardContent>
@@ -143,7 +199,7 @@ export function TrainingPlanDetailPage({ id }: { id: number }) {
           <PlanFormDialog open={formOpen} onOpenChange={setFormOpen} plan={plan} />
           <AddUnitDialog
             planId={id}
-            existingIds={(plan.training_units ?? []).map((unit) => unit.id)}
+            existingIds={units.map((unit) => unit.id)}
             open={addOpen}
             onOpenChange={setAddOpen}
           />

@@ -1,6 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '@/api/client'
-import type { ListParams, TrainingUnitCreate, TrainingUnitUpdate } from '@/api/types'
+import type {
+  ListParams,
+  PrescriptionUpdate,
+  TrainingUnitCreate,
+  TrainingUnitUpdate,
+} from '@/api/types'
 
 const unitKeys = {
   all: ['training-units'] as const,
@@ -110,6 +115,30 @@ export function useRemoveExerciseFromUnit(unitId: number) {
       const { data, error } = await api.DELETE(
         '/api/v1/training-units/{training_unit_id}/exercises/{exercise_id}',
         { params: { path: { training_unit_id: unitId, exercise_id: exerciseId } } },
+      )
+      if (error) throw error
+      return data
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: unitKeys.all }),
+  })
+}
+
+export function useSetPrescription(unitId: number) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async ({
+      exerciseId,
+      prescription,
+    }: {
+      exerciseId: number
+      prescription: PrescriptionUpdate
+    }) => {
+      const { data, error } = await api.PATCH(
+        '/api/v1/training-units/{training_unit_id}/exercises/{exercise_id}',
+        {
+          params: { path: { training_unit_id: unitId, exercise_id: exerciseId } },
+          body: prescription,
+        },
       )
       if (error) throw error
       return data

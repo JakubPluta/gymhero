@@ -1,5 +1,5 @@
-import { Link, useNavigate } from '@tanstack/react-router'
-import { ArrowLeft, Pencil, Trash2 } from 'lucide-react'
+import { useNavigate } from '@tanstack/react-router'
+import { Pencil, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
 import { getErrorMessage } from '@/api/errors'
@@ -7,6 +7,7 @@ import { useMe } from '@/auth/useAuth'
 import { ConfirmDialog } from '@/components/confirm-dialog'
 import { DataError } from '@/components/data-error'
 import { FadeIn } from '@/components/fade-in'
+import { PageBreadcrumb } from '@/components/page-breadcrumb'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -50,12 +51,13 @@ export function ExerciseDetailPage({ id }: { id: number }) {
 
   return (
     <FadeIn className="space-y-6">
-      <Button asChild variant="ghost" size="sm" className="-ml-2 w-fit">
-        <Link to="/exercises">
-          <ArrowLeft className="mr-2 size-4" />
-          Back to exercises
-        </Link>
-      </Button>
+      <PageBreadcrumb
+        items={[
+          { label: 'Home', to: '/' },
+          { label: 'Exercises', to: '/exercises' },
+          ...(exercise ? [{ label: exercise.name }] : []),
+        ]}
+      />
 
       {isLoading ? (
         <Skeleton className="h-64 w-full" />

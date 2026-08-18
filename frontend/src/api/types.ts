@@ -24,6 +24,11 @@ export type ExerciseUpdate = Schemas['ExerciseUpdate']
 export type TrainingUnit = Schemas['TrainingUnitInDB']
 export type TrainingUnitCreate = Schemas['TrainingUnitCreate']
 export type TrainingUnitUpdate = Schemas['TrainingUnitUpdate']
+// A unit's exercise plus its ordered prescription (a list of sets).
+export type TrainingUnitExercise = Schemas['TrainingUnitExerciseOut']
+export type PrescribedSet = Schemas['PrescribedSetOut']
+export type SetInput = Schemas['SetInput']
+export type PrescriptionUpdate = Schemas['PrescriptionUpdate']
 
 export type TrainingPlan = Schemas['TrainingPlanInDB']
 export type TrainingPlanCreate = Schemas['TrainingPlanCreate']

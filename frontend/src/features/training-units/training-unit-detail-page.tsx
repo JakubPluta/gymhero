@@ -1,13 +1,15 @@
 import { Link, useNavigate } from '@tanstack/react-router'
-import { ArrowLeft, Dumbbell, Pencil, Plus, Trash2, X } from 'lucide-react'
+import { Dumbbell, Pencil, Plus, Trash2, X } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
 import { getErrorMessage } from '@/api/errors'
+import type { PrescriptionUpdate, TrainingUnitExercise } from '@/api/types'
 import { useMe } from '@/auth/useAuth'
 import { ConfirmDialog } from '@/components/confirm-dialog'
 import { DataError } from '@/components/data-error'
 import { EmptyState } from '@/components/empty-state'
 import { FadeIn } from '@/components/fade-in'
+import { PageBreadcrumb } from '@/components/page-breadcrumb'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -15,8 +17,11 @@ import { AddExerciseDialog } from './add-exercise-dialog'
 import {
   useDeleteTrainingUnit,
   useRemoveExerciseFromUnit,
+  useSetPrescription,
   useTrainingUnit,
 } from './hooks'
+import { formatPrescription } from './prescription'
+import { PrescriptionDialog } from './prescription-dialog'
 import { UnitFormDialog } from './unit-form-dialog'
 
 export function TrainingUnitDetailPage({ id }: { id: number }) {
@@ -25,9 +30,11 @@ export function TrainingUnitDetailPage({ id }: { id: number }) {
   const { data: unit, isLoading, isError, error } = useTrainingUnit(id)
   const deleteUnit = useDeleteTrainingUnit()
   const removeExercise = useRemoveExerciseFromUnit(id)
+  const setPrescription = useSetPrescription(id)
   const [formOpen, setFormOpen] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [addOpen, setAddOpen] = useState(false)
+  const [editingLink, setEditingLink] = useState<TrainingUnitExercise | null>(null)
 
   const canManage =
     me !== undefined &&
@@ -51,14 +58,29 @@ export function TrainingUnitDetailPage({ id }: { id: number }) {
     })
   }
 
+  const handleSavePrescription = (prescription: PrescriptionUpdate) => {
+    if (editingLink === null) return
+    setPrescription.mutate(
+      { exerciseId: editingLink.exercise.id, prescription },
+      {
+        onSuccess: () => {
+          toast.success('Prescription updated')
+          setEditingLink(null)
+        },
+        onError: (saveError) => toast.error(getErrorMessage(saveError)),
+      },
+    )
+  }
+
   return (
     <FadeIn className="space-y-6">
-      <Button asChild variant="ghost" size="sm" className="-ml-2 w-fit">
-        <Link to="/training-units">
-          <ArrowLeft className="mr-2 size-4" />
-          Back to training units
-        </Link>
-      </Button>
+      <PageBreadcrumb
+        items={[
+          { label: 'Home', to: '/' },
+          { label: 'Training units', to: '/training-units' },
+          ...(unit ? [{ label: unit.name }] : []),
+        ]}
+      />
 
       {isLoading ? (
         <Skeleton className="h-64 w-full" />
@@ -108,28 +130,43 @@ export function TrainingUnitDetailPage({ id }: { id: number }) {
                 />
               ) : (
                 <ul className="divide-y">
-                  {(unit.exercises ?? []).map((exercise) => (
+                  {(unit.exercises ?? []).map((link) => (
                     <li
-                      key={exercise.id}
-                      className="flex items-center justify-between py-2.5"
+                      key={link.exercise.id}
+                      className="flex items-center justify-between gap-3 py-2.5"
                     >
-                      <Link
-                        to="/exercises/$exerciseId"
-                        params={{ exerciseId: String(exercise.id) }}
-                        className="text-sm font-medium hover:underline"
-                      >
-                        {exercise.name}
-                      </Link>
-                      {canManage ? (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          aria-label={`Remove ${exercise.name}`}
-                          disabled={removeExercise.isPending}
-                          onClick={() => handleRemoveExercise(exercise.id)}
+                      <div className="min-w-0 space-y-0.5">
+                        <Link
+                          to="/exercises/$exerciseId"
+                          params={{ exerciseId: String(link.exercise.id) }}
+                          className="text-sm font-medium hover:underline"
                         >
-                          <X className="size-4" />
-                        </Button>
+                          {link.exercise.name}
+                        </Link>
+                        <p className="text-xs text-muted-foreground">
+                          {formatPrescription(link)}
+                        </p>
+                      </div>
+                      {canManage ? (
+                        <div className="flex shrink-0 items-center gap-1">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            aria-label={`Edit prescription for ${link.exercise.name}`}
+                            onClick={() => setEditingLink(link)}
+                          >
+                            <Pencil className="size-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            aria-label={`Remove ${link.exercise.name}`}
+                            disabled={removeExercise.isPending}
+                            onClick={() => handleRemoveExercise(link.exercise.id)}
+                          >
+                            <X className="size-4" />
+                          </Button>
+                        </div>
                       ) : null}
                     </li>
                   ))}
@@ -141,10 +178,22 @@ export function TrainingUnitDetailPage({ id }: { id: number }) {
           <UnitFormDialog open={formOpen} onOpenChange={setFormOpen} unit={unit} />
           <AddExerciseDialog
             unitId={id}
-            existingIds={(unit.exercises ?? []).map((exercise) => exercise.id)}
+            existingIds={(unit.exercises ?? []).map((link) => link.exercise.id)}
             open={addOpen}
             onOpenChange={setAddOpen}
           />
+          {editingLink !== null ? (
+            <PrescriptionDialog
+              open
+              onOpenChange={(open) => {
+                if (!open) setEditingLink(null)
+              }}
+              exerciseName={editingLink.exercise.name}
+              initialSets={editingLink.sets ?? []}
+              isPending={setPrescription.isPending}
+              onSubmit={handleSavePrescription}
+            />
+          ) : null}
           <ConfirmDialog
             open={deleteOpen}
             onOpenChange={setDeleteOpen}
