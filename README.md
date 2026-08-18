@@ -1,7 +1,7 @@
 # GymHero
 
 Simple application to manage your gym training workouts.
-You have the flexibility to create your own exercises, you can develop custom training units and these units can be easily integrated into personalized training plans. You can manage your training units by adding or removing exercises as needed.
+You have the flexibility to create your own exercises, you can develop custom training units and these units can be easily integrated into personalized training plans. You can manage your training units by adding or removing exercises as needed, each with an optional prescription — a list of sets, every set with its own reps and weight.
 By default application contains database of more than 1000 exercises.
 
 ### Frontend
@@ -39,6 +39,7 @@ erDiagram
 
     training_units ||--o{ training_unit_exercise      : has
     exercises      ||--o{ training_unit_exercise      : in
+    training_unit_exercise ||--o{ prescribed_set      : prescribes
 
     training_plans ||--o{ training_plan_training_unit : has
     training_units ||--o{ training_plan_training_unit : in
@@ -100,8 +101,16 @@ erDiagram
         datetime updated_at
     }
     training_unit_exercise {
-        int training_unit_id PK, FK
-        int exercise_id      PK, FK
+        int id               PK
+        int training_unit_id FK "unique per (unit, exercise)"
+        int exercise_id      FK
+    }
+    prescribed_set {
+        int   id                        PK
+        int   training_unit_exercise_id FK
+        int   set_number
+        int   reps                      "nullable"
+        float weight                    "nullable"
     }
     training_plan_training_unit {
         int training_plan_id PK, FK
@@ -245,6 +254,7 @@ erDiagram
 | /training-units  | PUT     | /{training_unit_id}                                 | Owner, Superuser  |
 | /training-units  | POST    |                                                     | Owner, Superuser  |
 | /training-units  | PUT     | /{training_unit_id}/exercises/{exercise_id}         | Owner, Superuser  |
+| /training-units  | PATCH   | /{training_unit_id}/exercises/{exercise_id}         | Owner, Superuser  |
 | /training-units  | DELETE  | /{training_unit_id}/exercises/{exercise_id}         | Owner, Superuser  |
 
 
