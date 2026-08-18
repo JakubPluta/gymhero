@@ -321,7 +321,21 @@ async def test_add_exercise_to_training_unit_returns_200(
         headers=world.owner_headers,
     )
     assert response.status_code == 200
-    assert [e["id"] for e in response.json()["exercises"]] == [exercise.id]
+    assert [e["exercise"]["id"] for e in response.json()["exercises"]] == [exercise.id]
+
+
+async def test_added_exercise_has_empty_prescription(
+    client: AsyncClient, world: UnitWorld, db: AsyncSession
+) -> None:
+    # A freshly attached exercise carries no prescription until one is set.
+    unit = world.owner_units[0]
+    exercise = await create_exercise(db, owner=world.owner)
+    response = await client.put(
+        f"/api/v1/training-units/{unit.id}/exercises/{exercise.id}",
+        headers=world.owner_headers,
+    )
+    link = response.json()["exercises"][0]
+    assert link["sets"] == []
 
 
 async def test_added_exercise_output_hides_owner_email(
@@ -335,7 +349,7 @@ async def test_added_exercise_output_hides_owner_email(
         f"/api/v1/training-units/{unit.id}/exercises/{exercise.id}",
         headers=world.owner_headers,
     )
-    item = response.json()["exercises"][0]
+    item = response.json()["exercises"][0]["exercise"]
     assert item["owner_id"] == world.owner.id
     assert "owner" not in item
     assert "email" not in item
@@ -468,7 +482,7 @@ async def test_get_exercises_in_unit_reflects_added_exercise(
         f"/api/v1/training-units/{unit.id}/exercises", headers=world.owner_headers
     )
     assert response.status_code == 200
-    assert [e["id"] for e in response.json()] == [exercise.id]
+    assert [e["exercise"]["id"] for e in response.json()] == [exercise.id]
 
 
 async def test_get_exercises_in_missing_unit_returns_404(
@@ -486,5 +500,126 @@ async def test_get_exercises_in_unit_not_owner_returns_404(
     unit = world.owner_units[0]
     response = await client.get(
         f"/api/v1/training-units/{unit.id}/exercises", headers=world.other_headers
+    )
+    assert response.status_code == 404
+
+
+async def _add_exercise(
+    client: AsyncClient, unit_id: int, exercise_id: int, headers: dict[str, str]
+) -> None:
+    await client.put(
+        f"/api/v1/training-units/{unit_id}/exercises/{exercise_id}", headers=headers
+    )
+
+
+async def test_set_prescription_stores_ordered_sets(
+    client: AsyncClient, world: UnitWorld, db: AsyncSession
+) -> None:
+    # A ramp scheme: each set has its own reps × weight, ordered by set_number.
+    unit = world.owner_units[0]
+    exercise = await create_exercise(db, owner=world.owner)
+    await _add_exercise(client, unit.id, exercise.id, world.owner_headers)
+    response = await client.patch(
+        f"/api/v1/training-units/{unit.id}/exercises/{exercise.id}",
+        json={
+            "sets": [
+                {"reps": 12, "weight": 80},
+                {"reps": 10, "weight": 90},
+                {"reps": 10, "weight": 90},
+                {"reps": 8, "weight": 100},
+            ]
+        },
+        headers=world.owner_headers,
+    )
+    assert response.status_code == 200
+    sets = response.json()["exercises"][0]["sets"]
+    assert [(s["set_number"], s["reps"], s["weight"]) for s in sets] == [
+        (1, 12, 80.0),
+        (2, 10, 90.0),
+        (3, 10, 90.0),
+        (4, 8, 100.0),
+    ]
+
+
+async def test_set_prescription_replaces_previous_sets(
+    client: AsyncClient, world: UnitWorld, db: AsyncSession
+) -> None:
+    # PATCH is replace-all: a shorter list wipes the earlier sets (no leftovers).
+    unit = world.owner_units[0]
+    exercise = await create_exercise(db, owner=world.owner)
+    await _add_exercise(client, unit.id, exercise.id, world.owner_headers)
+    await client.patch(
+        f"/api/v1/training-units/{unit.id}/exercises/{exercise.id}",
+        json={"sets": [{"reps": 12, "weight": 80}, {"reps": 10, "weight": 90}]},
+        headers=world.owner_headers,
+    )
+    response = await client.patch(
+        f"/api/v1/training-units/{unit.id}/exercises/{exercise.id}",
+        json={"sets": [{"reps": 5, "weight": 100}]},
+        headers=world.owner_headers,
+    )
+    assert response.status_code == 200
+    sets = response.json()["exercises"][0]["sets"]
+    assert [(s["set_number"], s["reps"], s["weight"]) for s in sets] == [(1, 5, 100.0)]
+
+
+async def test_set_prescription_empty_clears_sets(
+    client: AsyncClient, world: UnitWorld, db: AsyncSession
+) -> None:
+    unit = world.owner_units[0]
+    exercise = await create_exercise(db, owner=world.owner)
+    await _add_exercise(client, unit.id, exercise.id, world.owner_headers)
+    await client.patch(
+        f"/api/v1/training-units/{unit.id}/exercises/{exercise.id}",
+        json={"sets": [{"reps": 5, "weight": 100}]},
+        headers=world.owner_headers,
+    )
+    response = await client.patch(
+        f"/api/v1/training-units/{unit.id}/exercises/{exercise.id}",
+        json={"sets": []},
+        headers=world.owner_headers,
+    )
+    assert response.status_code == 200
+    assert response.json()["exercises"][0]["sets"] == []
+
+
+async def test_set_prescription_negative_returns_422(
+    client: AsyncClient, world: UnitWorld, db: AsyncSession
+) -> None:
+    unit = world.owner_units[0]
+    exercise = await create_exercise(db, owner=world.owner)
+    await _add_exercise(client, unit.id, exercise.id, world.owner_headers)
+    response = await client.patch(
+        f"/api/v1/training-units/{unit.id}/exercises/{exercise.id}",
+        json={"sets": [{"reps": -1, "weight": 80}]},
+        headers=world.owner_headers,
+    )
+    assert response.status_code == 422
+
+
+async def test_set_prescription_exercise_not_in_unit_returns_404(
+    client: AsyncClient, world: UnitWorld, db: AsyncSession
+) -> None:
+    # The exercise exists but was never added to the unit.
+    unit = world.owner_units[0]
+    exercise = await create_exercise(db, owner=world.owner)
+    response = await client.patch(
+        f"/api/v1/training-units/{unit.id}/exercises/{exercise.id}",
+        json={"sets": [{"reps": 5, "weight": 100}]},
+        headers=world.owner_headers,
+    )
+    assert response.status_code == 404
+
+
+async def test_set_prescription_not_owned_unit_returns_404(
+    client: AsyncClient, world: UnitWorld, db: AsyncSession
+) -> None:
+    unit = world.owner_units[0]
+    exercise = await create_exercise(db, owner=world.owner)
+    await _add_exercise(client, unit.id, exercise.id, world.owner_headers)
+    response = await client.patch(
+        f"/api/v1/training-units/{unit.id}/exercises/{exercise.id}",
+        json={"sets": [{"reps": 5, "weight": 100}]},
+        headers=world.other_headers,
     )
     assert response.status_code == 404

@@ -6,7 +6,7 @@ from gymhero.models.body_part import BodyPart
 from gymhero.models.exercise import Exercise, ExerciseType
 from gymhero.models.level import Level
 from gymhero.models.training_plan import TrainingPlan
-from gymhero.models.training_unit import TrainingUnit
+from gymhero.models.training_unit import TrainingUnit, TrainingUnitExercise
 from gymhero.models.user import User
 from gymhero.security import get_password_hash
 
@@ -102,7 +102,7 @@ async def create_training_unit(
         name=name or _unique("unit"), description=description, owner_id=owner.id
     )
     if exercises:
-        unit.exercises = exercises
+        unit.exercises = [TrainingUnitExercise(exercise=e) for e in exercises]
     return await _persist(db, unit)
 
 
