@@ -1,5 +1,5 @@
 import { Link, useNavigate } from '@tanstack/react-router'
-import { ArrowLeft, Dumbbell, Pencil, Plus, Trash2, X } from 'lucide-react'
+import { Dumbbell, Pencil, Plus, Trash2, X } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
 import { getErrorMessage } from '@/api/errors'
@@ -9,6 +9,7 @@ import { ConfirmDialog } from '@/components/confirm-dialog'
 import { DataError } from '@/components/data-error'
 import { EmptyState } from '@/components/empty-state'
 import { FadeIn } from '@/components/fade-in'
+import { PageBreadcrumb } from '@/components/page-breadcrumb'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -73,12 +74,13 @@ export function TrainingUnitDetailPage({ id }: { id: number }) {
 
   return (
     <FadeIn className="space-y-6">
-      <Button asChild variant="ghost" size="sm" className="-ml-2 w-fit">
-        <Link to="/training-units">
-          <ArrowLeft className="mr-2 size-4" />
-          Back to training units
-        </Link>
-      </Button>
+      <PageBreadcrumb
+        items={[
+          { label: 'Home', to: '/' },
+          { label: 'Training units', to: '/training-units' },
+          ...(unit ? [{ label: unit.name }] : []),
+        ]}
+      />
 
       {isLoading ? (
         <Skeleton className="h-64 w-full" />
